@@ -162,7 +162,7 @@ public:
         toolButton_4->setText(QCoreApplication::translate("FriendPage", "...", nullptr));
         toolButton->setText(QCoreApplication::translate("FriendPage", "\346\237\245\346\211\276", nullptr));
         toolButton_3->setText(QCoreApplication::translate("FriendPage", "\345\210\233\345\273\272\347\276\244", nullptr));
-        toolButton_2->setText(QCoreApplication::translate("FriendPage", "...", nullptr));
+        toolButton_2->setText(QCoreApplication::translate("FriendPage", "\345\245\275\345\217\213\350\257\267\346\261\202", nullptr));
     } // retranslateUi
 
 };

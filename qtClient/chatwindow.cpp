@@ -1,8 +1,9 @@
-#include "chatwindow.h"
+﻿#include "chatwindow.h"
 #include "ui_chatwindow.h"
 #include "processor.h"
 #include "network.h"
 #include "friendpage.h"
+#include <QDateTime>
 #include <QMessageBox>
 ChatWindow::ChatWindow(QWidget *parent) :
     QWidget(parent),
@@ -31,12 +32,23 @@ void ChatWindow::messageUpdate() {
     int smallNum = INT_MAX;
     int bigNum = 0;
     for (int i = 0; i < mUnReadMessageList.size(); i++) {
-        ui->plainTextEdit->appendPlainText(QString::fromStdString(mUnReadMessageList[i].message_text));
+        //ui->plainTextEdit->appendPlainText(QString::fromStdString(mUnReadMessageList[i].message_text));
         smallNum = min(smallNum, mUnReadMessageList[i].id);
         bigNum = max(bigNum, mUnReadMessageList[i].id);
     }
     emit confirmMessage(mUserId, smallNum, bigNum);//网络发送给服务器确认
     emit friendPageUpdate(mUserId);
+}
+
+void ChatWindow::showChatContent()
+{
+    printf("size = %d\n", mUnReadMessageList.size());
+    for (int i = 0; i < mUnReadMessageList.size(); i++) {
+        ui->plainTextEdit->appendPlainText(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(mUnReadMessageList[i].timestamp));
+        ui->plainTextEdit->appendPlainText(QString::fromStdString(mUnReadMessageList[i].message_text));
+        mCurrentMessageList.push_back(mUnReadMessageList[i]);
+    }
+    mUnReadMessageList.clear();
 }
 
 void ChatWindow::addMessage(MessageInfo info)
@@ -70,9 +82,17 @@ void ChatWindow::on_pushButton_clicked()
             ui->plainTextEdit->appendPlainText("Trans failure......\n");
             return;
         }
+        MessageInfo info;
+        info.receiver_id = mInfo.user_id;
+        info.sender_id = mUserId;
+        QDateTime currentDateTime = QDateTime::currentDateTime();
+        // 将日期和时间转换为字符串
+        QString currentDateTimeStr = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
+        info.timestamp = currentDateTimeStr.toStdString();
         QString s = QString::fromStdString(content);
+        std::string name = ((FriendPage*)returnWindow)->mInfo.username;
+        ui->plainTextEdit->appendPlainText(QString::fromStdString(name) + "           " + currentDateTimeStr);
         ui->plainTextEdit->appendPlainText(s);
-        ui->plainTextEdit->appendPlainText("Trans......\n");
     }
 }
 

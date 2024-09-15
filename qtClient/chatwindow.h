@@ -1,4 +1,4 @@
-#ifndef CHATWINDOW_H
+﻿#ifndef CHATWINDOW_H
 #define CHATWINDOW_H
 
 #include <QWidget>
@@ -19,7 +19,9 @@ public:
     void addMessage(MessageInfo info);
     void messageUpdate();
     vector<MessageInfo> mUnReadMessageList;
+    vector<MessageInfo> mCurrentMessageList;//包括已读取和已发送和一些历史记录，可能需要持久化
     int mUserId;
+    void showChatContent();
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -34,6 +36,7 @@ public slots:
 private:
     Ui::ChatWindow *ui;
     UserInfo mInfo;
+    UserInfo* clientInfo;
 };
 
 #endif // CHATWINDOW_H

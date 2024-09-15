@@ -30,6 +30,7 @@ namespace FunctionCode {
         UpdateUserState                       = 9,
         ProcessFriendRequest                  = 10,
         ProcessMessageRead                    = 11,
+        ReciveMessage                         = 12,
         //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
     };
 
@@ -103,6 +104,7 @@ public:
     std::string message_text;
     int receiver_id;
     int message_id;
+    std::string timestamp;
     // 可以添加其他需要返回的消息信息字段，如时间戳等
     inline void print() {
         std::cout << "sender_id: " << sender_id << "   "

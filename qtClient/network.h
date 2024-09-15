@@ -26,6 +26,7 @@ signals:
     void getAllMessageSuccess(Response response);
     void getAllFriendRequestSuccess(Response response);
     void UpDateUserStateSuccess(Response response);
+    void ReciveMessageSuccess(Response response);
 private:
     ClientNetWork();
     QTcpSocket mSocket;

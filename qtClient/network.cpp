@@ -8,7 +8,7 @@
 QTcpSocket socket;
 QByteArray buffer;  // 缓冲区
 quint32 expectedPacketSize = 0;  // 预期数据包长度
-#define SERVERIP "192.168.100.102"
+#define SERVERIP "192.168.58.132"
 #define PORT 8080
 
 ClientNetWork::ClientNetWork()
@@ -83,6 +83,9 @@ bool ClientNetWork::process(QByteArray& array) {
     }
     else if (rsp.mFunctionCode == FunctionCode::UpdateUserState) {
         emit UpDateUserStateSuccess(rsp);
+    }
+    else if (rsp.mFunctionCode == FunctionCode::ReciveMessage) {
+        emit ReciveMessageSuccess(rsp);
     }
     return false;
 }

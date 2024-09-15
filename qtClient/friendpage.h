@@ -1,4 +1,4 @@
-#ifndef FRIENDPAGE_H
+﻿#ifndef FRIENDPAGE_H
 #define FRIENDPAGE_H
 
 #include <QWidget>
@@ -34,6 +34,7 @@ public:
 
     bool initPage();
     void friendPageUpdate(int uid);
+    UserInfo mInfo;
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -56,18 +57,16 @@ private slots:
     void getAllMessageSuccess(Response);
     void getAllFriendRequestSuccess(Response);
     void UpDateUserStateSuccess(Response response);
-
+    void ReciveMessageSuccess(Response response);
     void on_comboBox_currentIndexChanged(int index);
     void friendMessageArrive(FriendRequest info);
 
     void on_toolButton_2_clicked();
-
 private:
     Ui::FriendPage *ui;
     QWidget* returnWindow;
     FindFriendPage* m_FindFriendPage;
     CreateGroupPage* m_CreateGroupPage;
-    UserInfo mInfo;
     int mUserId;
 
 

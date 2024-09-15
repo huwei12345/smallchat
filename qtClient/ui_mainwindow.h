@@ -85,7 +85,6 @@ public:
         font.setPointSize(27);
         font.setBold(true);
         font.setItalic(true);
-        font.setWeight(75);
         label->setFont(font);
 
         horizontalLayout_4->addWidget(label);
@@ -234,7 +233,7 @@ public:
         MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
         label->setText(QCoreApplication::translate("MainWindow", "QFei", nullptr));
         label_2->setText(QCoreApplication::translate("MainWindow", "\350\264\246\345\217\267(&Z)", nullptr));
-        lineEdit->setText(QCoreApplication::translate("MainWindow", "admin", nullptr));
+        lineEdit->setText(QCoreApplication::translate("MainWindow", "huwei", nullptr));
         label_3->setText(QCoreApplication::translate("MainWindow", "\345\257\206\347\240\201(&M)", nullptr));
         lineEdit_2->setText(QCoreApplication::translate("MainWindow", "123456", nullptr));
         pushButton_4->setText(QCoreApplication::translate("MainWindow", "\347\231\273\345\275\2252", nullptr));

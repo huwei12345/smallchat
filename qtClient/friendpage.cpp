@@ -36,6 +36,7 @@ bool FriendPage::initPage() {
     connect(ClientNetWork::GetInstance(), &ClientNetWork::getAllMessageSuccess, this, &FriendPage::getAllMessageSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::getAllFriendRequestSuccess, this, &FriendPage::getAllFriendRequestSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::UpDateUserStateSuccess, this, &FriendPage::UpDateUserStateSuccess);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::ReciveMessageSuccess, this, &FriendPage::ReciveMessageSuccess);
     return true;
 }
 
@@ -107,7 +108,7 @@ void FriendPage::findAllFriendSuccess(Response response)
         info.print();
         mFriendList.push_back(info);
         mChatWindowMap[info.user_id] = new ChatWindow(info);
-        connect(this, FriendPage::userMessageUnRead, mChatWindowMap[info.user_id], &ChatWindow::userMessageRead);
+        connect(this, &FriendPage::userMessageUnRead, mChatWindowMap[info.user_id], &ChatWindow::userMessageRead);
     }
 }
 
@@ -122,7 +123,10 @@ void FriendPage::getAllMessageSuccess(Response response) {
     for (int i = 0; i < size; i++) {
         //TODO:ToolButton put in widget
         MessageInfo info;
-        stream2 >> info.sender_id >> info.message_text;
+        stream2 >> info.id;
+        stream2 >> info.sender_id;
+        stream2 >> info.message_text;
+        stream2 >> info.timestamp;
         qDebug() << info.sender_id;
         qDebug() << QString::fromStdString(info.message_text);
         info.receiver_id = user_id;
@@ -133,7 +137,7 @@ void FriendPage::getAllMessageSuccess(Response response) {
         QString str = mFriendButton[info.sender_id]->text();
         int index = str.indexOf("[New");
         if (index != -1)
-            str = str.remove(index);
+            str = str.remove(index, str.length() - index);
         //有新消息来时添加text,点击后，出现新消息后，删除text
         mFriendButton[info.sender_id]->setText(str + "  [New Message]");
     }
@@ -172,6 +176,34 @@ void FriendPage::getAllFriendRequestSuccess(Response response) {
 void FriendPage::UpDateUserStateSuccess(Response response) {
     if (response.mCode) {
         QMessageBox::information(this,"提示","修改状态成功！");
+    }
+}
+
+void FriendPage::ReciveMessageSuccess(Response response)
+{
+    std::string &mData = response.mData;
+    MessageInfo info;
+    //TODO: stream 应该重载>>(MessageInfo\UserInfo...)
+    if (response.mhasData) {
+        MyProtocolStream stream(mData);
+        stream >> info.id >> info.sender_id >> info.message_text >> info.timestamp;
+        int x = mChatWindowMap[info.sender_id]->windowState();
+        if (mChatWindowMap[info.sender_id]->windowState() == Qt::WindowNoState) {
+            printf("iiiiiiiiiiiiiiiiiiiiiiii  %d  \n", x);
+        }
+        else {
+            printf("iiiiiiiiiiiiiiiiiiiiiiii  %d  \n", x);
+        }
+        info.print();
+        mChatWindowMap[info.sender_id]->addMessage(info);
+        QString str = mFriendButton[info.sender_id]->text();
+        int index = str.indexOf("[New");
+        if (index != -1)
+            str = str.remove(index, str.length() - index);
+        //有新消息来时添加text,点击后，出现新消息后，删除text
+        mFriendButton[info.sender_id]->setText(str + "  [New Message]");
+        //如果ChatWindow已经打开：
+        //如果ChatWindow没有打开：
     }
 }
 
@@ -248,7 +280,8 @@ void FriendPage::addFriendToPage(int i, UserInfo info) {
     str2 += QString::number(i);
     ui->listWidget->addItem(str2);
     ui->listWidget->setItemWidget(ui->listWidget->item(i), button);
-
+    ui->listWidget->item(i)->setWhatsThis(QString::number(info.user_id));
+    qDebug() << "Hello XXXXX!" << button;
     //installEventFilter + eventFilter overide可以实现防覆
     button->installEventFilter(this); // 在当前类中实现 eventFilter 方法
     mFriendButton[info.user_id] =button;
@@ -283,10 +316,16 @@ void FriendPage::addFriendToPage(int i, UserInfo info) {
 }
 
 void FriendPage::chatWithFriend(QListWidgetItem* item) {
-    ChatWindow* chatWindow = new ChatWindow;
+    //需要根据是哪个item获取是哪个chatWindow
+    int userId = item->whatsThis().toInt();
+    //ChatWindow* chatWindow = new ChatWindow;
+    printf("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
+    printf("userId = %d\n", userId);
+    ChatWindow* chatWindow = mChatWindowMap[userId];
     chatWindow->returnWindow = this;
     chatWindow->messageUpdate();
     chatWindow->show();
+    chatWindow->showChatContent();
     this->hide();
     qDebug() << " hello!" << item;
 }
