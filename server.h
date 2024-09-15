@@ -7,6 +7,7 @@
 #include <map>
 #define BUF_SIZE 1024
 #define MAX_EVENTS 1024
+class Connection;
 
 class Server {
 public:

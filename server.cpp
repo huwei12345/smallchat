@@ -12,6 +12,14 @@
 using namespace std;
 #define MAX_REQUEST_SIZE 4096
 
+bool readRequest(int fd, char* buf, std::string& requestData);
+Request* parseRequest(std::string& RequestData);
+Response* processRequest(Request* request);
+bool sendDataAll(int fd, const char* data, int len);
+bool sendDataAll(int fd, std::string data);
+bool sendResponse(int fd, Response* response);
+std::string serialResponse(Response* response); 
+bool process(int fd, char* buf);
 using CallBack = void(void*);
 
 class Connection {
@@ -26,41 +34,6 @@ public:
     bool processRead();
 };
 
-bool Connection::processRead() {
-    std::string requestData;
-    Request* request = nullptr;
-    Response* response = nullptr;
-
-    if (!readRequest(clientSocket, buffer, requestData)) {
-        return false;
-    }
-
-    request = parseRequest(requestData);
-    if (!request) {
-        // Clean up requestData if necessary
-        return false;
-    }
-
-    response = processRequest(request);
-    delete request; // Clean up request after use
-    if (!response) {
-        // Clean up response if necessary
-        return false;
-    }
-
-    bool success = sendResponse(clientSocket, response);
-    delete response; // Clean up response after use
-    return success;
-}
-
-bool readRequest(int fd, char* buf, std::string& requestData);
-Request* parseRequest(std::string& RequestData);
-Response* processRequest(Request* request);
-bool sendDataAll(int fd, const char* data, int len);
-bool sendDataAll(int fd, std::string data);
-bool sendResponse(int fd, Response* response);
-std::string serialResponse(Response* response); 
-bool process(int fd, char* buf);
 
 RequestProcessor* requestProcessor[100];
 
