@@ -1,0 +1,320 @@
+#include <iostream>
+#include <string>
+#include <mysql.h>
+
+// 用户信息结构体，用于保存用户信息
+struct UserInfo {
+    int user_id;
+    std::string username;
+    // 可以添加其他需要返回的用户信息字段
+};
+
+//如密码哈希存储和安全传输。
+
+bool Login(Mysql* mysql, const std::string& username, const std::string& password, UserInfo& userInfo) {
+    // 查询用户信息
+    std::string query = "SELECT user_id, username FROM users WHERE username = '" + username + "' AND password = '" + password + "'";
+    if (mysql_query(&mysql, query.c_str()) != 0) {
+        std::cerr << "查询失败: " << mysql_error(&mysql) << std::endl;
+        mysql_close(&mysql);
+        return false;
+    }
+    MYSQL_RES* result = mysql_store_result(&mysql);
+    if (result == nullptr) {
+        std::cerr << "获取结果失败: " << mysql_error(&mysql) << std::endl;
+        mysql_close(&mysql);
+        return false;
+    }
+
+    // 检查查询结果
+    int num_rows = mysql_num_rows(result);
+    if (num_rows != 1) {
+        std::cout << "用户名或密码错误\n";
+        mysql_free_result(result);
+        mysql_close(&mysql);
+        return false;
+    }
+
+    // 读取用户信息
+    MYSQL_ROW row = mysql_fetch_row(result);
+    userInfo.user_id = std::stoi(row[0]);
+    userInfo.username = row[1];
+    // 可以继续读取其他需要的用户信息字段
+
+    mysql_free_result(result);
+    mysql_close(&mysql);
+
+    std::cout << "用户登录成功\n";
+    return true;
+}
+
+void Register(Mysql* mysql, const std::string& username, const std::string& password) {
+    // 检查用户名是否已经存在
+    std::string query = "SELECT COUNT(*) FROM users WHERE username = '" + username + "'";
+    if (mysql_query(&mysql, query.c_str()) != 0) {
+        std::cerr << "查询失败: " << mysql_error(&mysql) << std::endl;
+        mysql_close(&mysql);
+        return false;
+    }
+
+    MYSQL_RES* result = mysql_store_result(&mysql);
+    if (result == nullptr) {
+        std::cerr << "获取结果失败: " << mysql_error(&mysql) << std::endl;
+        mysql_close(&mysql);
+        return false;
+    }
+
+    MYSQL_ROW row = mysql_fetch_row(result);
+    int num_rows = std::stoi(row[0]);
+    mysql_free_result(result);
+
+    if (num_rows > 0) {
+        std::cout << "用户名已存在\n";
+        mysql_close(&mysql);
+        return false;
+    }
+
+    // 插入新用户数据
+    query = "INSERT INTO users (username, password) VALUES ('" + username + "', '" + password + "')";
+    if (mysql_query(&mysql, query.c_str()) != 0) {
+        std::cerr << "插入失败: " << mysql_error(&mysql) << std::endl;
+        mysql_close(&mysql);
+        return false;
+    }
+
+    std::cout << "用户注册成功\n";
+    mysql_close(&mysql);
+    return true;
+}
+
+// 函数：查找某人所有朋友
+bool findFriends(int user_id, std::vector<UserInfo>& friendsList) {
+    // 假设使用MySQL C API进行数据库操作
+
+    // 连接数据库
+    mysql_init(&mysql);
+    if (!mysql_real_connect(&mysql, "localhost", "username", "password", "database_name", 0, NULL, 0)) {
+        std::cerr << "数据库连接失败: " << mysql_error(&mysql) << std::endl;
+        return false;
+    }
+
+    // 查询用户的所有朋友
+    std::string query = "SELECT users.user_id, users.username FROM friends "
+                        "JOIN users ON friends.friend_id = users.user_id "
+                        "WHERE friends.user_id = " + std::to_string(user_id);
+    if (mysql_query(&mysql, query.c_str()) != 0) {
+        std::cerr << "查询失败: " << mysql_error(&mysql) << std::endl;
+        mysql_close(&mysql);
+        return false;
+    }
+
+    MYSQL_RES* result = mysql_store_result(&mysql);
+    if (result == nullptr) {
+        std::cerr << "获取结果失败: " << mysql_error(&mysql) << std::endl;
+        mysql_close(&mysql);
+        return false;
+    }
+
+    // 遍历查询结果，将朋友信息存入 friendsList
+    int num_rows = mysql_num_rows(result);
+    for (int i = 0; i < num_rows; ++i) {
+        MYSQL_ROW row = mysql_fetch_row(result);
+        UserInfo friendInfo;
+        friendInfo.user_id = std::stoi(row[0]);
+        friendInfo.username = row[1];
+        // 可以继续读取其他需要的用户信息字段
+
+        friendsList.push_back(friendInfo);
+    }
+
+    mysql_free_result(result);
+    mysql_close(&mysql);
+
+    std::cout << "查找朋友成功\n";
+    return true;
+}
+
+// 函数：添加朋友
+bool addFriend(int user_id, int friend_id, UserInfo& friendInfo) {
+    // 检查是否已经是好友
+    std::string query = "SELECT COUNT(*) FROM friends "
+                        "WHERE (user_id = " + std::to_string(user_id) +
+                        " AND friend_id = " + std::to_string(friend_id) + ") "
+                        "OR (user_id = " + std::to_string(friend_id) +
+                        " AND friend_id = " + std::to_string(user_id) + ")";
+    if (mysql_query(&mysql, query.c_str()) != 0) {
+        std::cerr << "查询失败: " << mysql_error(&mysql) << std::endl;
+        mysql_close(&mysql);
+        return false;
+    }
+
+    MYSQL_RES* result = mysql_store_result(&mysql);
+    if (result == nullptr) {
+        std::cerr << "获取结果失败: " << mysql_error(&mysql) << std::endl;
+        mysql_close(&mysql);
+        return false;
+    }
+
+    MYSQL_ROW row = mysql_fetch_row(result);
+    int num_rows = std::stoi(row[0]);
+    mysql_free_result(result);
+
+    if (num_rows > 0) {
+        std::cout << "这两个用户已经是好友\n";
+        mysql_close(&mysql);
+        return false;
+    }
+
+    // 添加好友关系
+    query = "INSERT INTO friends (user_id, friend_id) VALUES (" + std::to_string(user_id) +
+            ", " + std::to_string(friend_id) + ")";
+    if (mysql_query(&mysql, query.c_str()) != 0) {
+        std::cerr << "添加失败: " << mysql_error(&mysql) << std::endl;
+        mysql_close(&mysql);
+        return false;
+    }
+
+    // 获取新添加好友的信息
+    query = "SELECT users.user_id, users.username FROM users WHERE user_id = " + std::to_string(friend_id);
+    if (mysql_query(&mysql, query.c_str()) != 0) {
+        std::cerr << "查询失败: " << mysql_error(&mysql) << std::endl;
+        mysql_close(&mysql);
+        return false;
+    }
+
+    result = mysql_store_result(&mysql);
+    if (result == nullptr) {
+        std::cerr << "获取结果失败: " << mysql_error(&mysql) << std::endl;
+        mysql_close(&mysql);
+        return false;
+    }
+
+    row = mysql_fetch_row(result);
+    friendInfo.user_id = std::stoi(row[0]);
+    friendInfo.username = row[1];
+    // 可以继续读取其他需要的用户信息字段
+
+    mysql_free_result(result);
+    mysql_close(&mysql);
+
+    std::cout << "添加朋友成功\n";
+    return true;
+}
+
+void DeleteFriend() {
+
+}
+
+// 消息信息结构体，用于保存消息相关信息
+struct MessageInfo {
+    int message_id;
+    int sender_id;
+    int receiver_id;
+    std::string message_text;
+    // 可以添加其他需要返回的消息信息字段，如时间戳等
+};
+
+// 函数：发送消息给朋友
+//参数化查询，以防止SQL注入等安全问题的发生。
+bool sendMessage(int sender_id, int receiver_id, const std::string& message_text, MessageInfo& messageInfo) {
+    // 插入消息记录
+    std::string query = "INSERT INTO messages (sender_id, receiver_id, message_text) VALUES ("
+                        + std::to_string(sender_id) + ", "
+                        + std::to_string(receiver_id) + ", '"
+                        + message_text + "')";
+    if (mysql_query(&mysql, query.c_str()) != 0) {
+        std::cerr << "发送消息失败: " << mysql_error(&mysql) << std::endl;
+        mysql_close(&mysql);
+        return false;
+    }
+
+    // 获取新消息的信息
+    int message_id = mysql_insert_id(&mysql); // 获取刚插入消息的ID
+    messageInfo.message_id = message_id;
+    messageInfo.sender_id = sender_id;
+    messageInfo.receiver_id = receiver_id;
+    messageInfo.message_text = message_text;
+    // 可以继续读取其他需要的消息信息字段
+    mysql_close(&mysql);
+
+    std::cout << "发送消息成功\n";
+    return true;
+}
+
+// 文件信息结构体，用于保存文件相关信息
+struct FileInfo {
+    int file_id;
+    int user_id;
+    std::string file_name;
+    std::string file_path;
+    // 可以添加其他需要返回的文件信息字段，如上传时间等
+};
+
+// 函数：上传文件到用户空间   
+//TODO:验证文件类型、大小限制以及文件路径的安全性
+bool uploadFile(int user_id, const std::string& file_name, const std::string& file_path, FileInfo& fileInfo) {
+    // 插入文件记录
+    std::string query = "INSERT INTO user_files (user_id, file_name, file_path) VALUES ("
+                        + std::to_string(user_id) + ", '"
+                        + file_name + "', '"
+                        + file_path + "')";
+    if (mysql_query(&mysql, query.c_str()) != 0) {
+        std::cerr << "上传文件失败: " << mysql_error(&mysql) << std::endl;
+        mysql_close(&mysql);
+        return false;
+    }
+
+    // 获取新上传文件的信息
+    int file_id = mysql_insert_id(&mysql); // 获取刚插入文件的ID
+    fileInfo.file_id = file_id;
+    fileInfo.user_id = user_id;
+    fileInfo.file_name = file_name;
+    fileInfo.file_path = file_path;
+    // 可以继续读取其他需要的文件信息字段
+
+    mysql_close(&mysql);
+
+    std::cout << "上传文件成功\n";
+    return true;
+}
+
+// 离线文件信息结构体，用于保存离线文件相关信息
+struct OfflineFileInfo {
+    int file_id;
+    int sender_id;
+    int receiver_id;
+    std::string file_name;
+    std::string file_path;
+    // 可以添加其他需要返回的文件信息字段，如上传时间等
+};
+
+// 函数：向朋友离线传输文件
+bool transferOfflineFile(int sender_id, int receiver_id, const std::string& file_name, const std::string& file_path, OfflineFileInfo& offlineFileInfo) {
+    // 插入离线文件记录
+    std::string query = "INSERT INTO offline_files (sender_id, receiver_id, file_name, file_path) VALUES ("
+                        + std::to_string(sender_id) + ", "
+                        + std::to_string(receiver_id) + ", '"
+                        + file_name + "', '"
+                        + file_path + "')";
+    if (mysql_query(&mysql, query.c_str()) != 0) {
+        std::cerr << "离线传输文件失败: " << mysql_error(&mysql) << std::endl;
+        mysql_close(&mysql);
+        return false;
+    }
+
+    // 获取新离线传输文件的信息
+    int file_id = mysql_insert_id(&mysql); // 获取刚插入离线文件的ID
+    offlineFileInfo.file_id = file_id;
+    offlineFileInfo.sender_id = sender_id;
+    offlineFileInfo.receiver_id = receiver_id;
+    offlineFileInfo.file_name = file_name;
+    offlineFileInfo.file_path = file_path;
+    // 可以继续读取其他需要的离线文件信息字段
+
+    mysql_close(&mysql);
+
+    std::cout << "离线传输文件成功\n";
+    return true;
+}
+
+ 

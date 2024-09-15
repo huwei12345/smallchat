@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/friend">
+        <file>touxiang.jpeg</file>
+    </qresource>
+    <qresource prefix="/main">
+        <file>title.jpeg</file>
+        <file>back.jpeg</file>
+        <file>icon.jpeg</file>
+    </qresource>
+</RCC>
