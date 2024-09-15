@@ -22,17 +22,6 @@ std::string serialResponse(Response* response);
 bool process(int fd, char* buf);
 using CallBack = void(void*);
 
-class Connection {
-public:
-    Connection() {}
-    Connection(int socket) : clientSocket(socket) { }
-    int clientSocket;
-    int userId;
-    int state;
-    char buffer[4096];
-    //CallBack processRead; //CallBack
-    bool processRead();
-};
 
 
 RequestProcessor* requestProcessor[100];
@@ -108,7 +97,7 @@ Request* parseRequest(std::string& RequestData) {
 
 Response* processRequest(Request* request) {
     Response* response = new Response;
-    requestProcessor[request->mFunctionCode]->Exec(*request, *response);
+    requestProcessor[request->mFunctionCode]->Exec(NULL, *request, *response);
     response->print();
     return response;
 }
@@ -333,9 +322,9 @@ void Server::run()
             } else {
                 int client_fd = events[i].data.fd;
                 char buffer[4096];
-                process(client_fd, buffer);
+                //process(client_fd, buffer);
                 
-                //mConnectionMap[client_fd]->processRead();
+                mConnectionMap[client_fd]->processRead();
                 
                 // Request req;
                 // int len = Trans::receive(client_fd, req);
@@ -359,3 +348,60 @@ int Server::send(int clientfd, char *str, int len)
     n = sendline(clientfd, buf, len);
     return n;
 }
+
+Server* Server::mInstance = NULL;
+
+Server *Server::GetInstance()
+{
+    if (mInstance == NULL) {
+        mInstance = new Server;
+    }
+    return mInstance;
+}
+
+bool Connection::processRead()
+{
+    std::string requestData;
+    Request* request = nullptr;
+    Response* response = nullptr;
+
+    if (!readRequest(clientSocket, buffer, requestData)) {
+        return false;
+    }
+
+    request = parseRequest(requestData);
+    if (!request) {
+        // Clean up requestData if necessary
+        return false;
+    }
+
+    response = new Response;
+    requestProcessor[request->mFunctionCode]->Exec(this, *request, *response);
+    response->print();
+    delete request; // Clean up request after use
+    if (!response) {
+        // Clean up response if necessary
+        return false;
+    }
+
+    bool success = sendResponse(clientSocket, response);
+    delete response; // Clean up response after use
+    return success;
+}
+
+
+/*
+
+2024年9月15日
+
+1.缺少在线发送消息和朋友请求逻辑
+
+2.缺少消息处理后的数据库read=1操作，目前方便调试
+
+3.界面端对于New Message显示取消
+
+4.Connection的断开连接 delete操作 Session
+
+5.如何防止野指针
+
+*/

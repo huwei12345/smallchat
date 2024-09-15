@@ -3,9 +3,9 @@
 #include "MyProtocolStream.h"
 
 #include "MysqlPool.h"
-using namespace sql;
+#include "server.h"
 
-void RequestProcessor::Exec(Request &request, Response &response)
+void RequestProcessor::Exec(Connection* conn, Request &request, Response &response)
 {
     response.mType = request.mType;
     response.mDirection = !request.mDirection;
@@ -21,15 +21,15 @@ void RequestProcessor::Exec(Request &request, Response &response)
 
 
 bool LoginProcessor::Login(const std::string& username, const std::string& password, UserInfo& userInfo) {
-    Connection* conn = MysqlPool::GetInstance()->getConnection();
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
     //查询
-	PreparedStatement* state2 = conn->prepareStatement("select * from users where username = ? and password_hash = ?;");
+	sql::PreparedStatement* state2 = conn->prepareStatement("select * from users where username = ? and password_hash = ?;");
 	state2->setString(1, username);
     state2->setString(2, password);
-    ResultSet *st = state2->executeQuery();
+    sql::ResultSet *st = state2->executeQuery();
     try {	
         while (st->next()) {
             userInfo.user_id = st->getInt("user_id");
@@ -52,7 +52,7 @@ bool LoginProcessor::Login(const std::string& username, const std::string& passw
     return true;
 }
 
-void LoginProcessor::Exec(Request &request, Response& response)
+void LoginProcessor::Exec(Connection* conn, Request &request, Response& response)
 {
     std::string& data = request.mData;
     MyProtocolStream stream(data);
@@ -64,6 +64,12 @@ void LoginProcessor::Exec(Request &request, Response& response)
     if (response.mCode) {
         response.mhasData = true;
         response.mData = info.loginserial();
+        //conn->mUserId = info.user_id;
+        //conn->mLoginState = ;
+        Session* session = new Session;
+        session->mConn = conn;
+        session->mUserId = info.user_id;
+        //session->mLoginState = info.status; 登陆状态
     }
     else {
         //some error info add
@@ -77,13 +83,13 @@ int RegisterProcessor::Register(const Request& request, UserInfo& info) {
     stream >> info.username >> password >> info.email >> info.full_name >>
 	  info.avatar_url >> info.bio >> info.sex >> info.age >> info.address;
 
-    Connection* conn = MysqlPool::GetInstance()->getConnection();
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
 
     //查询      values('lixin','123456','lixin.com','li','xxx.com','111',1,0,'shanxi');)");
-	PreparedStatement* state2 = conn->prepareStatement(R"(insert into users
+	sql::PreparedStatement* state2 = conn->prepareStatement(R"(insert into users
         (username, password_hash, email, full_name, avatar_url, bio,sex,age,address) 
         values(?,?,?,?,?,?,?,?,?);)");
     state2->setString(1, info.username);
@@ -111,8 +117,8 @@ int RegisterProcessor::Register(const Request& request, UserInfo& info) {
     }
 
     state2->close();
-    PreparedStatement* state3 = conn->prepareStatement("SELECT LAST_INSERT_ID();");
-    ResultSet* rs = state3->executeQuery();
+    sql::PreparedStatement* state3 = conn->prepareStatement("SELECT LAST_INSERT_ID();");
+    sql::ResultSet* rs = state3->executeQuery();
     int autoIncKeyFromFunc = -1;
     if (rs->next()) {
         autoIncKeyFromFunc = rs->getInt(1);
@@ -131,7 +137,7 @@ int RegisterProcessor::Register(const Request& request, UserInfo& info) {
     return 0;
 }
 
-void RegisterProcessor::Exec(Request &request, Response& response)
+void RegisterProcessor::Exec(Connection* conn, Request &request, Response& response)
 {
     UserInfo info;
     int ret = Register(request, info);
@@ -146,7 +152,7 @@ void RegisterProcessor::Exec(Request &request, Response& response)
 }
 
 
-void SearchAllFriendProcessor::Exec(Request &request, Response& response)
+void SearchAllFriendProcessor::Exec(Connection* conn, Request &request, Response& response)
 {
     FriendList friendList;
     bool ret = SearchAllFriend(request, friendList);
@@ -161,7 +167,7 @@ void SearchAllFriendProcessor::Exec(Request &request, Response& response)
 }
 
 
-void FindFriendProcessor::Exec(Request &request, Response& response)
+void FindFriendProcessor::Exec(Connection* conn, Request &request, Response& response)
 {
     FriendList friendList;
     bool ret = FindFriend(request, friendList);
@@ -175,7 +181,7 @@ void FindFriendProcessor::Exec(Request &request, Response& response)
     }
 }
 
-void AddFriendProcessor::Exec(Request &request, Response& response)
+void AddFriendProcessor::Exec(Connection* conn, Request &request, Response& response)
 {
     UserInfo info;
     bool ret = AddFriend(request);
@@ -189,15 +195,36 @@ void AddFriendProcessor::Exec(Request &request, Response& response)
 }
 
 
-void SendMessageProcessor::Exec(Request &request, Response& response)
+void SendMessageProcessor::Exec(Connection* conn, Request &request, Response& response)
 {
     MessageInfo message;
-    bool ret = SendMessage(request);
+    bool ret = false;
+    std::string mData = request.mData;
+    MyProtocolStream stream(mData);
+    MessageInfo info;
+    stream >> info.receiver_id >> info.message_text;
+
+    if (Server::GetInstance()->mUserSessionMap.count(info.receiver_id)) {
+        //向消息所向用户发送消息
+        //从userId索引到Connection再得到clientSocket
+        //TODO:在线时，接收消息和朋友请求的逻辑
+        //思路1：在线，直接发送，或者入库read=0, 再尝试发送，再修改read=1
+        //思路2：直接入库read=0，不发送，等客户端进行心跳连接时，相应新消息和朋友请求
+        //思路3：当在库中新增一项时，触发某任务，向客户发送消息
+        Session* session = Server::GetInstance()->mUserSessionMap[info.receiver_id];
+        Connection* friendConn = session->mConn;
+        // if (friendConn != NULL && friendConn->connState != DisConnectionState) {
+        //     sendMessageByNetwork(info, /*info.receiver_id*/);
+        //     UpMessageDateBase();
+        // }
+    }
+    else {
+        //不在线，存库，等上线后发送
+        ret = SendMessage(request);
+    }
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
         //向当前用户返回true
-        //向消息所向用户发送消息
-
         //response.mData = message.SendMessageSerial();
     }
     else {
@@ -212,12 +239,12 @@ bool SearchAllFriendProcessor::SearchAllFriend(const Request &request, FriendLis
     UserInfo info;
     stream >> info.user_id;
     
-    Connection* conn = MysqlPool::GetInstance()->getConnection();
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
     //TODO: 联合查询，用户的名字、email等返回
-	PreparedStatement* state2 = conn->prepareStatement(R"(
+	sql::PreparedStatement* state2 = conn->prepareStatement(R"(
         SELECT u.user_id AS friend_id, u.username AS friend_username, u.email
         FROM friendships f
         JOIN users u ON u.user_id = CASE
@@ -232,7 +259,7 @@ bool SearchAllFriendProcessor::SearchAllFriend(const Request &request, FriendLis
     state2->setInt(3, 2);
     state2->setInt(4, info.user_id);
     state2->setInt(5, info.user_id);
-    ResultSet *st = state2->executeQuery();
+    sql::ResultSet *st = state2->executeQuery();
 
     int id = -1;
     try {
@@ -263,15 +290,15 @@ bool FindFriendProcessor::FindFriend(const Request &request, FriendList &friendL
     MyProtocolStream stream(mData);
     UserInfo info;
     stream >> info.username;
-    Connection* conn = MysqlPool::GetInstance()->getConnection();
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
     //查询
-	PreparedStatement* state2 = conn->prepareStatement("select * from users where username = ?;");
+	sql::PreparedStatement* state2 = conn->prepareStatement("select * from users where username = ?;");
 
 	state2->setString(1, info.username);
-    ResultSet *st = state2->executeQuery();
+    sql::ResultSet *st = state2->executeQuery();
     int id = -1;
     try {
         while (st->next()) {
@@ -301,21 +328,21 @@ bool AddFriendProcessor::AddFriend(const Request &request)
     MyProtocolStream stream(mData);
     UserInfo info;
     stream >> info.user_id;
-    Connection* conn = MysqlPool::GetInstance()->getConnection();
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
     //查询
-	PreparedStatement* state = conn->prepareStatement("select * from users where user_id = ?;");
+	sql::PreparedStatement* state = conn->prepareStatement("select * from users where user_id = ?;");
 	state->setInt(1, request.mUserId);
-    ResultSet *st = state->executeQuery();
+    sql::ResultSet *st = state->executeQuery();
     
     if (st->rowsCount() <= 0) {
         printf("Row %d\n", (int)st->rowsCount());
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
-    PreparedStatement* state2 = conn->prepareStatement(R"(insert into friendships
+    sql::PreparedStatement* state2 = conn->prepareStatement(R"(insert into friendships
         (user1_id, user2_id, status) 
         values(?,?,?);)");
     state2->setInt(1, request.mUserId);
@@ -325,7 +352,7 @@ bool AddFriendProcessor::AddFriend(const Request &request)
     try {
         state2->execute();
     }
-    catch(SQLException& e) {
+    catch(sql::SQLException& e) {
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
@@ -344,12 +371,12 @@ bool SendMessageProcessor::SendMessage(const Request &request)
     MyProtocolStream stream(mData);
     MessageInfo info;
     stream >> info.receiver_id >> info.message_text;
-    Connection* conn = MysqlPool::GetInstance()->getConnection();
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
 
-	PreparedStatement* state2 = conn->prepareStatement(R"(insert into messages
+	sql::PreparedStatement* state2 = conn->prepareStatement(R"(insert into messages
         (sender_id, recipient_id, content) 
         values(?,?,?);)");
     state2->setInt(1, request.mUserId);
@@ -379,7 +406,7 @@ std::string UserInfo::loginserial() {
     return str;
 }
 
-void GetAllMessageProcessor::Exec(Request &request, Response &response)
+void GetAllMessageProcessor::Exec(Connection* conn, Request &request, Response &response)
 {
     std::vector<MessageInfo> message;
     bool ret = GetAllMessage(request, message);
@@ -403,16 +430,16 @@ bool GetAllMessageProcessor::GetAllMessage(const Request &request, vector<Messag
 {
     std::string mData = request.mData;
     MyProtocolStream stream(mData);
-    Connection* conn = MysqlPool::GetInstance()->getConnection();
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
 
-	PreparedStatement* state2 = conn->prepareStatement(R"(select message_id, sender_id, recipient_id, content, timestamp from messages
+	sql::PreparedStatement* state2 = conn->prepareStatement(R"(select message_id, sender_id, recipient_id, content, timestamp from messages
         where is_read = ? and recipient_id = ?;)");
     state2->setInt(1, 0);
     state2->setInt(2, request.mUserId);
-    ResultSet *st = state2->executeQuery();
+    sql::ResultSet *st = state2->executeQuery();
     int id = -1;
     try {
         while (st->next()) {
@@ -438,7 +465,7 @@ bool GetAllMessageProcessor::GetAllMessage(const Request &request, vector<Messag
     return true;
 }
 
-void GetAllFriendReqProcessor::Exec(Request &request, Response &response)
+void GetAllFriendReqProcessor::Exec(Connection* conn, Request &request, Response &response)
 {
     std::vector<FriendRequest> infoList;
     bool ret = GetAllFriendReq(request, infoList);
@@ -464,18 +491,18 @@ bool GetAllFriendReqProcessor::GetAllFriendReq(const Request &request, vector<Fr
 {
     std::string mData = request.mData;
     MyProtocolStream stream(mData);
-    Connection* conn = MysqlPool::GetInstance()->getConnection();
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
-	PreparedStatement* state2 = conn->prepareStatement(R"(select f.user1_id, u.username, f.status, f.since
+	sql::PreparedStatement* state2 = conn->prepareStatement(R"(select f.user1_id, u.username, f.status, f.since
         from friendships f join users u 
         on f.status = ?
         and f.user2_id = ? 
         and f.user1_id = u.user_id;)");
     state2->setInt(1, 1);//pending
     state2->setInt(2, request.mUserId);
-    ResultSet *st = state2->executeQuery();
+    sql::ResultSet *st = state2->executeQuery();
 
     try {
         while (st->next()) {
@@ -502,7 +529,7 @@ bool GetAllFriendReqProcessor::GetAllFriendReq(const Request &request, vector<Fr
     return true;
 }
 
-void UpdateUserStateProcessor::Exec(Request &request, Response &response)
+void UpdateUserStateProcessor::Exec(Connection* conn, Request &request, Response &response)
 {
     bool ret = UpdateUserState(request);
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
@@ -522,12 +549,12 @@ bool UpdateUserStateProcessor::UpdateUserState(const Request &request)
     MyProtocolStream stream(mData);
     int state = 0;
     stream >> state;
-    Connection* conn = MysqlPool::GetInstance()->getConnection();
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
     //查询
-	PreparedStatement* state2 = conn->prepareStatement("update status = ? from users where user_id = ?;");
+	sql::PreparedStatement* state2 = conn->prepareStatement("update status = ? from users where user_id = ?;");
     state2->setInt(1, state);
 	state2->setInt(2, request.mUserId);
     try {
@@ -544,7 +571,7 @@ bool UpdateUserStateProcessor::UpdateUserState(const Request &request)
     return true;
 }
 
-void ProcessFriendRequestProcessor::Exec(Request &request, Response &response)
+void ProcessFriendRequestProcessor::Exec(Connection* conn, Request &request, Response &response)
 {
     FriendRequest fr;
     bool ret = ProcessFriendRequest(request, fr);
@@ -569,18 +596,18 @@ bool ProcessFriendRequestProcessor::ProcessFriendRequest(Request & request, Frie
     MyProtocolStream stream(mData);
     stream >> fr.sender_id >> fr.reciver_id >> fr.mAccept;
     std::cout << fr.sender_id << "  " << fr.reciver_id << " " << fr.mAccept << std::endl;
-    Connection* conn = MysqlPool::GetInstance()->getConnection();
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
     //trans
-    PreparedStatement* state2 = conn->prepareStatement(R"(update friendships set status = ?
+    sql::PreparedStatement* state2 = conn->prepareStatement(R"(update friendships set status = ?
         where user1_id = ? and user2_id = ?;)");
     state2->setInt(1, fr.mAccept ? 2 : 3);
     state2->setInt(2, fr.sender_id);
     state2->setInt(3, fr.reciver_id);
 
-    PreparedStatement* state3 = conn->prepareStatement(R"(delete from friendships
+    sql::PreparedStatement* state3 = conn->prepareStatement(R"(delete from friendships
         where user1_id = ? and user2_id = ?;)");
     state3->setInt(1, fr.reciver_id);
     state3->setInt(2, fr.sender_id);
@@ -604,24 +631,26 @@ bool ProcessFriendRequestProcessor::ProcessFriendRequest(Request & request, Frie
     return true;
 }
 
-void ProcessMessageReadProcessor::Exec(Request &request, Response &response)
+void ProcessMessageReadProcessor::Exec(Connection* conn, Request &request, Response &response)
 {
     ProcessMessageRead(request);
 }
 
 bool ProcessMessageReadProcessor::ProcessMessageRead(Request &request)
 {
+    //范围确认 start-end
+    //后续可以优化为根据协议如何确认，如type = byte[0] type1:范围确认 type2:单条确认 type3:时间确认 type4:位图确认
     string& data = request.mData;
     MyProtocolStream stream(data);
     int send_id = 0, recv_id = 0;
     int start = 0, end = 0;
     stream >> send_id >> recv_id;
     stream >> start >> end;
-    Connection* conn = MysqlPool::GetInstance()->getConnection();
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
-    PreparedStatement* state2 = conn->prepareStatement(R"(update is_read = ? from messages
+    sql::PreparedStatement* state2 = conn->prepareStatement(R"(update is_read = ? from messages
         where sender_id = ? and recipient_id = ? and message_id >= ? and message_id <= ? ;)");
     state2->setInt(1, send_id);
     state2->setInt(2, recv_id);

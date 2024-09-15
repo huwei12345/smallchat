@@ -8,6 +8,25 @@
 using namespace std;
 using namespace net;
 
+class Connection {
+public:
+    Connection() {}
+    Connection(int socket) : clientSocket(socket) { }
+    int clientSocket;
+    char buffer[4096];
+    //CallBack processRead; //CallBack
+    bool processRead();
+};
+
+class Session {
+public:
+    Session() {}
+    Connection*mConn;
+    int mUserId;
+    int mLoginState;
+    //应该还需要保持心跳连接
+};
+
 //二进制打印所有的值
 inline void print(string& s) {
     for (int i = 0; i < (int)s.size(); i++) {
