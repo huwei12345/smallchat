@@ -12,18 +12,6 @@
 using namespace std;
 #define MAX_REQUEST_SIZE 4096
 
-bool readRequest(int fd, char* buf, std::string& requestData);
-Request* parseRequest(std::string& RequestData);
-Response* processRequest(Request* request);
-bool sendDataAll(int fd, const char* data, int len);
-bool sendDataAll(int fd, std::string data);
-bool sendResponse(int fd, Response* response);
-std::string serialResponse(Response* response); 
-bool process(int fd, char* buf);
-using CallBack = void(void*);
-
-
-
 RequestProcessor* requestProcessor[100];
 
 int readline(int sockfd, char* buffer, int MaxSize) {
@@ -87,6 +75,8 @@ bool readRequest(int fd, char* buf, std::string& requestData) {
     requestData.assign(buf, buf + len);
     return true;
 }
+
+
 
 Request* parseRequest(std::string& RequestData) {
     Request* request = new Request;
@@ -359,16 +349,53 @@ Server *Server::GetInstance()
     return mInstance;
 }
 
+bool Connection::readRequest(std::string &requestData)
+{
+    int ret = recv(clientSocket, buffer, 4, MSG_PEEK);
+    if (ret <= 0) {
+        if (ret == 0) {
+            printf("connect %d close\n", clientSocket);
+            closeConnection();
+        }
+        // Handle recv error
+        return false;
+    } else if (ret < 4) {
+        // Handle incomplete length field
+        return false;
+    }
+    uint32_t len = 0;
+    memcpy(&len, buffer, 4);
+    len = htonl(len);
+    
+    if (len < 4 || len > MAX_REQUEST_SIZE) {
+        // Handle invalid length
+        return false;
+    }
+    
+    ret = recv(clientSocket, buffer, len, MSG_WAITALL);
+    if (ret <= 0) {
+        if (ret == 0) {
+            printf("connect %d close\n", clientSocket);
+            closeConnection();
+        }
+        // Handle recv error
+        return false;
+    } else if (ret != len) {
+        // Handle incomplete request data
+        return false;
+    }
+    requestData.assign(buffer, buffer + len);
+    return true;
+}
+
 bool Connection::processRead()
 {
     std::string requestData;
     Request* request = nullptr;
     Response* response = nullptr;
-
-    if (!readRequest(clientSocket, buffer, requestData)) {
+    if (!readRequest(requestData)) {
         return false;
     }
-
     request = parseRequest(requestData);
     if (!request) {
         // Clean up requestData if necessary
@@ -384,24 +411,71 @@ bool Connection::processRead()
         return false;
     }
 
+    if (request->mFunctionCode == FunctionCode::ProcessMessageRead) {
+        //某些请求不返回相应的
+        delete response;
+        return true;
+    }
     bool success = sendResponse(clientSocket, response);
     delete response; // Clean up response after use
     return success;
 }
 
+//flag = 0,默认关闭  flag = 1,强行关闭
+bool Connection::closeConnection(int flag)
+{
+    //删除顺序有待确认，这是IO线程，某些对象在业务线程可能还在用
+    if (epoll_ctl(Server::GetInstance()->epoll_fd, EPOLL_CTL_DEL, clientSocket, NULL) == -1) {
+        printf("epoll del error %d\n", clientSocket);
+        perror("epoll_ctl: EPOLL_CTL_DEL");
+        return false;
+    }
+    close(clientSocket);
+    Connection* conn = Server::GetInstance()->mConnectionMap[clientSocket];
+    if (conn == NULL) {
+        return true;
+    }
+    Session* session = conn->session;
+    if (session != NULL) {
+        int userId = session->mUserId;
+        Server::GetInstance()->mUserSessionMap.erase(userId);
+        delete session;
+    }
+    Server::GetInstance()->mConnectionMap.erase(clientSocket);
+    clientSocket = -1;
+    delete conn;
+    printf("size : %d %d\n", (int)Server::GetInstance()->mUserSessionMap.size(), (int)Server::GetInstance()->mConnectionMap.size());
+    return true;
+}
 
 /*
 
 2024年9月15日
 
-1.缺少在线发送消息和朋友请求逻辑
+1.缺少在线发送消息和朋友请求逻辑(已完成，待优化)
 
-2.缺少消息处理后的数据库read=1操作，目前方便调试
+2.缺少消息处理后的数据库read=1操作，目前方便调试不用改（已完成，通过注释Qt端发送逻辑取消该功能）
+如果使用，最好在Qt端本地持久化历史聊天数据，或者添加一个逻辑，在本地没有聊天数据时，请求30天内已确认聊天数据到本地
 
-3.界面端对于New Message显示取消
+3.界面端对于New Message显示取消（已完成）
 
-4.Connection的断开连接 delete操作 Session
+4.Connection的断开连接 delete操作 Session（已完成，待优化）,
+如何防止野指针
 
-5.如何防止野指针
+5.通过userId搜索朋友
 
+6.修改当前朋友状态，以及在页面的显示
+朋友上线后的提示，下线提示
+
+7.Group
+
+8.头像存储
+
+9.表情显示与存储
+
+10.图片、文件
+
+11.抖动消息
+
+12.远程存储文件
 */

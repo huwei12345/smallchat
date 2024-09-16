@@ -4,7 +4,7 @@
 
 #include "MysqlPool.h"
 #include "server.h"
-
+#include "settime.h"
 void RequestProcessor::Exec(Connection* conn, Request &request, Response &response)
 {
     response.mType = request.mType;
@@ -68,7 +68,10 @@ void LoginProcessor::Exec(Connection* conn, Request &request, Response& response
         //conn->mLoginState = ;
         Session* session = new Session;
         session->mConn = conn;
+        conn->session = session;
+        //互相指可能有问题
         session->mUserId = info.user_id;
+        Server::GetInstance()->mUserSessionMap[info.user_id] = session;
         //session->mLoginState = info.status; 登陆状态
     }
     else {
@@ -194,38 +197,41 @@ void AddFriendProcessor::Exec(Connection* conn, Request &request, Response& resp
     }
 }
 
+bool SendMessageProcessor::sendMessageByNet(Connection* conn, MessageInfo message) {
+    std::string data;
+    int clientSocket = conn->clientSocket; 
+    MyProtocolStream stream(data);
+    stream << message.id << message.sender_id << message.receiver_id << message.timestamp << message.message_text;
+    Response rsp(1, FunctionCode::SendMessage, 3, 4, 5, 1, message.sender_id, 1, true, data);
+    string str = rsp.serial();
+    bool success = sendResponse(clientSocket, &rsp);
+    if (success > 0) {
+        return true;
+    }
+    return false;
+}
 
 void SendMessageProcessor::Exec(Connection* conn, Request &request, Response& response)
 {
-    MessageInfo message;
+    MessageInfo info;//返回值
     bool ret = false;
-    std::string mData = request.mData;
-    MyProtocolStream stream(mData);
-    MessageInfo info;
-    stream >> info.receiver_id >> info.message_text;
-
+    ret = SendMessage(request, info);
+    //在线时，直接通过网络发送消息给客户端，（接收消息和朋友请求的逻辑）
     if (Server::GetInstance()->mUserSessionMap.count(info.receiver_id)) {
-        //向消息所向用户发送消息
         //从userId索引到Connection再得到clientSocket
-        //TODO:在线时，接收消息和朋友请求的逻辑
-        //思路1：在线，直接发送，或者入库read=0, 再尝试发送，再修改read=1
+        //思路1：在线，直接发送，入库read=0, 等消息确认相应，再修改read=1
         //思路2：直接入库read=0，不发送，等客户端进行心跳连接时，相应新消息和朋友请求
-        //思路3：当在库中新增一项时，触发某任务，向客户发送消息
+        //思路3：当在库中新增一项时，触发某任务，向客户发送消息，异步发送
         Session* session = Server::GetInstance()->mUserSessionMap[info.receiver_id];
         Connection* friendConn = session->mConn;
-        // if (friendConn != NULL && friendConn->connState != DisConnectionState) {
-        //     sendMessageByNetwork(info, /*info.receiver_id*/);
-        //     UpMessageDateBase();
-        // }
-    }
-    else {
-        //不在线，存库，等上线后发送
-        ret = SendMessage(request);
+        if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
+            bool ret = sendMessageByNet(friendConn, info/*info.receiver_id*/);
+        }
     }
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
+        //TODO:发出去的消息，相应需要带ID吗？
         //向当前用户返回true
-        //response.mData = message.SendMessageSerial();
     }
     else {
         //some error info add
@@ -365,17 +371,18 @@ bool AddFriendProcessor::AddFriend(const Request &request)
     return true;
 }
 
-bool SendMessageProcessor::SendMessage(const Request &request)
+bool SendMessageProcessor::SendMessage(const Request &request, MessageInfo& info)
 {
     std::string mData = request.mData;
     MyProtocolStream stream(mData);
-    MessageInfo info;
     stream >> info.receiver_id >> info.message_text;
+    info.sender_id = request.mUserId;
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
-
+    info.timestamp = SetTime::GetInstance()->getAccurateTime();
+    printf("info.time = %s\n", info.timestamp.c_str());
 	sql::PreparedStatement* state2 = conn->prepareStatement(R"(insert into messages
         (sender_id, recipient_id, content) 
         values(?,?,?);)");
@@ -385,11 +392,23 @@ bool SendMessageProcessor::SendMessage(const Request &request)
     state2->execute();
 
     state2->close();
+    sql::PreparedStatement* state3 = conn->prepareStatement("SELECT LAST_INSERT_ID();");
+    sql::ResultSet* rs = state3->executeQuery();
+    int autoIncKeyFromFunc = -1;
+    if (rs->next()) {
+        autoIncKeyFromFunc = rs->getInt(1);
+    } else {
+        // throw an exception from here
+    }
+    info.id = autoIncKeyFromFunc;
+    rs->close();
+    state3->close();
     MysqlPool::GetInstance()->releaseConncetion(conn);
+    if (info.id <= 0)
+        return false;
     return true;
+
 }
-
-
 
 std::string UserInfo::registerSerial() {
     std::string str;
@@ -634,6 +653,7 @@ bool ProcessFriendRequestProcessor::ProcessFriendRequest(Request & request, Frie
 void ProcessMessageReadProcessor::Exec(Connection* conn, Request &request, Response &response)
 {
     ProcessMessageRead(request);
+    //No Response
 }
 
 bool ProcessMessageReadProcessor::ProcessMessageRead(Request &request)
@@ -644,18 +664,18 @@ bool ProcessMessageReadProcessor::ProcessMessageRead(Request &request)
     MyProtocolStream stream(data);
     int send_id = 0, recv_id = 0;
     int start = 0, end = 0;
-    stream >> send_id >> recv_id;
-    stream >> start >> end;
+    stream >> send_id >> recv_id >> start >> end;
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
-    sql::PreparedStatement* state2 = conn->prepareStatement(R"(update is_read = ? from messages
+    sql::PreparedStatement* state2 = conn->prepareStatement(R"(update messages set is_read = ? 
         where sender_id = ? and recipient_id = ? and message_id >= ? and message_id <= ? ;)");
-    state2->setInt(1, send_id);
-    state2->setInt(2, recv_id);
-    state2->setInt(3, start);
-    state2->setInt(4, end);
+    state2->setInt(1, 1);
+    state2->setInt(2, send_id);
+    state2->setInt(3, recv_id);
+    state2->setInt(4, start);
+    state2->setInt(5, end);
     try {
         state2->executeUpdate();
     }

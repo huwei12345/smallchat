@@ -7,15 +7,18 @@
 #include"MyProtocolStream.h"
 using namespace std;
 using namespace net;
-
+class Session;
 class Connection {
 public:
-    Connection() {}
-    Connection(int socket) : clientSocket(socket) { }
+    Connection() : clientSocket(0), session(NULL) { }
+    Connection(int socket) : clientSocket(socket), session(NULL) { }
     int clientSocket;
     char buffer[4096];
-    //CallBack processRead; //CallBack
+    bool readRequest(std::string &requestData);
+    // CallBack processRead; //CallBack
     bool processRead();
+    bool closeConnection(int flag = 0);
+    Session* session;
 };
 
 class Session {

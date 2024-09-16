@@ -29,7 +29,7 @@ private slots:
     void on_pushButton_clicked();
 
 signals:
-    void confirmMessage(int, int start, int end);
+    void confirmMessage(int sender, int reciver, int start, int end);
     void friendPageUpdate(int);
 public slots:
     void userMessageRead();

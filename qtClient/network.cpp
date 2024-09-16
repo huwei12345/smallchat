@@ -10,7 +10,7 @@ QByteArray buffer;  // 缓冲区
 quint32 expectedPacketSize = 0;  // 预期数据包长度
 #define SERVERIP "192.168.58.132"
 #define PORT 8080
-
+extern int user_id;
 ClientNetWork::ClientNetWork()
 {
 
@@ -58,12 +58,21 @@ bool ClientNetWork::process(QByteArray& array) {
         return false;
     }
     else if (rsp.mFunctionCode == FunctionCode::SendMessage) {
-        if (rsp.mCode == 1) {
-            printf("send Message Success\n");
-            return true;
+        if (rsp.mhasData == false) {
+            //消息确认
+            if (rsp.mCode == 1) {
+                printf("send Message Success\n");
+                return true;
+            }
+            else {
+                printf("send Message Failure Server Error\n");
+                return false;
+            }
         }
-        printf("send Message Failure Server Error\n");
-        return false;
+        else {
+            //消息到达
+            emit MessageArriveClient(rsp);
+        }
     }
     else if (rsp.mFunctionCode == FunctionCode::FindFriend) {
         emit FindFriendSuccess(rsp);
@@ -85,26 +94,26 @@ bool ClientNetWork::process(QByteArray& array) {
         emit UpDateUserStateSuccess(rsp);
     }
     else if (rsp.mFunctionCode == FunctionCode::ReciveMessage) {
+        //弃用,使用SendMessage功能2代替
         emit ReciveMessageSuccess(rsp);
     }
     return false;
 }
 
-void ClientNetWork::confirmMessage(int uid, int start, int end) {
+bool ClientNetWork::confirmMessage(int sendId, int recvId, int start, int end) {
     //TODO:
-//    std::string data;
-//    MyProtocolStream stream(data);
-//    stream << username << password;
-//    Request req(1, FunctionCode::Login, 3, 4, 5, data, 0, 0);
-//    string str = req.serial();
-//    QByteArray array(str.c_str(),str.size());
-//    int r = SendPacket(array);
-//    if (r > 0) {
-//        req.print();
-
-//        return true;
-//    }
-//    return false;
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << sendId << recvId << start << end;
+    Request req(1, FunctionCode::ProcessMessageRead, 3, 4, 5, data, ::user_id, 0);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
 }
 
 

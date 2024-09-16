@@ -37,6 +37,7 @@ bool FriendPage::initPage() {
     connect(ClientNetWork::GetInstance(), &ClientNetWork::getAllFriendRequestSuccess, this, &FriendPage::getAllFriendRequestSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::UpDateUserStateSuccess, this, &FriendPage::UpDateUserStateSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::ReciveMessageSuccess, this, &FriendPage::ReciveMessageSuccess);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::MessageArriveClient, this, &FriendPage::MessageArriveClient);
     return true;
 }
 
@@ -107,8 +108,10 @@ void FriendPage::findAllFriendSuccess(Response response)
         addFriendToPage(i, info);//
         info.print();
         mFriendList.push_back(info);
-        mChatWindowMap[info.user_id] = new ChatWindow(info);
-        connect(this, &FriendPage::userMessageUnRead, mChatWindowMap[info.user_id], &ChatWindow::userMessageRead);
+        ChatWindow* chatWindow = new ChatWindow(info);
+        mChatWindowMap[info.user_id] = chatWindow;
+        connect(this, &FriendPage::userMessageUnRead, chatWindow, &ChatWindow::userMessageRead);
+        connect(chatWindow, &ChatWindow::friendPageUpdate, this, &FriendPage::friendPageUpdate);
     }
 }
 
@@ -130,8 +133,6 @@ void FriendPage::getAllMessageSuccess(Response response) {
         qDebug() << info.sender_id;
         qDebug() << QString::fromStdString(info.message_text);
         info.receiver_id = user_id;
-        //这个ChatWindow一定一定已经在上面一个函数里创建了
-        mChatWindowMap[info.sender_id]->addMessage(info);
 
         info.print();
         QString str = mFriendButton[info.sender_id]->text();
@@ -140,14 +141,19 @@ void FriendPage::getAllMessageSuccess(Response response) {
             str = str.remove(index, str.length() - index);
         //有新消息来时添加text,点击后，出现新消息后，删除text
         mFriendButton[info.sender_id]->setText(str + "  [New Message]");
+
+        //这个ChatWindow一定一定已经在上面一个函数里创建了
+        mChatWindowMap[info.sender_id]->addMessage(info);
     }
 }
 
 void FriendPage::friendPageUpdate(int uid) {
+    printf("mmmmmmmmmmmmmmmmmmmmmmmmmm\n");
+    fflush(stdout);
     QString str = mFriendButton[uid]->text();
     int index = str.indexOf("[New");
     if (index != -1)
-        str = str.remove(index);
+        str = str.remove(index, str.length() - index);
     //有新消息来时添加text,点击后，出现新消息后，删除text
     mFriendButton[uid]->setText(str);
 }
@@ -181,30 +187,47 @@ void FriendPage::UpDateUserStateSuccess(Response response) {
 
 void FriendPage::ReciveMessageSuccess(Response response)
 {
+//    std::string &mData = response.mData;
+//    MessageInfo info;
+//    //TODO: stream 应该重载>>(MessageInfo\UserInfo...)
+//    if (response.mhasData) {
+//        MyProtocolStream stream(mData);
+//        stream >> info.id >> info.sender_id >> info.message_text >> info.timestamp;
+//        int x = mChatWindowMap[info.sender_id]->windowState();
+//        if (mChatWindowMap[info.sender_id]->windowState() == Qt::WindowNoState) {
+//            printf("iiiiiiiiiiiiiiiiiiiiiiii  %d  \n", x);
+//        }
+//        else {
+//            printf("iiiiiiiiiiiiiiiiiiiiiiii  %d  \n", x);
+//        }
+//        info.print();
+//        mChatWindowMap[info.sender_id]->addMessage(info);
+//        QString str = mFriendButton[info.sender_id]->text();
+//        int index = str.indexOf("[New");
+//        if (index != -1)
+//            str = str.remove(index, str.length() - index);
+//        //有新消息来时添加text,点击后，出现新消息后，删除text
+//        mFriendButton[info.sender_id]->setText(str + "  [New Message]");
+//        //如果ChatWindow已经打开：
+//        //如果ChatWindow没有打开：
+//    }
+}
+
+void FriendPage::MessageArriveClient(Response response)
+{
+    //在线消息到达
     std::string &mData = response.mData;
+    MyProtocolStream stream(mData);
     MessageInfo info;
-    //TODO: stream 应该重载>>(MessageInfo\UserInfo...)
-    if (response.mhasData) {
-        MyProtocolStream stream(mData);
-        stream >> info.id >> info.sender_id >> info.message_text >> info.timestamp;
-        int x = mChatWindowMap[info.sender_id]->windowState();
-        if (mChatWindowMap[info.sender_id]->windowState() == Qt::WindowNoState) {
-            printf("iiiiiiiiiiiiiiiiiiiiiiii  %d  \n", x);
-        }
-        else {
-            printf("iiiiiiiiiiiiiiiiiiiiiiii  %d  \n", x);
-        }
-        info.print();
-        mChatWindowMap[info.sender_id]->addMessage(info);
-        QString str = mFriendButton[info.sender_id]->text();
-        int index = str.indexOf("[New");
-        if (index != -1)
-            str = str.remove(index, str.length() - index);
-        //有新消息来时添加text,点击后，出现新消息后，删除text
-        mFriendButton[info.sender_id]->setText(str + "  [New Message]");
-        //如果ChatWindow已经打开：
-        //如果ChatWindow没有打开：
-    }
+    stream >> info.id >> info.sender_id >> info.receiver_id >> info.timestamp >> info.message_text;
+    QString str = mFriendButton[info.sender_id]->text();
+    int index = str.indexOf("[New");
+    if (index != -1)
+        str = str.remove(index, str.length() - index);
+    //有新消息来时添加text,点击后，出现新消息后，删除text
+    mFriendButton[info.sender_id]->setText(str + "  [New Message]");
+
+    mChatWindowMap[info.sender_id]->addMessage(info);
 }
 
 FriendPage::~FriendPage()
@@ -323,10 +346,9 @@ void FriendPage::chatWithFriend(QListWidgetItem* item) {
     printf("userId = %d\n", userId);
     ChatWindow* chatWindow = mChatWindowMap[userId];
     chatWindow->returnWindow = this;
-    chatWindow->messageUpdate();
     chatWindow->show();
     chatWindow->showChatContent();
-    this->hide();
+    //this->hide();
     qDebug() << " hello!" << item;
 }
 

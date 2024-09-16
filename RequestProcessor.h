@@ -40,7 +40,8 @@ class AddFriendProcessor  : public RequestProcessor  {
 
 class SendMessageProcessor : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
-    bool SendMessage(const Request& request);
+    bool SendMessage(const Request &request, MessageInfo &info);
+    bool sendMessageByNet(Connection *conn, MessageInfo message);
 };
 
 class GetAllMessageProcessor : public RequestProcessor  {

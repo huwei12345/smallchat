@@ -58,6 +58,7 @@ private slots:
     void getAllFriendRequestSuccess(Response);
     void UpDateUserStateSuccess(Response response);
     void ReciveMessageSuccess(Response response);
+    void MessageArriveClient(Response response);
     void on_comboBox_currentIndexChanged(int index);
     void friendMessageArrive(FriendRequest info);
 

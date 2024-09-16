@@ -16,7 +16,7 @@ public:
     void close();
     bool process(QByteArray& array);
 
-    void confirmMessage(int uid, int start, int end);
+    bool confirmMessage(int sendId, int recvId, int start, int end);
 signals:
     void loginSuccessful(UserInfo info);
     void loginFailure();
@@ -27,6 +27,7 @@ signals:
     void getAllFriendRequestSuccess(Response response);
     void UpDateUserStateSuccess(Response response);
     void ReciveMessageSuccess(Response response);
+    void MessageArriveClient(Response response);
 private:
     ClientNetWork();
     QTcpSocket mSocket;
