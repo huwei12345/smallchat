@@ -462,12 +462,13 @@ bool Connection::closeConnection(int flag)
 4.Connection的断开连接 delete操作 Session（已完成，待优化）,
 如何防止野指针
 
-5.通过userId搜索朋友
+5.通过userId搜索朋友(完成，未测试)
 
-6.修改当前朋友状态，以及在页面的显示
+6.修改当前朋友状态，以及在页面的显示(未完成)
 朋友上线后的提示，下线提示
 
 7.Group
+朋友列表分组和 群都是Group，还需要一个表
 
 8.头像存储
 

@@ -56,6 +56,7 @@ class GetAllFriendReqProcessor : public RequestProcessor  {
 
 class UpdateUserStateProcessor  : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
+    bool notifyStateToFriend(int userId, int state);
     bool UpdateUserState(const Request &request);
 };
 
@@ -68,6 +69,8 @@ class ProcessMessageReadProcessor  : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
     bool ProcessMessageRead(Request &request);
 };
+
+int stoiAll(const std::string &str);
 
 #endif
 

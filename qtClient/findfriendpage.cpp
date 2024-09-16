@@ -38,6 +38,21 @@ void FindFriendPage::keyPressEvent(QKeyEvent *event)
     }
 }
 
+
+int stoiAll(const std::string &str) {
+    int number = 0;
+    if (str.size() > 15) {
+        return -1;
+    }
+    for (int i = 0; i <= str.size(); i++) {
+        if (str[i] > '9' || str[i] < '0') {
+            return -1;
+        }
+        number = number * 10 + (str[i] - '0');
+    }
+    return number;
+}
+
 //查找
 void FindFriendPage::on_pushButton_clicked()
 {
@@ -45,7 +60,7 @@ void FindFriendPage::on_pushButton_clicked()
     if (str.size() <= 0) {
         return;
     }
-    int friendId = atoi(str.c_str());
+    int friendId = stoiAll(str);
     if (str[0] >= '0' && str[0] <= '9' && friendId > 0) {
         printf("friendId = %d\n", friendId);
         bool ret = Processor::FindFriend(friendId);
@@ -53,7 +68,7 @@ void FindFriendPage::on_pushButton_clicked()
             QMessageBox::information(this,"提示","网络不可达！");
         }
     }
-    else if (friendId <= 0) {
+    else if (isalpha(str[0])) {
         printf("friendName = %s\n", str.c_str());
         bool ret = Processor::FindFriendByName(str);
         if (!ret) {
