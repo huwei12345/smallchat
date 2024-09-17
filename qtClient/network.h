@@ -28,6 +28,13 @@ signals:
     void UpDateUserStateSuccess(Response response);
     void ReciveMessageSuccess(Response response);
     void MessageArriveClient(Response response);
+
+    void createGroupSuccess(Response response);
+    void applyJoinGroupSuccess(Response response);
+    void processGroupApplySuccess(Response response);
+    void storeFileSuccess(Response response);
+    void offlineTransFileSuccess(Response response);
+
 private:
     ClientNetWork();
     QTcpSocket mSocket;

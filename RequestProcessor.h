@@ -70,6 +70,36 @@ class ProcessMessageReadProcessor  : public RequestProcessor  {
     bool ProcessMessageRead(Request &request);
 };
 
+class CreateGroupProcessor : public RequestProcessor
+{
+    void Exec(Connection* conn, Request& request, Response&);
+    bool CreateGroup(Request &request, GroupInfo& info);
+};
+
+class JoinGroupProcessor : public RequestProcessor
+{
+    void Exec(Connection* conn, Request& request, Response&);
+    bool JoinGroup(Request &request);
+};
+
+class ResponseJoinGroupProcessor : public RequestProcessor
+{
+    void Exec(Connection* conn, Request& request, Response&);
+    bool ResponseJoinGroup(Request &request);
+};
+
+class StoreFileProcessor : public RequestProcessor
+{
+    void Exec(Connection* conn, Request& request, Response&);
+    bool StoreFile(Request &request, FileObject &fileObject);
+};
+
+class TransFileProcessor : public RequestProcessor
+{
+    void Exec(Connection* conn, Request& request, Response&);
+    bool TransFile(Request &request, TransObject &object);
+};
+
 int stoiAll(const std::string &str);
 
 #endif

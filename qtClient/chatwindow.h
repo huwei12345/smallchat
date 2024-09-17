@@ -27,7 +27,7 @@ protected:
 
 private slots:
     void on_pushButton_clicked();
-
+    void offlineTransFileSuccess(Response rsp);
 signals:
     void confirmMessage(int sender, int reciver, int start, int end);
     void friendPageUpdate(int);

@@ -1,8 +1,8 @@
-#ifndef CREATEGROUPPAGE_H
+﻿#ifndef CREATEGROUPPAGE_H
 #define CREATEGROUPPAGE_H
 
 #include <QWidget>
-
+#include "Protocol.h"
 namespace Ui {
 class CreateGroupPage;
 }
@@ -20,6 +20,10 @@ protected:
 
 private:
     Ui::CreateGroupPage *ui;
+
+private slots:
+    void createGroupSuccess(Response rsp);
+    void applyJoinGroupSuccess(Response rsp);
 };
 
 #endif // CREATEGROUPPAGE_H

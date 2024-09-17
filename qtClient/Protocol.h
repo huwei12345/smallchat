@@ -7,6 +7,28 @@
 #include"MyProtocolStream.h"
 using namespace std;
 using namespace net;
+class Session;
+class Connection {
+public:
+    Connection() : clientSocket(0), session(NULL) { }
+    Connection(int socket) : clientSocket(socket), session(NULL) { }
+    int clientSocket;
+    char buffer[4096];
+    bool readRequest(std::string &requestData);
+    // CallBack processRead; //CallBack
+    bool processRead();
+    bool closeConnection(int flag = 0);
+    Session* session;
+};
+
+class Session {
+public:
+    Session() {}
+    Connection*mConn;
+    int mUserId;
+    int mLoginState;
+    //应该还需要保持心跳连接
+};
 
 //二进制打印所有的值
 inline void print(string& s) {
@@ -31,6 +53,12 @@ namespace FunctionCode {
         ProcessFriendRequest                  = 10,
         ProcessMessageRead                    = 11,
         ReciveMessage                         = 12,
+
+        CreateGroup                           = 13,
+        JoinGroup                             = 14,
+        ResponseJoinGroup                     = 15,
+        StoreFile                             = 16,
+        TransFile                             = 17
         //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
     };
 
@@ -122,7 +150,33 @@ public:
     //int time;什么时候添加的
 };
 
+class GroupInfo {
+public:
+    int id;
+    int admin_id;
+    int gtype;
+    std::string group_name;
+    std::string description;
+    std::string tips;
+};
 
+
+class FileObject {
+public:
+    int user_id;
+    int parent_id;
+    std::string item_name;
+    int item_type;
+    std::string file_path;
+};
+
+class TransObject {
+public:
+    int sender_id;
+    int receiver_id;
+    std::string file_path;
+    std::string message;
+};
 
 struct friendHasher {
     std::size_t operator()(const FriendRequest& request) const {

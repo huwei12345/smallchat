@@ -31,8 +31,8 @@ bool ClientNetWork::process(QByteArray& array) {
     rsp.deserial(array.toStdString());
     rsp.print();
     std::string mdata = rsp.mData;
-
-    if (rsp.mFunctionCode == FunctionCode::Login) {
+    switch(rsp.mFunctionCode) {
+    case FunctionCode::Login: {
         MyProtocolStream stream2(mdata);
         UserInfo info;
         stream2 >> info.user_id >> info.username;
@@ -48,16 +48,18 @@ bool ClientNetWork::process(QByteArray& array) {
             return false;
         }
         return false;
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::Register) {
+    case FunctionCode::Register: {
         if (rsp.mCode == 1) {
             printf("Register Success\n");
             return true;
         }
         printf("Register Failure\n");
         return false;
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::SendMessage) {
+    case FunctionCode::SendMessage: {
         if (rsp.mhasData == false) {
             //消息确认
             if (rsp.mCode == 1) {
@@ -73,31 +75,63 @@ bool ClientNetWork::process(QByteArray& array) {
             //消息到达
             emit MessageArriveClient(rsp);
         }
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::FindFriend) {
+    case FunctionCode::FindFriend: {
         emit FindFriendSuccess(rsp);
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::AddFriend) {
+    case FunctionCode::AddFriend: {
         emit AddFriendSuccess(rsp.mCode);
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::SearchAllFriend) {
-        qDebug() << "yyyyyyyyyyyyyyyyyyyyyyyyy" ;
+    case FunctionCode::SearchAllFriend: {
         emit findAllFriendSuccess(rsp);
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::GetAllMessage) {
+    case FunctionCode::GetAllMessage: {
         emit getAllMessageSuccess(rsp);
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::GetAllFriendRequest) {
+    case FunctionCode::GetAllFriendRequest: {
         emit getAllFriendRequestSuccess(rsp);
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::UpdateUserState) {
+    case FunctionCode::UpdateUserState: {
         emit UpDateUserStateSuccess(rsp);
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::ReciveMessage) {
+    case FunctionCode::ReciveMessage: {
         //弃用,使用SendMessage功能2代替
         emit ReciveMessageSuccess(rsp);
+        break;
     }
-    return false;
+    case FunctionCode::CreateGroup: {
+        emit createGroupSuccess(rsp);
+        break;
+    }
+    case FunctionCode::JoinGroup: {
+        emit applyJoinGroupSuccess(rsp);
+        break;
+    }
+    case FunctionCode::ResponseJoinGroup: {
+        emit processGroupApplySuccess(rsp);
+        break;
+    }
+    case FunctionCode::StoreFile: {
+        emit storeFileSuccess(rsp);
+        break;
+    }
+    case FunctionCode::TransFile: {
+        emit offlineTransFileSuccess(rsp);
+        break;
+    }
+    default: {
+        break;
+    }
+
+    }
+    return true;
 }
 
 bool ClientNetWork::confirmMessage(int sendId, int recvId, int start, int end) {

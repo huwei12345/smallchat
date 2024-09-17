@@ -14,6 +14,7 @@ ChatWindow::ChatWindow(QWidget *parent) :
     mUserId = 1;
     connect(this, &ChatWindow::confirmMessage, ClientNetWork::GetInstance(), &ClientNetWork::confirmMessage);
     connect(this, &ChatWindow::friendPageUpdate, (FriendPage*)this->parent(), &FriendPage::friendPageUpdate);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::offlineTransFileSuccess, this, &ChatWindow::offlineTransFileSuccess);
 }
 
 ChatWindow::ChatWindow(UserInfo info, QWidget *parent) :
@@ -42,8 +43,8 @@ void ChatWindow::messageUpdate() {
 //非显示 切换 显示
 void ChatWindow::showChatContent()
 {
-    printf("size = %d\n", mUnReadMessageList.size());
-    for (int i = 0; i < mUnReadMessageList.size(); i++) {
+    printf("size = %d\n", (int)mUnReadMessageList.size());
+    for (int i = 0; i < (int)mUnReadMessageList.size(); i++) {
         ui->plainTextEdit->appendPlainText(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(mUnReadMessageList[i].timestamp));
         ui->plainTextEdit->appendPlainText(QString::fromStdString(mUnReadMessageList[i].message_text));
         mCurrentMessageList.push_back(mUnReadMessageList[i]);
@@ -110,6 +111,11 @@ void ChatWindow::on_pushButton_clicked()
         ui->plainTextEdit->appendPlainText(s);
         mCurrentMessageList.push_back(info);
     }
+}
+
+void ChatWindow::offlineTransFileSuccess(Response rsp)
+{
+
 }
 
 void ChatWindow::userMessageRead()

@@ -38,6 +38,8 @@ bool FriendPage::initPage() {
     connect(ClientNetWork::GetInstance(), &ClientNetWork::UpDateUserStateSuccess, this, &FriendPage::UpDateUserStateSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::ReciveMessageSuccess, this, &FriendPage::ReciveMessageSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::MessageArriveClient, this, &FriendPage::MessageArriveClient);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::storeFileSuccess, this, &FriendPage::storeFileSuccess);
+
     return true;
 }
 
@@ -407,6 +409,11 @@ void FriendPage::friendMessageArrive(FriendRequest info)
     }
     // 启动定时器
     mFriendRequestTimer->start();
+}
+
+void FriendPage::storeFileSuccess(Response response)
+{
+
 }
 
 

@@ -765,41 +765,27 @@ bool ProcessMessageReadProcessor::ProcessMessageRead(Request &request)
     return true;
 }
 
-//创建群
-bool CreateGroup(const std::string& group_name, const std::string& description, int admin_id, int gtype, const std::string& tips) {
-    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
-    if (conn == nullptr) {
-        std::cerr << "Failed to get database connection." << std::endl;
-        return false;
+void CreateGroupProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    GroupInfo info;
+    MyProtocolStream stream(request.mData);
+    stream >> info.group_name >> info.gtype >> info.admin_id >> info.description >> info.tips;
+    bool ret = CreateGroup(request, info);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        response.mhasData = true;
+        std::string &data = response.mData;
+        MyProtocolStream stream(data);
+        stream << info.id << info.group_name << info.gtype << info.admin_id << info.description << info.tips;
     }
-
-    // Prepare SQL statement to insert into group_t table
-    sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
-        INSERT INTO group_t (group_name, description, admin_id, gtype, Tips)
-        VALUES (?, ?, ?, ?, ?)
-    )");
-    pstmt->setString(1, group_name);
-    pstmt->setString(2, description);
-    pstmt->setInt(3, admin_id);
-    pstmt->setInt(4, gtype);
-    pstmt->setString(5, tips);
-
-    try {
-        pstmt->execute();
-        pstmt->close();
-        MysqlPool::GetInstance()->releaseConncetion(conn);
-        return true;
-    } catch (sql::SQLException& e) {
-        std::cerr << "SQL error: " << e.what() << std::endl;
-        std::cerr << "Error code: " << e.getErrorCode() << std::endl;
-        std::cerr << "SQLState: " << e.getSQLState() << std::endl;
-        pstmt->close();
-        MysqlPool::GetInstance()->releaseConncetion(conn);
-        return false;
+    else {
+        response.mhasData = false;
+        //some error info add
     }
 }
+
 /*
-std::string group_name = "Sample Group"; // Replace with actual group name
+    std::string group_name = "Sample Group"; // Replace with actual group name
     std::string description = "This is a sample group"; // Replace with actual description
     int admin_id = 1; // Replace with actual admin user ID
     int gtype = 0; // Replace with actual group type
@@ -812,24 +798,87 @@ std::string group_name = "Sample Group"; // Replace with actual group name
     }
     */
 
-
-//添加群成员
-//需要先申请，再等待管理员同意后成为群成员
-bool AddGroupMember(int group_id, int user_id, const std::string& role) {
+bool CreateGroupProcessor::CreateGroup(Request &request, GroupInfo& info)
+{
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == nullptr) {
         std::cerr << "Failed to get database connection." << std::endl;
         return false;
     }
+    // Prepare SQL statement to insert into group_t table
+    sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
+        INSERT INTO group_t (group_name, description, admin_id, gtype, Tips)
+        VALUES (?, ?, ?, ?, ?)
+    )");
+    pstmt->setString(1, info.group_name);
+    pstmt->setString(2, info.description);
+    pstmt->setInt(3, info.admin_id);
+    pstmt->setInt(4, info.gtype);
+    pstmt->setString(5, info.tips);
 
+    try {
+        pstmt->execute();
+        pstmt->close();
+        sql::PreparedStatement* state3 = conn->prepareStatement("SELECT LAST_INSERT_ID();");
+        sql::ResultSet* rs = state3->executeQuery();
+        int autoIncKeyFromFunc = -1;
+        if (rs->next()) {
+            autoIncKeyFromFunc = rs->getInt(1);
+        } else {
+            // throw an exception from here
+        }
+        info.id = autoIncKeyFromFunc;
+        rs->close();
+        state3->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        if (info.id <= 0) {
+            return false;
+        }
+        return true;
+    } catch (sql::SQLException& e) {
+        std::cerr << "SQL error: " << e.what() << std::endl;
+        std::cerr << "Error code: " << e.getErrorCode() << std::endl;
+        std::cerr << "SQLState: " << e.getSQLState() << std::endl;
+        pstmt->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    return true;
+}
+
+void JoinGroupProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    bool ret = JoinGroup(request);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        //修改状态成功
+    }
+    else {
+        response.mhasData = false;
+        //some error info add
+    }
+}
+
+bool JoinGroupProcessor::JoinGroup(Request &request)
+{
+    MyProtocolStream stream(request.mData);
+    int group_id;
+    stream >> group_id;
+    int role = 1;
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == nullptr) {
+        std::cerr << "Failed to get database connection." << std::endl;
+        return false;
+    }
+    //TODO:申请态
     // Prepare SQL statement to insert into group_members table
     sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
         INSERT INTO group_members (group_id, user_id, role)
         VALUES (?, ?, ?)
     )");
     pstmt->setInt(1, group_id);
-    pstmt->setInt(2, user_id);
-    pstmt->setString(3, role);
+    pstmt->setInt(2, request.mUserId);
+    pstmt->setInt(3, role);
 
     try {
         pstmt->execute();
@@ -844,21 +893,40 @@ bool AddGroupMember(int group_id, int user_id, const std::string& role) {
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
+    return true;
 }
-/*int group_id = 1;  // Replace with actual group ID
-    int user_id = 100; // Replace with actual user ID
-    std::string role = "member"; // Replace with actual role
 
-    if (AddGroupMember(group_id, user_id, role)) {
-        std::cout << "Group member added successfully." << std::endl;
-    } else {
-        std::cerr << "Failed to add group member." << std::endl;
+//相应加群
+void ResponseJoinGroupProcessor::Exec(Connection *conn, Request &request, Response &)
+{
+    
+}
+bool ResponseJoinGroupProcessor::ResponseJoinGroup(Request &request)
+{
+    
+    return false;
+}
+
+
+void StoreFileProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    FileObject fileObject;
+    bool ret = StoreFile(request, fileObject);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+
     }
+    else {
+        response.mhasData = false;
+        //some error info add
+    }
+}
 
-    return 0;
-    */
 
-bool AddUserStorageItem(int user_id, const std::string& item_name, const std::string& item_type, const std::string& file_path, int parent_id = 0) {
+//bool AddUserStorageItem(int user_id, const std::string& item_name, const std::string& item_type, const std::string& file_path, int parent_id = 0) {
+//可以在注册用户后，为其添加一个根项，用于管理
+bool StoreFileProcessor::StoreFile(Request &request, FileObject& fileObject)
+{
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == nullptr) {
         std::cerr << "Failed to get database connection." << std::endl;
@@ -870,12 +938,11 @@ bool AddUserStorageItem(int user_id, const std::string& item_name, const std::st
         INSERT INTO user_storage (user_id, parent_id, item_name, item_type, file_path)
         VALUES (?, ?, ?, ?, ?)
     )");
-    pstmt->setInt(1, user_id);
-    pstmt->setInt(2, parent_id);
-    pstmt->setString(3, item_name);
-    pstmt->setString(4, item_type);
-    pstmt->setString(5, file_path);
-
+    pstmt->setInt(1, fileObject.user_id);
+    pstmt->setInt(2, fileObject.parent_id);
+    pstmt->setString(3, fileObject.item_name);
+    pstmt->setInt(4, fileObject.item_type);
+    pstmt->setString(5, fileObject.file_path);
     try {
         pstmt->execute();
         pstmt->close();
@@ -889,9 +956,9 @@ bool AddUserStorageItem(int user_id, const std::string& item_name, const std::st
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
+    return false;
 }
 /*
-int main() {
     int user_id = 1;  // Replace with actual user ID
     std::string item_name = "example_file.txt"; // Replace with actual item name
     std::string item_type = "file"; // Replace with actual item type
@@ -903,12 +970,25 @@ int main() {
     } else {
         std::cerr << "Failed to add user storage item." << std::endl;
     }
-
-    return 0;
-}
 */
 
-bool OfflineTransfer(int sender_id, int receiver_id, const std::string& file_path, const std::string& message) {
+
+void TransFileProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    TransObject fileObject;
+    bool ret = TransFile(request, fileObject);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        
+    }
+    else {
+        response.mhasData = false;
+        //some error info add
+    }
+}
+
+bool TransFileProcessor::TransFile(Request &request, TransObject& object)
+{
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == nullptr) {
         std::cerr << "Failed to get database connection." << std::endl;
@@ -920,10 +1000,10 @@ bool OfflineTransfer(int sender_id, int receiver_id, const std::string& file_pat
         INSERT INTO offline_transfer (sender_id, receiver_id, file_path, message, created_at)
         VALUES (?, ?, ?, ?, NOW())
     )");
-    pstmt->setInt(1, sender_id);
-    pstmt->setInt(2, receiver_id);
-    pstmt->setString(3, file_path);
-    pstmt->setString(4, message);
+    pstmt->setInt(1, object.sender_id);
+    pstmt->setInt(2, object.receiver_id);
+    pstmt->setString(3, object.file_path);
+    pstmt->setString(4, object.message);
 
     try {
         pstmt->execute();
@@ -938,8 +1018,8 @@ bool OfflineTransfer(int sender_id, int receiver_id, const std::string& file_pat
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
+    return false;
 }
-
 /*
   int sender_id = 1;  // Replace with actual sender ID
     int receiver_id = 2; // Replace with actual receiver ID

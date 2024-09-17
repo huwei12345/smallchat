@@ -228,7 +228,7 @@ bool Processor::processMessageRead(std::vector<int> messageList)
     MyProtocolStream stream(data);
     //多个一起确认
     stream << (int)messageList.size();
-    for (int i = 0; i < messageList.size(); i++) {
+    for (int i = 0; (int)i < messageList.size(); i++) {
         stream << messageList[i];
     }
     Request req(1, FunctionCode::ProcessMessageRead, 3, 4, 5, data, user_id);

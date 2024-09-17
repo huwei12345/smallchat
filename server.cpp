@@ -261,6 +261,12 @@ Server::Server(const char *ip, unsigned int port)
     requestProcessor[FunctionCode::ProcessFriendRequest] = new ProcessFriendRequestProcessor;
     requestProcessor[FunctionCode::ProcessMessageRead] = new ProcessMessageReadProcessor;
 
+    requestProcessor[FunctionCode::CreateGroup] = new CreateGroupProcessor;
+    requestProcessor[FunctionCode::JoinGroup] = new JoinGroupProcessor;
+    requestProcessor[FunctionCode::ResponseJoinGroup] = new ResponseJoinGroupProcessor;
+    requestProcessor[FunctionCode::StoreFile] = new StoreFileProcessor;
+    requestProcessor[FunctionCode::TransFile] = new TransFileProcessor;
+
     for (int i = 30; i < 100; i++) {
         requestProcessor[i] = new RequestProcessor;
     }

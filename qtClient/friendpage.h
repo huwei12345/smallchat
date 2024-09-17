@@ -61,7 +61,7 @@ private slots:
     void MessageArriveClient(Response response);
     void on_comboBox_currentIndexChanged(int index);
     void friendMessageArrive(FriendRequest info);
-
+    void storeFileSuccess(Response response);
     void on_toolButton_2_clicked();
 private:
     Ui::FriendPage *ui;

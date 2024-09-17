@@ -44,7 +44,7 @@ int stoiAll(const std::string &str) {
     if (str.size() > 15) {
         return -1;
     }
-    for (int i = 0; i <= str.size(); i++) {
+    for (int i = 0; i <= (int)str.size(); i++) {
         if (str[i] > '9' || str[i] < '0') {
             return -1;
         }
