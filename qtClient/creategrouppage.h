@@ -23,7 +23,7 @@ private:
 
 private slots:
     void createGroupSuccess(Response rsp);
-    void applyJoinGroupSuccess(Response rsp);
+    void on_pushButton_clicked();
 };
 
 #endif // CREATEGROUPPAGE_H

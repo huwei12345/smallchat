@@ -71,7 +71,7 @@ bool Processor::FindFriend(int friendId) {
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     std::string data;
     MyProtocolStream stream(data);
-    stream << friendId;
+    stream << QString::number(friendId).toStdString();
     Request req(1, FunctionCode::FindFriend, 3, 4, 5, data, user_id);
 
     string str = req.serial();
@@ -233,6 +233,58 @@ bool Processor::processMessageRead(std::vector<int> messageList)
     }
     Request req(1, FunctionCode::ProcessMessageRead, 3, 4, 5, data, user_id);
 
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
+bool Processor::CreateGroup(GroupInfo &info)
+{
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << info.group_name << info.gtype << info.admin_id << info.description << info.tips;
+    Request req(1, FunctionCode::CreateGroup, 3, 4, 5, data, user_id);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
+//还要先有FindGroup
+bool Processor::JoinGroup(int groupId)
+{
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << groupId;
+    Request req(1, FunctionCode::JoinGroup, 3, 4, 5, data, user_id);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
+bool Processor::FindGroup(int groupId)
+{
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << groupId;
+    Request req(1, FunctionCode::FindGroup, 3, 4, 5, data, user_id);
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());
     int r = clientSocket->SendPacket(array);

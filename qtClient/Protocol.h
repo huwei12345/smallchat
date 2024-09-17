@@ -58,7 +58,8 @@ namespace FunctionCode {
         JoinGroup                             = 14,
         ResponseJoinGroup                     = 15,
         StoreFile                             = 16,
-        TransFile                             = 17
+        TransFile                             = 17,
+        FindGroup                             = 18,
         //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
     };
 
@@ -75,6 +76,14 @@ namespace FunctionCode {
         "UpdateUserState     "  ,
         "ProcessFriendRequest"  ,
         "ProcessMessageRead  "  ,
+        "ReciveMessage"         ,
+
+        "CreateGroup         "  ,
+        "JoinGroup           "  ,
+        "ResponseJoinGroup   "  ,
+        "StoreFile           "  ,
+        "TransFile           "  ,
+        "FindGroup           "  ,
     };
 };
 
@@ -154,7 +163,7 @@ class GroupInfo {
 public:
     int id;
     int admin_id;
-    int gtype;
+    std::string gtype;
     std::string group_name;
     std::string description;
     std::string tips;

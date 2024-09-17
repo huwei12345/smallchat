@@ -19,6 +19,9 @@ public:
     static bool getAllFriendRequest(int userId);
     static bool ChangeUserState(int state);
     static bool processFriendRequest(FriendRequest friendRequest);
+    static bool CreateGroup(GroupInfo& info);
+    static bool JoinGroup(int groupId);
+    static bool FindGroup(int groupId);
     bool processMessageRead(std::vector<int> messageList);
 };
 

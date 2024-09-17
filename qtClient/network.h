@@ -21,6 +21,7 @@ signals:
     void loginSuccessful(UserInfo info);
     void loginFailure();
     void FindFriendSuccess(Response response);
+    void FindGroupSuccess(Response response);
     void findAllFriendSuccess(Response response);
     void AddFriendSuccess(int mCode);
     void getAllMessageSuccess(Response response);

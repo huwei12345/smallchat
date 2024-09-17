@@ -11,7 +11,7 @@ int stoiAll(const std::string &str) {
     if (str.size() > 15) {
         return -1;
     }
-    for (int i = 0; i <= str.size(); i++) {
+    for (int i = 0; i < str.size(); i++) {
         if (str[i] > '9' || str[i] < '0') {
             return -1;
         }
@@ -360,9 +360,9 @@ bool FindFriendProcessor::FindFriend(const Request &request, FriendList &friendL
     MyProtocolStream stream(mData);
     UserInfo info;
     int type = 0;//0 按名字，1 按id
-    if (mData[0] >= '0' && mData[0] <= '9') {
+    stream >> info.username;
+    if (info.username[0] >= '0' && info.username[0] <= '9') {
         type = 1;
-        stream >> info.username;
         info.user_id = stoiAll(info.username);
         if (info.user_id <= 0) {
             return false;
@@ -813,7 +813,7 @@ bool CreateGroupProcessor::CreateGroup(Request &request, GroupInfo& info)
     pstmt->setString(1, info.group_name);
     pstmt->setString(2, info.description);
     pstmt->setInt(3, info.admin_id);
-    pstmt->setInt(4, info.gtype);
+    pstmt->setString(4, info.gtype);
     pstmt->setString(5, info.tips);
 
     try {
@@ -828,13 +828,16 @@ bool CreateGroupProcessor::CreateGroup(Request &request, GroupInfo& info)
             // throw an exception from here
         }
         info.id = autoIncKeyFromFunc;
+        printf("id = %d\n", info.id);
         rs->close();
         state3->close();
         MysqlPool::GetInstance()->releaseConncetion(conn);
         if (info.id <= 0) {
             return false;
         }
-        return true;
+        //作为拥有者
+        JoinGroupProcessor proc;
+        return proc.JoinGroup(info.admin_id, info.id, 3);
     } catch (sql::SQLException& e) {
         std::cerr << "SQL error: " << e.what() << std::endl;
         std::cerr << "Error code: " << e.getErrorCode() << std::endl;
@@ -848,7 +851,11 @@ bool CreateGroupProcessor::CreateGroup(Request &request, GroupInfo& info)
 
 void JoinGroupProcessor::Exec(Connection *conn, Request &request, Response &response)
 {
-    bool ret = JoinGroup(request);
+    MyProtocolStream stream(request.mData);
+    int groupId = 1;
+    stream >> groupId;
+
+    bool ret = JoinGroup(request.mUserId, groupId, 1);
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
         //修改状态成功
@@ -859,12 +866,8 @@ void JoinGroupProcessor::Exec(Connection *conn, Request &request, Response &resp
     }
 }
 
-bool JoinGroupProcessor::JoinGroup(Request &request)
+bool JoinGroupProcessor::JoinGroup(int userId, int groupId, int role)
 {
-    MyProtocolStream stream(request.mData);
-    int group_id;
-    stream >> group_id;
-    int role = 1;
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == nullptr) {
         std::cerr << "Failed to get database connection." << std::endl;
@@ -876,8 +879,8 @@ bool JoinGroupProcessor::JoinGroup(Request &request)
         INSERT INTO group_members (group_id, user_id, role)
         VALUES (?, ?, ?)
     )");
-    pstmt->setInt(1, group_id);
-    pstmt->setInt(2, request.mUserId);
+    pstmt->setInt(1, groupId);
+    pstmt->setInt(2, userId);
     pstmt->setInt(3, role);
 
     try {

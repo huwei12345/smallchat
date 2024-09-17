@@ -22,11 +22,20 @@ private slots:
 
     void on_pushButton_2_clicked();
     void findFriendSuccess(Response response);
+    void FindGroupSuccess(Response response);
     void addFriendSuccess(int mCode);
     void on_listWidget_itemSelectionChanged();
+    void applyJoinGroupSuccess(Response rsp);
 
+    void on_listWidget_itemClicked(QListWidgetItem *item);
+
+    void on_listWidget_itemDoubleClicked(QListWidgetItem *item);
+
+    void FindFriend();
+    void FindGroup();
 private:
     Ui::FindFriendPage *ui;
+    QListWidgetItem *mSelectItem;
 };
 
 #endif // FINDFRIENDPAGE_H

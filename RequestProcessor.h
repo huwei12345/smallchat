@@ -74,12 +74,14 @@ class CreateGroupProcessor : public RequestProcessor
 {
     void Exec(Connection* conn, Request& request, Response&);
     bool CreateGroup(Request &request, GroupInfo& info);
+    bool AddGroupOwner(Request &request);
 };
 
 class JoinGroupProcessor : public RequestProcessor
 {
     void Exec(Connection* conn, Request& request, Response&);
-    bool JoinGroup(Request &request);
+public:
+    bool JoinGroup(int userId, int groupId, int role);
 };
 
 class ResponseJoinGroupProcessor : public RequestProcessor

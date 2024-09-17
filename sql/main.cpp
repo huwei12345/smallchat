@@ -71,7 +71,7 @@ vector<std::string> tableCreateStringMap = {
     description TEXT,
     admin_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    gtype INT DEFAULT 0,
+    gtype VARCHAR(100) DEFAULT NULL,
     Tips TEXT,
     FOREIGN KEY (admin_id) REFERENCES users(user_id)
 	);
@@ -82,7 +82,7 @@ vector<std::string> tableCreateStringMap = {
     group_member_id INT AUTO_INCREMENT PRIMARY KEY,
     group_id INT NOT NULL,
     user_id INT NOT NULL,
-    role ENUM('member', 'admin', 'owner') DEFAULT 'member',
+    role ENUM('member', 'admin', 'owner', 'applyer') DEFAULT 'member',
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (group_id) REFERENCES group_t(group_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id),

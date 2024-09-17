@@ -30,13 +30,13 @@ public:
     QWidget *widget;
     QFormLayout *formLayout;
     QLabel *label_2;
-    QLineEdit *lineEdit;
+    QLineEdit *lineEditName;
     QLabel *label_3;
-    QLineEdit *lineEdit_2;
+    QLineEdit *lineEditType;
     QLabel *label_4;
-    QLineEdit *lineEdit_3;
+    QLineEdit *lineEditTips;
     QLabel *label_5;
-    QLineEdit *lineEdit_4;
+    QLineEdit *lineEditIntro;
     QWidget *widget_2;
     QHBoxLayout *horizontalLayout;
     QSpacerItem *horizontalSpacer_2;
@@ -55,6 +55,7 @@ public:
         QFont font;
         font.setPointSize(18);
         font.setBold(false);
+        font.setWeight(50);
         label->setFont(font);
         label->setAlignment(Qt::AlignCenter);
 
@@ -69,40 +70,40 @@ public:
 
         formLayout->setWidget(0, QFormLayout::LabelRole, label_2);
 
-        lineEdit = new QLineEdit(widget);
-        lineEdit->setObjectName(QString::fromUtf8("lineEdit"));
+        lineEditName = new QLineEdit(widget);
+        lineEditName->setObjectName(QString::fromUtf8("lineEditName"));
 
-        formLayout->setWidget(0, QFormLayout::FieldRole, lineEdit);
+        formLayout->setWidget(0, QFormLayout::FieldRole, lineEditName);
 
         label_3 = new QLabel(widget);
         label_3->setObjectName(QString::fromUtf8("label_3"));
 
         formLayout->setWidget(1, QFormLayout::LabelRole, label_3);
 
-        lineEdit_2 = new QLineEdit(widget);
-        lineEdit_2->setObjectName(QString::fromUtf8("lineEdit_2"));
+        lineEditType = new QLineEdit(widget);
+        lineEditType->setObjectName(QString::fromUtf8("lineEditType"));
 
-        formLayout->setWidget(1, QFormLayout::FieldRole, lineEdit_2);
+        formLayout->setWidget(1, QFormLayout::FieldRole, lineEditType);
 
         label_4 = new QLabel(widget);
         label_4->setObjectName(QString::fromUtf8("label_4"));
 
         formLayout->setWidget(2, QFormLayout::LabelRole, label_4);
 
-        lineEdit_3 = new QLineEdit(widget);
-        lineEdit_3->setObjectName(QString::fromUtf8("lineEdit_3"));
+        lineEditTips = new QLineEdit(widget);
+        lineEditTips->setObjectName(QString::fromUtf8("lineEditTips"));
 
-        formLayout->setWidget(2, QFormLayout::FieldRole, lineEdit_3);
+        formLayout->setWidget(2, QFormLayout::FieldRole, lineEditTips);
 
         label_5 = new QLabel(widget);
         label_5->setObjectName(QString::fromUtf8("label_5"));
 
         formLayout->setWidget(3, QFormLayout::LabelRole, label_5);
 
-        lineEdit_4 = new QLineEdit(widget);
-        lineEdit_4->setObjectName(QString::fromUtf8("lineEdit_4"));
+        lineEditIntro = new QLineEdit(widget);
+        lineEditIntro->setObjectName(QString::fromUtf8("lineEditIntro"));
 
-        formLayout->setWidget(3, QFormLayout::FieldRole, lineEdit_4);
+        formLayout->setWidget(3, QFormLayout::FieldRole, lineEditIntro);
 
 
         verticalLayout->addWidget(widget);
@@ -139,7 +140,7 @@ public:
         label->setText(QCoreApplication::translate("CreateGroupPage", "\345\210\233\345\273\272\347\276\244", nullptr));
         label_2->setText(QCoreApplication::translate("CreateGroupPage", "\347\276\244\345\220\215\347\247\260", nullptr));
         label_3->setText(QCoreApplication::translate("CreateGroupPage", "\347\276\244\345\210\206\347\261\273", nullptr));
-        label_4->setText(QCoreApplication::translate("CreateGroupPage", "\345\212\240\347\276\244\346\230\257\345\220\246\351\234\200\350\246\201\345\257\206\347\240\201", nullptr));
+        label_4->setText(QCoreApplication::translate("CreateGroupPage", "Tips", nullptr));
         label_5->setText(QCoreApplication::translate("CreateGroupPage", "\347\276\244\347\256\200\344\273\213", nullptr));
         pushButton->setText(QCoreApplication::translate("CreateGroupPage", "\347\224\263\350\257\267", nullptr));
     } // retranslateUi

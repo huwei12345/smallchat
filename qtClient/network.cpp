@@ -126,6 +126,10 @@ bool ClientNetWork::process(QByteArray& array) {
         emit offlineTransFileSuccess(rsp);
         break;
     }
+    case FunctionCode::FindGroup: {
+        emit FindFriendSuccess(rsp);
+        break;
+    }
     default: {
         break;
     }
