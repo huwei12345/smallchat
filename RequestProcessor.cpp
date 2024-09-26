@@ -4,6 +4,21 @@
 
 #include "MysqlPool.h"
 #include "server.h"
+#include "settime.h"
+
+int stoiAll(const std::string &str) {
+    int number = 0; 
+    if (str.size() > 15) {
+        return -1;
+    }
+    for (int i = 0; i < str.size(); i++) {
+        if (str[i] > '9' || str[i] < '0') {
+            return -1;
+        }
+        number = number * 10 + (str[i] - '0'); 
+    }
+    return number;
+}
 
 void RequestProcessor::Exec(Connection* conn, Request &request, Response &response)
 {
@@ -68,7 +83,10 @@ void LoginProcessor::Exec(Connection* conn, Request &request, Response& response
         //conn->mLoginState = ;
         Session* session = new Session;
         session->mConn = conn;
+        conn->session = session;
+        //互相指可能有问题
         session->mUserId = info.user_id;
+        Server::GetInstance()->mUserSessionMap[info.user_id] = session;
         //session->mLoginState = info.status; 登陆状态
     }
     else {
@@ -194,38 +212,88 @@ void AddFriendProcessor::Exec(Connection* conn, Request &request, Response& resp
     }
 }
 
+bool AddFriendProcessor::AddFriend(const Request &request)
+{
+    std::string mData = request.mData;
+    MyProtocolStream stream(mData);
+    UserInfo info;
+    stream >> info.user_id;
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == NULL) {
+        //记录一下错误
+        return false;
+    }
+    //查询
+    //SQL 注入：确保对 request.mUserId 和 info.user_id 进行适当的验证或清理，以防止 SQL 注入攻击。
+	sql::PreparedStatement* state = conn->prepareStatement("select * from users where user_id = ?;");
+	state->setInt(1, request.mUserId);
+    sql::ResultSet *st = state->executeQuery();
+    //资源管理：考虑使用 RAII（资源获取即初始化）来管理资源，如数据库连接 (conn)、预编译语句 (state, state2) 和结果集 (st)。这有助于自动资源清理，避免资源泄漏。
+    if (st->rowsCount() <= 0) {
+        printf("Row %d\n", (int)st->rowsCount());
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    //事务处理：根据应用程序需求，考虑将数据库操作包装在事务中 (conn->setAutoCommit(false))，以确保操作的原子性（全部成功或全部失败）。
+    sql::PreparedStatement* state2 = conn->prepareStatement(R"(insert into friendships
+        (user1_id, user2_id, status) 
+        values(?,?,?);)");
+    state2->setInt(1, request.mUserId);
+    state2->setInt(2, info.user_id);
+    state2->setInt(3, 1);
+    
+    try {
+        state2->execute();
+    }
+    catch(sql::SQLException& e) {
+        //日志和调试：特别是在错误情况下（catch 块），添加更详细的日志记录，有助于调试和监控系统行为。
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    st->close();
+    state2->close();
+    MysqlPool::GetInstance()->releaseConncetion(conn);
+    return true;
+}
+
+bool SendMessageProcessor::sendMessageByNet(Connection* conn, MessageInfo message) {
+    std::string data;
+    int clientSocket = conn->clientSocket; 
+    MyProtocolStream stream(data);
+    stream << message.id << message.sender_id << message.receiver_id << message.timestamp << message.message_text;
+    Response rsp(1, FunctionCode::SendMessage, 3, 4, 5, 1, message.sender_id, 1, true, data);
+    string str = rsp.serial();
+    bool success = sendResponse(clientSocket, &rsp);
+    if (success > 0) {
+        return true;
+    }
+    return false;
+}
 
 void SendMessageProcessor::Exec(Connection* conn, Request &request, Response& response)
 {
-    MessageInfo message;
+    MessageInfo info;//返回值
     bool ret = false;
-    std::string mData = request.mData;
-    MyProtocolStream stream(mData);
-    MessageInfo info;
-    stream >> info.receiver_id >> info.message_text;
-
+    ret = SendMessage(request, info);
+    //在线时，直接通过网络发送消息给客户端，（接收消息和朋友请求的逻辑）
     if (Server::GetInstance()->mUserSessionMap.count(info.receiver_id)) {
-        //向消息所向用户发送消息
         //从userId索引到Connection再得到clientSocket
-        //TODO:在线时，接收消息和朋友请求的逻辑
-        //思路1：在线，直接发送，或者入库read=0, 再尝试发送，再修改read=1
+        //思路1：在线，直接发送，入库read=0, 等消息确认相应，再修改read=1
         //思路2：直接入库read=0，不发送，等客户端进行心跳连接时，相应新消息和朋友请求
-        //思路3：当在库中新增一项时，触发某任务，向客户发送消息
+        //思路3：当在库中新增一项时，触发某任务，向客户发送消息，异步发送
         Session* session = Server::GetInstance()->mUserSessionMap[info.receiver_id];
         Connection* friendConn = session->mConn;
-        // if (friendConn != NULL && friendConn->connState != DisConnectionState) {
-        //     sendMessageByNetwork(info, /*info.receiver_id*/);
-        //     UpMessageDateBase();
-        // }
-    }
-    else {
-        //不在线，存库，等上线后发送
-        ret = SendMessage(request);
+        if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
+            bool ret = sendMessageByNet(friendConn, info/*info.receiver_id*/);
+        }
     }
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
+        //TODO:发出去的消息，相应需要带ID吗？
         //向当前用户返回true
-        //response.mData = message.SendMessageSerial();
     }
     else {
         //some error info add
@@ -284,20 +352,40 @@ bool SearchAllFriendProcessor::SearchAllFriend(const Request &request, FriendLis
     return true;
 }
 
+
+
 bool FindFriendProcessor::FindFriend(const Request &request, FriendList &friendList)
 {
     std::string mData = request.mData;
     MyProtocolStream stream(mData);
     UserInfo info;
+    int type = 0;//0 按名字，1 按id
     stream >> info.username;
+    if (info.username[0] >= '0' && info.username[0] <= '9') {
+        type = 1;
+        info.user_id = stoiAll(info.username);
+        if (info.user_id <= 0) {
+            return false;
+        }
+    }
+    else {
+        type = 0;
+        stream >> info.username;
+    }
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
+    sql::PreparedStatement* state2 = NULL;
     //查询
-	sql::PreparedStatement* state2 = conn->prepareStatement("select * from users where username = ?;");
-
-	state2->setString(1, info.username);
+    if (type == 1) {
+        state2 = conn->prepareStatement("select * from users where user_id = ?;");
+        state2->setInt(1, info.user_id);
+    }
+    else {
+	    state2 = conn->prepareStatement("select * from users where username = ?;");
+	    state2->setString(1, info.username);
+    }
     sql::ResultSet *st = state2->executeQuery();
     int id = -1;
     try {
@@ -322,60 +410,20 @@ bool FindFriendProcessor::FindFriend(const Request &request, FriendList &friendL
     return false;
 }
 
-bool AddFriendProcessor::AddFriend(const Request &request)
-{
-    std::string mData = request.mData;
-    MyProtocolStream stream(mData);
-    UserInfo info;
-    stream >> info.user_id;
-    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
-    if (conn == NULL) {
-        return false;
-    }
-    //查询
-	sql::PreparedStatement* state = conn->prepareStatement("select * from users where user_id = ?;");
-	state->setInt(1, request.mUserId);
-    sql::ResultSet *st = state->executeQuery();
-    
-    if (st->rowsCount() <= 0) {
-        printf("Row %d\n", (int)st->rowsCount());
-        MysqlPool::GetInstance()->releaseConncetion(conn);
-        return false;
-    }
-    sql::PreparedStatement* state2 = conn->prepareStatement(R"(insert into friendships
-        (user1_id, user2_id, status) 
-        values(?,?,?);)");
-    state2->setInt(1, request.mUserId);
-    state2->setInt(2, info.user_id);
-    state2->setInt(3, 1);
-    
-    try {
-        state2->execute();
-    }
-    catch(sql::SQLException& e) {
-        cout << "# ERR " << e.what();
-        cout << " Err Code: " << e.getErrorCode();
-        cout << " SQLState: " << e.getSQLState() << std::endl;
-        MysqlPool::GetInstance()->releaseConncetion(conn);
-        return false;
-    }
-    st->close();
-    state2->close();
-    MysqlPool::GetInstance()->releaseConncetion(conn);
-    return true;
-}
 
-bool SendMessageProcessor::SendMessage(const Request &request)
+
+bool SendMessageProcessor::SendMessage(const Request &request, MessageInfo& info)
 {
     std::string mData = request.mData;
     MyProtocolStream stream(mData);
-    MessageInfo info;
     stream >> info.receiver_id >> info.message_text;
+    info.sender_id = request.mUserId;
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
-
+    info.timestamp = SetTime::GetInstance()->getAccurateTime();
+    printf("info.time = %s\n", info.timestamp.c_str());
 	sql::PreparedStatement* state2 = conn->prepareStatement(R"(insert into messages
         (sender_id, recipient_id, content) 
         values(?,?,?);)");
@@ -385,11 +433,23 @@ bool SendMessageProcessor::SendMessage(const Request &request)
     state2->execute();
 
     state2->close();
+    sql::PreparedStatement* state3 = conn->prepareStatement("SELECT LAST_INSERT_ID();");
+    sql::ResultSet* rs = state3->executeQuery();
+    int autoIncKeyFromFunc = -1;
+    if (rs->next()) {
+        autoIncKeyFromFunc = rs->getInt(1);
+    } else {
+        // throw an exception from here
+    }
+    info.id = autoIncKeyFromFunc;
+    rs->close();
+    state3->close();
     MysqlPool::GetInstance()->releaseConncetion(conn);
+    if (info.id <= 0)
+        return false;
     return true;
+
 }
-
-
 
 std::string UserInfo::registerSerial() {
     std::string str;
@@ -534,6 +594,7 @@ void UpdateUserStateProcessor::Exec(Connection* conn, Request &request, Response
     bool ret = UpdateUserState(request);
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
+        //修改状态成功
         response.mhasData = true;
         response.mData = request.mData;
     }
@@ -543,31 +604,61 @@ void UpdateUserStateProcessor::Exec(Connection* conn, Request &request, Response
     }
 }
 
+
+bool UpdateUserStateProcessor::notifyStateToFriend(int userId, int state) {
+    std::string data;
+    vector<int> friendList;
+    //friendList = getAllFriend();//从缓存读取，或者从数据库读取
+    MyProtocolStream stream(data);
+    stream << state;
+    Response rsp(1, FunctionCode::SendMessage, 3, 4, 5, 1, userId, 1, true, data);
+    string str = rsp.serial();
+    for (int i = 0; i < friendList.size(); i++) {
+        bool success = sendResponse(friendList[i], &rsp);
+        if (success > 0) {
+            
+        }
+    }
+    //可能在用户初始获取朋友列表时，还要参考缓存中的朋友状态，或者从数据库读取
+    //用户状态可能不需要，微信也没有，因为消息是不是实时不重要
+    return true;
+}
+
 bool UpdateUserStateProcessor::UpdateUserState(const Request &request)
 {
     std::string mData = request.mData;
     MyProtocolStream stream(mData);
     int state = 0;
     stream >> state;
-    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
-    if (conn == NULL) {
+    //不用修改数据库了，默认上线，然后直接修改内存中的登录状态
+    if (Server::GetInstance()->mUserSessionMap[request.mUserId]->mLoginState == state) {
+        //不可能存在，在客户端避免
         return false;
     }
-    //查询
-	sql::PreparedStatement* state2 = conn->prepareStatement("update status = ? from users where user_id = ?;");
-    state2->setInt(1, state);
-	state2->setInt(2, request.mUserId);
-    try {
-        state2->executeUpdate();
-    }
-    catch(sql::SQLException& e) {
-        cout << "# ERR " << e.what();
-        cout << " Err Code: " << e.getErrorCode();
-        cout << " SQLState: " << e.getSQLState() << std::endl;
-        MysqlPool::GetInstance()->releaseConncetion(conn);
-        return false;
-    }
-    MysqlPool::GetInstance()->releaseConncetion(conn);
+    Server::GetInstance()->mUserSessionMap[request.mUserId]->mLoginState = state;
+    notifyStateToFriend(request.mUserId, state);
+    //通知本人各个好友，通知这种行为可能需要进一步设计为异步任务，如上下线、消息、好友请求等。
+
+    // sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    // if (conn == NULL) {
+    //     return false;
+    // }
+    // //查询
+	// sql::PreparedStatement* state2 = conn->prepareStatement("update users set status = ? where user_id = ?;");
+    // state2->setInt(1, state);
+	// state2->setInt(2, request.mUserId);
+    // try {
+    //     state2->executeUpdate();
+    // }
+    // catch(sql::SQLException& e) {
+    //     cout << "# ERR " << e.what();
+    //     cout << " Err Code: " << e.getErrorCode();
+    //     cout << " SQLState: " << e.getSQLState() << std::endl;
+    //     MysqlPool::GetInstance()->releaseConncetion(conn);
+    //     return false;
+    // }
+    // MysqlPool::GetInstance()->releaseConncetion(conn);
+
     return true;
 }
 
@@ -634,6 +725,7 @@ bool ProcessFriendRequestProcessor::ProcessFriendRequest(Request & request, Frie
 void ProcessMessageReadProcessor::Exec(Connection* conn, Request &request, Response &response)
 {
     ProcessMessageRead(request);
+    //No Response
 }
 
 bool ProcessMessageReadProcessor::ProcessMessageRead(Request &request)
@@ -644,18 +736,18 @@ bool ProcessMessageReadProcessor::ProcessMessageRead(Request &request)
     MyProtocolStream stream(data);
     int send_id = 0, recv_id = 0;
     int start = 0, end = 0;
-    stream >> send_id >> recv_id;
-    stream >> start >> end;
+    stream >> send_id >> recv_id >> start >> end;
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
-    sql::PreparedStatement* state2 = conn->prepareStatement(R"(update is_read = ? from messages
+    sql::PreparedStatement* state2 = conn->prepareStatement(R"(update messages set is_read = ? 
         where sender_id = ? and recipient_id = ? and message_id >= ? and message_id <= ? ;)");
-    state2->setInt(1, send_id);
-    state2->setInt(2, recv_id);
-    state2->setInt(3, start);
-    state2->setInt(4, end);
+    state2->setInt(1, 1);
+    state2->setInt(2, send_id);
+    state2->setInt(3, recv_id);
+    state2->setInt(4, start);
+    state2->setInt(5, end);
     try {
         state2->executeUpdate();
     }
@@ -671,6 +763,25 @@ bool ProcessMessageReadProcessor::ProcessMessageRead(Request &request)
     state2->close();
     MysqlPool::GetInstance()->releaseConncetion(conn);    
     return true;
+}
+
+void CreateGroupProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    GroupInfo info;
+    MyProtocolStream stream(request.mData);
+    stream >> info.group_name >> info.gtype >> info.admin_id >> info.description >> info.tips;
+    bool ret = CreateGroup(request, info);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        response.mhasData = true;
+        std::string &data = response.mData;
+        MyProtocolStream stream(data);
+        stream << info.id << info.group_name << info.gtype << info.admin_id << info.description << info.tips;
+    }
+    else {
+        response.mhasData = false;
+        //some error info add
+    }
 }
 
 
@@ -700,6 +811,87 @@ void ProcessStartUpLoadFileProcessor::Exec(Connection* conn, Request &request, R
     }
 }
 
+/*
+    std::string group_name = "Sample Group"; // Replace with actual group name
+    std::string description = "This is a sample group"; // Replace with actual description
+    int admin_id = 1; // Replace with actual admin user ID
+    int gtype = 0; // Replace with actual group type
+    std::string tips = "Some tips for the group"; // Replace with actual tips
+
+    if (CreateGroup(group_name, description, admin_id, gtype, tips)) {
+        std::cout << "Group created successfully." << std::endl;
+    } else {
+        std::cerr << "Failed to create group." << std::endl;
+    }
+    */
+
+bool CreateGroupProcessor::CreateGroup(Request &request, GroupInfo& info)
+{
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == nullptr) {
+        std::cerr << "Failed to get database connection." << std::endl;
+        return false;
+    }
+    // Prepare SQL statement to insert into group_t table
+    sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
+        INSERT INTO group_t (group_name, description, admin_id, gtype, Tips)
+        VALUES (?, ?, ?, ?, ?)
+    )");
+    pstmt->setString(1, info.group_name);
+    pstmt->setString(2, info.description);
+    pstmt->setInt(3, info.admin_id);
+    pstmt->setString(4, info.gtype);
+    pstmt->setString(5, info.tips);
+
+    try {
+        pstmt->execute();
+        pstmt->close();
+        sql::PreparedStatement* state3 = conn->prepareStatement("SELECT LAST_INSERT_ID();");
+        sql::ResultSet* rs = state3->executeQuery();
+        int autoIncKeyFromFunc = -1;
+        if (rs->next()) {
+            autoIncKeyFromFunc = rs->getInt(1);
+        } else {
+            // throw an exception from here
+        }
+        info.id = autoIncKeyFromFunc;
+        printf("id = %d\n", info.id);
+        rs->close();
+        state3->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        if (info.id <= 0) {
+            return false;
+        }
+        //作为拥有者
+        JoinGroupProcessor proc;
+        return proc.JoinGroup(info.admin_id, info.id, 3);
+    } catch (sql::SQLException& e) {
+        std::cerr << "SQL error: " << e.what() << std::endl;
+        std::cerr << "Error code: " << e.getErrorCode() << std::endl;
+        std::cerr << "SQLState: " << e.getSQLState() << std::endl;
+        pstmt->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    return true;
+}
+
+void JoinGroupProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    MyProtocolStream stream(request.mData);
+    int groupId = 1;
+    stream >> groupId;
+
+    bool ret = JoinGroup(request.mUserId, groupId, 1);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        //修改状态成功
+    }
+    else {
+        response.mhasData = false;
+    }
+}
+
 bool ProcessStartUpLoadFileProcessor::ProcessStartUpLoadFile(Request &request, FileInfo& info)
 {
     //Request : 通知服务器要发送文件，告知文件参数 Response: 告知允许上传，及部分参数
@@ -711,7 +903,6 @@ bool ProcessStartUpLoadFileProcessor::ProcessStartUpLoadFile(Request &request, F
     bool ret2 = checkUserLimit(info);
     return ret && ret2;
 }
-
 void ProcessUpLoadFileSuccessProcessor::Exec(Connection* conn, Request &request, Response &response)
 {
     FileInfo info;
@@ -724,6 +915,175 @@ void ProcessUpLoadFileSuccessProcessor::Exec(Connection* conn, Request &request,
     }
 }
 
+bool JoinGroupProcessor::JoinGroup(int userId, int groupId, int role)
+{
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == nullptr) {
+        std::cerr << "Failed to get database connection." << std::endl;
+        return false;
+    }
+    //TODO:申请态
+    // Prepare SQL statement to insert into group_members table
+    sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
+        INSERT INTO group_members (group_id, user_id, role)
+        VALUES (?, ?, ?)
+    )");
+    pstmt->setInt(1, groupId);
+    pstmt->setInt(2, userId);
+    pstmt->setInt(3, role);
+
+    try {
+        pstmt->execute();
+        pstmt->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return true;
+    } catch (sql::SQLException& e) {
+        std::cerr << "SQL error: " << e.what() << std::endl;
+        std::cerr << "Error code: " << e.getErrorCode() << std::endl;
+        std::cerr << "SQLState: " << e.getSQLState() << std::endl;
+        pstmt->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    return true;
+}
+
+//相应加群
+void ResponseJoinGroupProcessor::Exec(Connection *conn, Request &request, Response &)
+{
+    
+}
+bool ResponseJoinGroupProcessor::ResponseJoinGroup(Request &request)
+{
+    
+    return false;
+}
+
+
+void StoreFileProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    FileObject fileObject;
+    bool ret = StoreFile(request, fileObject);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+
+    }
+    else {
+        response.mhasData = false;
+        //some error info add
+    }
+}
+
+
+//bool AddUserStorageItem(int user_id, const std::string& item_name, const std::string& item_type, const std::string& file_path, int parent_id = 0) {
+//可以在注册用户后，为其添加一个根项，用于管理
+bool StoreFileProcessor::StoreFile(Request &request, FileObject& fileObject)
+{
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == nullptr) {
+        std::cerr << "Failed to get database connection." << std::endl;
+        return false;
+    }
+
+    // Prepare SQL statement to insert into user_storage table
+    sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
+        INSERT INTO user_storage (user_id, parent_id, item_name, item_type, file_path)
+        VALUES (?, ?, ?, ?, ?)
+    )");
+    pstmt->setInt(1, fileObject.user_id);
+    pstmt->setInt(2, fileObject.parent_id);
+    pstmt->setString(3, fileObject.item_name);
+    pstmt->setInt(4, fileObject.item_type);
+    pstmt->setString(5, fileObject.file_path);
+    try {
+        pstmt->execute();
+        pstmt->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return true;
+    } catch (sql::SQLException& e) {
+        std::cerr << "SQL error: " << e.what() << std::endl;
+        std::cerr << "Error code: " << e.getErrorCode() << std::endl;
+        std::cerr << "SQLState: " << e.getSQLState() << std::endl;
+        pstmt->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    return false;
+}
+/*
+    int user_id = 1;  // Replace with actual user ID
+    std::string item_name = "example_file.txt"; // Replace with actual item name
+    std::string item_type = "file"; // Replace with actual item type
+    std::string file_path = "/path/to/example_file.txt"; // Replace with actual file path
+    int parent_id = 0; // Optional parent ID, replace with actual parent ID if needed
+
+    if (AddUserStorageItem(user_id, item_name, item_type, file_path, parent_id)) {
+        std::cout << "User storage item added successfully." << std::endl;
+    } else {
+        std::cerr << "Failed to add user storage item." << std::endl;
+    }
+*/
+
+
+void TransFileProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    TransObject fileObject;
+    bool ret = TransFile(request, fileObject);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        
+    }
+    else {
+        response.mhasData = false;
+        //some error info add
+    }
+}
+
+bool TransFileProcessor::TransFile(Request &request, TransObject& object)
+{
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == nullptr) {
+        std::cerr << "Failed to get database connection." << std::endl;
+        return false;
+    }
+
+    // Prepare SQL statement to insert into offline_transfer table
+    sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
+        INSERT INTO offline_transfer (sender_id, receiver_id, file_path, message, created_at)
+        VALUES (?, ?, ?, ?, NOW())
+    )");
+    pstmt->setInt(1, object.sender_id);
+    pstmt->setInt(2, object.receiver_id);
+    pstmt->setString(3, object.file_path);
+    pstmt->setString(4, object.message);
+
+    try {
+        pstmt->execute();
+        pstmt->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return true;
+    } catch (sql::SQLException& e) {
+        std::cerr << "SQL error: " << e.what() << std::endl;
+        std::cerr << "Error code: " << e.getErrorCode() << std::endl;
+        std::cerr << "SQLState: " << e.getSQLState() << std::endl;
+        pstmt->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    return false;
+}
+/*
+  int sender_id = 1;  // Replace with actual sender ID
+    int receiver_id = 2; // Replace with actual receiver ID
+    std::string file_path = "/path/to/offline_file.txt"; // Replace with actual file path
+    std::string message = "Hello, here is an offline message."; // Replace with actual message
+
+    if (OfflineTransfer(sender_id, receiver_id, file_path, message)) {
+        std::cout << "Offline transfer recorded successfully." << std::endl;
+    } else {
+        std::cerr << "Failed to record offline transfer." << std::endl;
+    }
+*/
 bool checkmd5(FileInfo& info) {
 }
 

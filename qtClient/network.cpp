@@ -8,9 +8,9 @@
 QTcpSocket socket;
 QByteArray buffer;  // 缓冲区
 quint32 expectedPacketSize = 0;  // 预期数据包长度
-#define SERVERIP "192.168.100.102"
+#define SERVERIP "192.168.58.132"
 #define PORT 8080
-
+extern int user_id;
 ClientNetWork::ClientNetWork()
 {
 
@@ -31,8 +31,8 @@ bool ClientNetWork::process(QByteArray& array) {
     rsp.deserial(array.toStdString());
     rsp.print();
     std::string mdata = rsp.mData;
-
-    if (rsp.mFunctionCode == FunctionCode::Login) {
+    switch(rsp.mFunctionCode) {
+    case FunctionCode::Login: {
         MyProtocolStream stream2(mdata);
         UserInfo info;
         stream2 >> info.user_id >> info.username;
@@ -48,60 +48,119 @@ bool ClientNetWork::process(QByteArray& array) {
             return false;
         }
         return false;
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::Register) {
+    case FunctionCode::Register: {
         if (rsp.mCode == 1) {
             printf("Register Success\n");
             return true;
         }
         printf("Register Failure\n");
         return false;
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::SendMessage) {
-        if (rsp.mCode == 1) {
-            printf("send Message Success\n");
-            return true;
+    case FunctionCode::SendMessage: {
+        if (rsp.mhasData == false) {
+            //消息确认
+            if (rsp.mCode == 1) {
+                printf("send Message Success\n");
+                return true;
+            }
+            else {
+                printf("send Message Failure Server Error\n");
+                return false;
+            }
         }
-        printf("send Message Failure Server Error\n");
-        return false;
+        else {
+            //消息到达
+            emit MessageArriveClient(rsp);
+        }
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::FindFriend) {
+    case FunctionCode::FindFriend: {
         emit FindFriendSuccess(rsp);
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::AddFriend) {
+    case FunctionCode::AddFriend: {
         emit AddFriendSuccess(rsp.mCode);
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::SearchAllFriend) {
-        qDebug() << "yyyyyyyyyyyyyyyyyyyyyyyyy" ;
+    case FunctionCode::SearchAllFriend: {
         emit findAllFriendSuccess(rsp);
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::GetAllMessage) {
+    case FunctionCode::GetAllMessage: {
         emit getAllMessageSuccess(rsp);
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::GetAllFriendRequest) {
+    case FunctionCode::GetAllFriendRequest: {
         emit getAllFriendRequestSuccess(rsp);
+        break;
     }
-    else if (rsp.mFunctionCode == FunctionCode::UpdateUserState) {
+    case FunctionCode::UpdateUserState: {
         emit UpDateUserStateSuccess(rsp);
+        break;
     }
-    return false;
+    case FunctionCode::ReciveMessage: {
+        //弃用,使用SendMessage功能2代替
+        emit ReciveMessageSuccess(rsp);
+        break;
+    }
+    case FunctionCode::CreateGroup: {
+        emit createGroupSuccess(rsp);
+        break;
+    }
+    case FunctionCode::JoinGroup: {
+        emit applyJoinGroupSuccess(rsp);
+        break;
+    }
+    case FunctionCode::ResponseJoinGroup: {
+        emit processGroupApplySuccess(rsp);
+        break;
+    }
+    case FunctionCode::StoreFile: {
+        emit storeFileSuccess(rsp);
+        break;
+    }
+    case FunctionCode::TransFile: {
+        emit offlineTransFileSuccess(rsp);
+        break;
+    }
+    case FunctionCode::FindGroup: {
+        emit FindFriendSuccess(rsp);
+        break;
+    }
+    default: {
+        break;
+    }
+
+    }
+	else if (rsp.mFunctionCode == FunctionCode::StartUpLoadFile) {
+        emit StartUpLoadFileSuccess(rsp);
+    }
+    else if (rsp.mFunctionCode == FunctionCode::UpLoadFileSuccess) {
+        emit UpLoadFileSuccess(rsp);
+    }
+    else if (rsp.mFunctionCode == FunctionCode::GetFile) {
+        emit GetFileFirstSuccess(rsp);
+    }
+    return true;
 }
 
-void ClientNetWork::confirmMessage(int uid, int start, int end) {
+bool ClientNetWork::confirmMessage(int sendId, int recvId, int start, int end) {
     //TODO:
-//    std::string data;
-//    MyProtocolStream stream(data);
-//    stream << username << password;
-//    Request req(1, FunctionCode::Login, 3, 4, 5, data, 0, 0);
-//    string str = req.serial();
-//    QByteArray array(str.c_str(),str.size());
-//    int r = SendPacket(array);
-//    if (r > 0) {
-//        req.print();
-
-//        return true;
-//    }
-//    return false;
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << sendId << recvId << start << end;
+    Request req(1, FunctionCode::ProcessMessageRead, 3, 4, 5, data, ::user_id, 0);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
 }
 
 

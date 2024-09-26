@@ -31,8 +31,8 @@ public:
     QLabel *label;
     QGroupBox *groupBox;
     QHBoxLayout *horizontalLayout_3;
-    QRadioButton *radioButton_2;
-    QRadioButton *radioButton;
+    QRadioButton *friendButton;
+    QRadioButton *groupButton;
     QWidget *widget;
     QHBoxLayout *horizontalLayout;
     QLabel *label_2;
@@ -56,9 +56,9 @@ public:
         label = new QLabel(FindFriendPage);
         label->setObjectName(QString::fromUtf8("label"));
         QFont font;
-        font.setFamily(QString::fromUtf8("Courier New"));
         font.setPointSize(18);
         font.setBold(false);
+        font.setWeight(50);
         label->setFont(font);
         label->setAlignment(Qt::AlignCenter);
 
@@ -69,15 +69,15 @@ public:
         horizontalLayout_3 = new QHBoxLayout(groupBox);
         horizontalLayout_3->setSpacing(0);
         horizontalLayout_3->setObjectName(QString::fromUtf8("horizontalLayout_3"));
-        radioButton_2 = new QRadioButton(groupBox);
-        radioButton_2->setObjectName(QString::fromUtf8("radioButton_2"));
+        friendButton = new QRadioButton(groupBox);
+        friendButton->setObjectName(QString::fromUtf8("friendButton"));
 
-        horizontalLayout_3->addWidget(radioButton_2);
+        horizontalLayout_3->addWidget(friendButton);
 
-        radioButton = new QRadioButton(groupBox);
-        radioButton->setObjectName(QString::fromUtf8("radioButton"));
+        groupButton = new QRadioButton(groupBox);
+        groupButton->setObjectName(QString::fromUtf8("groupButton"));
 
-        horizontalLayout_3->addWidget(radioButton);
+        horizontalLayout_3->addWidget(groupButton);
 
 
         verticalLayout->addWidget(groupBox);
@@ -146,8 +146,8 @@ public:
         FindFriendPage->setWindowTitle(QCoreApplication::translate("FindFriendPage", "Form", nullptr));
         label->setText(QCoreApplication::translate("FindFriendPage", "\346\237\245\346\211\276\346\234\213\345\217\213", nullptr));
         groupBox->setTitle(QString());
-        radioButton_2->setText(QCoreApplication::translate("FindFriendPage", "\346\237\245\346\211\276\344\272\272", nullptr));
-        radioButton->setText(QCoreApplication::translate("FindFriendPage", "\346\237\245\346\211\276\347\276\244", nullptr));
+        friendButton->setText(QCoreApplication::translate("FindFriendPage", "\346\237\245\346\211\276\344\272\272", nullptr));
+        groupButton->setText(QCoreApplication::translate("FindFriendPage", "\346\237\245\346\211\276\347\276\244", nullptr));
         label_2->setText(QCoreApplication::translate("FindFriendPage", "\347\224\250\346\210\267", nullptr));
         lineEdit->setText(QString());
         lineEdit->setPlaceholderText(QCoreApplication::translate("FindFriendPage", "\350\276\223\345\205\245\347\224\250\346\210\267\345\220\215/\350\264\246\345\217\267", nullptr));

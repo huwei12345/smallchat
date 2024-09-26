@@ -7,15 +7,18 @@
 #include"MyProtocolStream.h"
 using namespace std;
 using namespace net;
-
+class Session;
 class Connection {
 public:
-    Connection() {}
-    Connection(int socket) : clientSocket(socket) { }
+    Connection() : clientSocket(0), session(NULL) { }
+    Connection(int socket) : clientSocket(socket), session(NULL) { }
     int clientSocket;
     char buffer[4096];
-    //CallBack processRead; //CallBack
+    bool readRequest(std::string &requestData);
+    // CallBack processRead; //CallBack
     bool processRead();
+    bool closeConnection(int flag = 0);
+    Session* session;
 };
 
 class Session {
@@ -49,23 +52,29 @@ namespace FunctionCode {
         UpdateUserState                       = 9,//未实现，要广播
         ProcessFriendRequest                  = 10,
         ProcessMessageRead                    = 11,
+        ReciveMessage                         = 12,
+
+        CreateGroup                           = 13,
+        JoinGroup                             = 14,
+        ResponseJoinGroup                     = 15,
+        StoreFile                             = 16,
+        TransFile                             = 17,
+        FindGroup                             = 18,
 
         //上送文件，头像、图片、文件等
-        StartUpLoadFile                       = 12,//Request : 通知服务器要发送文件，告知文件参数 Response: 告知允许上传，及部分参数
-        UpLoadFileSuccess                     = 13,//Request: 告知服务器文件已通过FTP传输完毕。 Response:验证文件后，告知是否上传成功
+        StartUpLoadFile                       = 19,//Request : 通知服务器要发送文件，告知文件参数 Response: 告知允许上传，及部分参数
+        UpLoadFileSuccess                     = 20,//Request: 告知服务器文件已通过FTP传输完毕。 Response:验证文件后，告知是否上传成功
 
         //主动获取
-        GetFile                               = 14,//主动获取，告知服务器要获取的文件， Response:验证文件是否存在和大小等参数
-        GetFileSuccess                        = 15,
-        TEST                                  = 16,
+        GetFile                               = 21,//主动获取，告知服务器要获取的文件， Response:验证文件是否存在和大小等参数
+        GetFileSuccess                        = 22,
+        TEST                                  = 23,
         //GetFileSecond                         = 15,//根据文件大小决定是否有这一步（10M以内不用）， 告知服务器是否将要获取，更改本地状态为正在接收。
         //GetFileThird                          = 16,//服务器发给客户端的通知性相应，告知文件发送完成。或者文件将取消发送。Response:客户端响应给服务器已经接收完毕或者其他状态。
 
-
         //被动接收
-        NofifyFileComing                      = 17,//服务器发个客户端告知有文件将传来，Response: 客户端相应服务器，是否接收，若准备接受，切换为接收状态
-        TransFileOver                         = 18,//服务器告知客户端文件已传输完毕，Response: 客户端相应服务器接收情况。服务器必须收到接受情况后才完成此次任务，否则将文件传输状态回滚。
-
+        NofifyFileComing                      = 25,//服务器发个客户端告知有文件将传来，Response: 客户端相应服务器，是否接收，若准备接受，切换为接收状态
+        TransFileOver                         = 26,//服务器告知客户端文件已传输完毕，Response: 客户端相应服务器接收情况。服务器必须收到接受情况后才完成此次任务，否则将文件传输状态回滚。
         //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
     };
 
@@ -82,6 +91,14 @@ namespace FunctionCode {
         "UpdateUserState     "  ,
         "ProcessFriendRequest"  ,
         "ProcessMessageRead  "  ,
+        "ReciveMessage"         ,
+
+        "CreateGroup         "  ,
+        "JoinGroup           "  ,
+        "ResponseJoinGroup   "  ,
+        "StoreFile           "  ,
+        "TransFile           "  ,
+        "FindGroup           "  ,
         //上送文件，头像、图片、文件等
         "StartUpLoadFile     ",
         "UpLoadFileSuccess   ",
@@ -90,7 +107,6 @@ namespace FunctionCode {
         "GetFileThird        ",
         "NofifyFileComing    ",
         "TransFileOver       "
-
     };
 };
 
@@ -177,7 +193,33 @@ public:
     //int time;什么时候添加的
 };
 
+class GroupInfo {
+public:
+    int id;
+    int admin_id;
+    std::string gtype;
+    std::string group_name;
+    std::string description;
+    std::string tips;
+};
 
+
+class FileObject {
+public:
+    int user_id;
+    int parent_id;
+    std::string item_name;
+    int item_type;
+    std::string file_path;
+};
+
+class TransObject {
+public:
+    int sender_id;
+    int receiver_id;
+    std::string file_path;
+    std::string message;
+};
 
 struct friendHasher {
     std::size_t operator()(const FriendRequest& request) const {

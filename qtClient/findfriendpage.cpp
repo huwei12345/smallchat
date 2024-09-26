@@ -17,6 +17,8 @@ FindFriendPage::FindFriendPage(QWidget *parent) :
 
     connect(ClientNetWork::GetInstance(), &ClientNetWork::FindFriendSuccess, this, &FindFriendPage::findFriendSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::AddFriendSuccess, this, &FindFriendPage::addFriendSuccess);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::applyJoinGroupSuccess, this, &FindFriendPage::applyJoinGroupSuccess);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::FindGroupSuccess, this, &FindFriendPage::FindGroupSuccess);
 }
 
 FindFriendPage::~FindFriendPage()
@@ -38,31 +40,29 @@ void FindFriendPage::keyPressEvent(QKeyEvent *event)
     }
 }
 
+
+int stoiAll(const std::string &str) {
+    int number = 0;
+    if (str.size() > 15) {
+        return -1;
+    }
+    for (int i = 0; i < (int)str.size(); i++) {
+        if (str[i] > '9' || str[i] < '0') {
+            return -1;
+        }
+        number = number * 10 + (str[i] - '0');
+    }
+    return number;
+}
+
 //查找
 void FindFriendPage::on_pushButton_clicked()
 {
-    std::string str = ui->lineEdit->text().toStdString();
-    if (str.size() <= 0) {
-        return;
-    }
-    int friendId = atoi(str.c_str());
-    if (str[0] >= '0' && str[0] <= '9' && friendId > 0) {
-        printf("friendId = %d\n", friendId);
-        bool ret = Processor::FindFriend(friendId);
-        if (!ret) {
-            QMessageBox::information(this,"提示","网络不可达！");
-        }
-    }
-    else if (friendId <= 0) {
-        printf("friendName = %s\n", str.c_str());
-        bool ret = Processor::FindFriendByName(str);
-        if (!ret) {
-            QMessageBox::information(this,"提示","网络不可达！");
-        }
+    if (ui->friendButton->isChecked()) {
+        FindFriend();
     }
     else {
-        printf("friendId = %d\n", friendId);
-        QMessageBox::information(this,"提示","输入错误！");
+        FindGroup();
     }
 }
 
@@ -92,15 +92,55 @@ void FindFriendPage::findFriendSuccess(Response response) {
     }
 }
 
+void FindFriendPage::FindGroupSuccess(Response response)
+{
+    //未实现
+    if (response.mCode) {
+        std::string mdata = response.mData;
+        MyProtocolStream stream2(mdata);
+        int size = 0;
+        stream2 >> size;
+        if (size > 0) {
+            for (int i = 0; i < size; i++) {
+                UserInfo info;
+                stream2 >> info.user_id >> info.username >> info.email;
+                char text[100] = {0};
+                sprintf(text, "%10d    %15s     %15s ", info.user_id, info.username.c_str(), info.email.c_str());
+                info.print();
+//                QLabel *label = new QLabel(this);
+//                label->setText(text);
+                QListWidgetItem *item = new QListWidgetItem();
+                item->setText(text);
+                ui->listWidget->addItem(item);
+            }
+        }
+    }
+    else {
+
+    }
+}
+
 //添加
 void FindFriendPage::on_pushButton_2_clicked()
 {
-    int index = 0;
-    QListWidgetItem* item = ui->listWidget->item(index);
-    int friendId = atoi(item->text().toStdString().c_str());
-    bool ret = Processor::AddFriend(friendId);
-    if (!ret) {
-        QMessageBox::information(this,"提示","网络不可达！");
+    if (mSelectItem == NULL) {
+        return;
+    }
+    if (ui->friendButton->isChecked()) {
+        QListWidgetItem* item = mSelectItem;
+        int friendId = atoi(item->text().toStdString().c_str());
+        bool ret = Processor::AddFriend(friendId);
+        if (!ret) {
+            QMessageBox::information(this,"提示","网络不可达！");
+        }
+    }
+    else {
+        QListWidgetItem* item = mSelectItem;
+        int groupId = atoi(item->text().toStdString().c_str());
+        bool ret = Processor::JoinGroup(groupId);
+        if (!ret) {
+            QMessageBox::information(this,"提示","网络不可达！");
+        }
     }
 }
 
@@ -117,6 +157,82 @@ void FindFriendPage::on_listWidget_itemSelectionChanged()
 {
     int selectedCount = ui->listWidget->selectedItems().count();
 
-        // Enable button if at least one item is selected, disable otherwise
-        ui->pushButton_2->setEnabled(selectedCount > 0);
+    // Enable button if at least one item is selected, disable otherwise
+    ui->pushButton_2->setEnabled(selectedCount > 0);
+}
+
+void FindFriendPage::applyJoinGroupSuccess(Response rsp)
+{
+    if (rsp.mCode) {
+        QMessageBox::information(this, "群组通知", "申请加群成功，等待管理员操作");
+    }
+    else {
+        QMessageBox::information(this, "群组通知", "申请加群失败！");
+    }
+}
+
+void FindFriendPage::on_listWidget_itemClicked(QListWidgetItem *item)
+{
+    mSelectItem = item;
+}
+
+void FindFriendPage::on_listWidget_itemDoubleClicked(QListWidgetItem *item)
+{
+    mSelectItem = item;
+}
+
+void FindFriendPage::FindFriend()
+{
+    std::string str = ui->lineEdit->text().toStdString();
+    if (str.size() <= 0) {
+        return;
+    }
+    int friendId = stoiAll(str);
+    if (str[0] >= '0' && str[0] <= '9' && friendId > 0) {
+        printf("friendId = %d\n", friendId);
+        bool ret = Processor::FindFriend(friendId);
+        if (!ret) {
+            QMessageBox::information(this,"提示","网络不可达！");
+        }
+    }
+    else if (isalpha(str[0])) {
+        printf("friendName = %s\n", str.c_str());
+        bool ret = Processor::FindFriendByName(str);
+        if (!ret) {
+            QMessageBox::information(this,"提示","网络不可达！");
+        }
+    }
+    else {
+        printf("friendId = %d\n", friendId);
+        QMessageBox::information(this,"提示","输入错误！");
+    }
+}
+
+void FindFriendPage::FindGroup()
+{
+    std::string str = ui->lineEdit->text().toStdString();
+    if (str.size() <= 0) {
+        return;
+    }
+    int groupId = stoiAll(str);
+    if (str[0] >= '0' && str[0] <= '9' && groupId > 0) {
+        printf("friendId = %d\n", groupId);
+        bool ret = Processor::FindGroup(groupId);
+        if (!ret) {
+            QMessageBox::information(this,"提示","网络不可达！");
+        }
+    }
+    else if (isalpha(str[0])) {
+        printf("friendName = %s\n", str.c_str());
+        bool ret = true;
+        //bool ret = Processor::FindGroupByName(str);
+        QMessageBox::information(this,"提示","未实现按名查找！");
+        if (!ret) {
+            QMessageBox::information(this,"提示","网络不可达！");
+        }
+    }
+    else {
+        printf("friendId = %d\n", groupId);
+        QMessageBox::information(this,"提示","输入错误！");
+    }
 }

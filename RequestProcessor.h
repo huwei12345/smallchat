@@ -40,7 +40,8 @@ class AddFriendProcessor  : public RequestProcessor  {
 
 class SendMessageProcessor : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
-    bool SendMessage(const Request& request);
+    bool SendMessage(const Request &request, MessageInfo &info);
+    bool sendMessageByNet(Connection *conn, MessageInfo message);
 };
 
 class GetAllMessageProcessor : public RequestProcessor  {
@@ -55,6 +56,7 @@ class GetAllFriendReqProcessor : public RequestProcessor  {
 
 class UpdateUserStateProcessor  : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
+    bool notifyStateToFriend(int userId, int state);
     bool UpdateUserState(const Request &request);
 };
 
@@ -67,6 +69,40 @@ class ProcessMessageReadProcessor  : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
     bool ProcessMessageRead(Request &request);
 };
+
+class CreateGroupProcessor : public RequestProcessor
+{
+    void Exec(Connection* conn, Request& request, Response&);
+    bool CreateGroup(Request &request, GroupInfo& info);
+    bool AddGroupOwner(Request &request);
+};
+
+class JoinGroupProcessor : public RequestProcessor
+{
+    void Exec(Connection* conn, Request& request, Response&);
+public:
+    bool JoinGroup(int userId, int groupId, int role);
+};
+
+class ResponseJoinGroupProcessor : public RequestProcessor
+{
+    void Exec(Connection* conn, Request& request, Response&);
+    bool ResponseJoinGroup(Request &request);
+};
+
+class StoreFileProcessor : public RequestProcessor
+{
+    void Exec(Connection* conn, Request& request, Response&);
+    bool StoreFile(Request &request, FileObject &fileObject);
+};
+
+class TransFileProcessor : public RequestProcessor
+{
+    void Exec(Connection* conn, Request& request, Response&);
+    bool TransFile(Request &request, TransObject &object);
+};
+
+int stoiAll(const std::string &str);
 
 class ProcessStartUpLoadFileProcessor : public RequestProcessor {
     void Exec(Connection* conn, Request& request, Response&);

@@ -315,6 +315,7 @@ std::string Client::sendAndRecv(const char *str, int code)
                 message.message_text = Message;
                 message.receiver_id = user_id;
                 message.sender_id = info.user_id;
+                printf("message %d %d\n", message.sender_id, message.receiver_id);
                 SendMessage(clientSocket, info, message);
                 break;
         }

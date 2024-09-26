@@ -16,16 +16,28 @@ public:
     void close();
     bool process(QByteArray& array);
 
-    void confirmMessage(int uid, int start, int end);
+    bool confirmMessage(int sendId, int recvId, int start, int end);
 signals:
     void loginSuccessful(UserInfo info);
     void loginFailure();
     void FindFriendSuccess(Response response);
+    void FindGroupSuccess(Response response);
     void findAllFriendSuccess(Response response);
     void AddFriendSuccess(int mCode);
     void getAllMessageSuccess(Response response);
     void getAllFriendRequestSuccess(Response response);
     void UpDateUserStateSuccess(Response response);
+    void ReciveMessageSuccess(Response response);
+    void MessageArriveClient(Response response);
+
+    void createGroupSuccess(Response response);
+    void applyJoinGroupSuccess(Response response);
+    void processGroupApplySuccess(Response response);
+    void storeFileSuccess(Response response);
+    void offlineTransFileSuccess(Response response);
+    void StartUpLoadFileSuccess(Response response);
+    void UpLoadFileSuccess(Response response);
+    void GetFileFirstSuccess(Response response);
 private:
     ClientNetWork();
     QTcpSocket mSocket;
