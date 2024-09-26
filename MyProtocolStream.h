@@ -35,6 +35,7 @@ public:
 	MyProtocolStream& operator<<(float f);
     MyProtocolStream& operator<<(double d);
     MyProtocolStream& operator<<(int64_t i);
+    MyProtocolStream& operator<<(long long i);
     MyProtocolStream& operator<<(int32_t i);
     MyProtocolStream& operator<<(short s);
     MyProtocolStream& operator<<(char c);
@@ -55,6 +56,7 @@ public:
     MyProtocolStream& operator>>(float& f);
     MyProtocolStream& operator>>(double& d);
     MyProtocolStream& operator>>(int64_t& i);
+    MyProtocolStream& operator>>(long long& i);
     MyProtocolStream& operator>>(int32_t& i);
     MyProtocolStream& operator>>(short& s);
     MyProtocolStream& operator>>(char& c);

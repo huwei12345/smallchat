@@ -270,10 +270,14 @@ Server::Server(const char *ip, unsigned int port)
     requestProcessor[FunctionCode::UpdateUserState] = new UpdateUserStateProcessor;
     requestProcessor[FunctionCode::ProcessFriendRequest] = new ProcessFriendRequestProcessor;
     requestProcessor[FunctionCode::ProcessMessageRead] = new ProcessMessageReadProcessor;
-
+    
+    requestProcessor[FunctionCode::StartUpLoadFile] = new ProcessStartUpLoadFileProcessor;
+    requestProcessor[FunctionCode::UpLoadFileSuccess] = new ProcessUpLoadFileSuccessProcessor;
     for (int i = 30; i < 100; i++) {
         requestProcessor[i] = new RequestProcessor;
     }
+
+    
 }
 
 void Server::run()
