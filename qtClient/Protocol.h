@@ -60,6 +60,23 @@ namespace FunctionCode {
         StoreFile                             = 16,
         TransFile                             = 17,
         FindGroup                             = 18,
+		
+		//上送文件，头像、图片、文件等
+        StartUpLoadFile                       = 12,//Request : 通知服务器要发送文件，告知文件参数 Response: 告知允许上传，及部分参数
+        UpLoadFileSuccess                     = 13,//Request: 告知服务器文件已通过FTP传输完毕。 Response:验证文件后，告知是否上传成功
+
+        //主动获取
+        GetFile                               = 14,//主动获取，告知服务器要获取的文件， Response:验证文件是否存在和大小等参数
+        GetFileSuccess                        = 15,
+        TEST                                  = 16,
+        //GetFileSecond                         = 15,//根据文件大小决定是否有这一步（10M以内不用）， 告知服务器是否将要获取，更改本地状态为正在接收。
+        //GetFileThird                          = 16,//服务器发给客户端的通知性相应，告知文件发送完成。或者文件将取消发送。Response:客户端响应给服务器已经接收完毕或者其他状态。
+
+
+        //被动接收
+        NofifyFileComing                      = 17,//服务器发个客户端告知有文件将传来，Response: 客户端相应服务器，是否接收，若准备接受，切换为接收状态
+        TransFileOver                         = 18,//服务器告知客户端文件已传输完毕，Response: 客户端相应服务器接收情况。服务器必须收到接受情况后才完成此次任务，否则将文件传输状态回滚。
+
         //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
     };
 
@@ -84,6 +101,15 @@ namespace FunctionCode {
         "StoreFile           "  ,
         "TransFile           "  ,
         "FindGroup           "  ,
+
+//上送文件，头像、图片、文件等
+        "StartUpLoadFile     ",
+        "UpLoadFileSuccess   ",
+        "GetFile             ",
+        "GetFileSecond       ",
+        "GetFileThird        ",
+        "NofifyFileComing    ",
+        "TransFileOver       "
     };
 };
 
@@ -148,6 +174,17 @@ public:
                   << "message: " << message_text << "\n";
     }
 };
+
+class FileInfo {
+public:
+    string path;
+    string filename;
+    string fileType;
+    int filesize;
+    int fileMode;
+    long long md5sum;
+};
+
 class FriendRequest {
 public:
     int reciver_id;

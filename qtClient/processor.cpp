@@ -1,4 +1,5 @@
 ﻿#include "processor.h"
+#include <QMessageBox>
 #include <string>
 #include "network.h"
 #include "MyProtocolStream.h"
@@ -285,6 +286,87 @@ bool Processor::FindGroup(int groupId)
     MyProtocolStream stream(data);
     stream << groupId;
     Request req(1, FunctionCode::FindGroup, 3, 4, 5, data, user_id);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
+
+bool Processor::SendFile(string path, string filename)
+{
+    int filesize = 100;
+    int fileMode = 777;
+    int fileType = 1;
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << path << filename << fileType << filesize << fileMode;
+    Request req(1, FunctionCode::StartUpLoadFile, 3, 4, 5, data, user_id);
+
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
+bool Processor::SendMessageSuccess(string filename)
+{
+    int md5sum = 0xfffe1111;
+    std::string data;
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    MyProtocolStream stream(data);
+    stream << filename << md5sum;
+    Request req(1, FunctionCode::UpLoadFileSuccess, 3, 4, 5, data, user_id);
+
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
+bool Processor::GetFile(string path, string filename)
+{
+    int filesizeLimit = 10000;
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << path << filename << filesizeLimit;
+    Request req(1, FunctionCode::GetFile, 3, 4, 5, data, user_id);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
+bool Processor::processMessageRead(std::vector<int> messageList)
+{
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    //多个一起确认
+    stream << (int)messageList.size();
+    for (int i = 0; i < messageList.size(); i++) {
+        stream << messageList[i];
+    }
+    Request req(1, FunctionCode::ProcessMessageRead, 3, 4, 5, data, user_id);
+
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());
     int r = clientSocket->SendPacket(array);

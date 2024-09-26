@@ -69,6 +69,19 @@ int FriendPage::init() {
     ret = initMessageList();
     //QThread::msleep(20); // 睡眠1秒
     ret = initFriendRequest();
+
+    ret = initMyPhoto();
+    return ret;
+}
+
+
+bool FriendPage::initMyPhoto() {
+    std::string path("/userPhoto/");
+    std::string photo = QString::num(mUserId) + "photonow";
+    bool ret = Processor::GetFile(path, photo);
+    if (!ret) {
+        QMessageBox::information(this,"提示","网络不可达！");
+    }
     return ret;
 }
 

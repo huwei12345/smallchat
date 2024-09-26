@@ -135,6 +135,15 @@ bool ClientNetWork::process(QByteArray& array) {
     }
 
     }
+	else if (rsp.mFunctionCode == FunctionCode::StartUpLoadFile) {
+        emit StartUpLoadFileSuccess(rsp);
+    }
+    else if (rsp.mFunctionCode == FunctionCode::UpLoadFileSuccess) {
+        emit UpLoadFileSuccess(rsp);
+    }
+    else if (rsp.mFunctionCode == FunctionCode::GetFile) {
+        emit GetFileFirstSuccess(rsp);
+    }
     return true;
 }
 

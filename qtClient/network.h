@@ -35,7 +35,9 @@ signals:
     void processGroupApplySuccess(Response response);
     void storeFileSuccess(Response response);
     void offlineTransFileSuccess(Response response);
-
+    void StartUpLoadFileSuccess(Response response);
+    void UpLoadFileSuccess(Response response);
+    void GetFileFirstSuccess(Response response);
 private:
     ClientNetWork();
     QTcpSocket mSocket;

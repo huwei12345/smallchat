@@ -33,6 +33,10 @@ signals:
     void friendPageUpdate(int);
 public slots:
     void userMessageRead();
+    void StartUpLoadFileSuccess(Response rsp);
+    void ftpSendFileSuccess(std::string name);
+    void UpLoadFileSuccess(Response rsp);
+    void GetFileFirstSuccess(Response rsp);
 private:
     Ui::ChatWindow *ui;
     UserInfo mInfo;

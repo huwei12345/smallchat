@@ -14,6 +14,11 @@ ChatWindow::ChatWindow(QWidget *parent) :
     mUserId = 1;
     connect(this, &ChatWindow::confirmMessage, ClientNetWork::GetInstance(), &ClientNetWork::confirmMessage);
     connect(this, &ChatWindow::friendPageUpdate, (FriendPage*)this->parent(), &FriendPage::friendPageUpdate);
+connect(ClientNetWork::GetInstance(), &ClientNetWork::StartUpLoadFileSuccess, this, &ChatWindow::StartUpLoadFileSuccess);
+
+    connect(ftpSender::GetInstance(), ftpSender::ftpFileSendOver, this, &ChatWindow::ftpSendFileSuccess);
+    connect(ClientNetWork::GetInstance(), ClientNetWork::UpLoadFileSuccess, this, &ChatWindow::UpLoadFileSuccess);
+    connect(ClientNetWork::GetInstance(), ClientNetWork::GetFileFirstSuccess, this, &ChatWindow::GetFileFirstSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::offlineTransFileSuccess, this, &ChatWindow::offlineTransFileSuccess);
 }
 
@@ -123,4 +128,71 @@ void ChatWindow::userMessageRead()
     if (mUnReadMessageList.size() > 0) {
         //闪烁
     }
+}
+void ChatWindow::StartUpLoadFileSuccess(Response rsp)
+{
+    std::string mdata = response.mData;
+    MyProtocolStream stream2(mdata);
+    //Response: 告知允许上传，及部分参数
+    int ret = rsp.mCode;
+    std::string filePath;
+    std::string fileName;
+    stream2 >> filePath >> fileName;
+    if (ret) {
+        stream2 >> filePath >> fileName;
+        ftp->GetInstance()->SendFile(filePath, fileName);//ftp发送队列异步发送
+    }
+    else {
+        QMessageBox::Information(this, "提示", "Server is not allow SendFile");
+    }
+}
+
+
+void ChatWindow::ftpSendFileSuccess(string filename)
+{
+    bool ret = Processor::SendMessageSuccess(filename);
+}
+
+
+void ChatWindow::UpLoadFileSuccess(Response rsp)
+{
+    std::string mdata = response.mData;
+    MyProtocolStream stream2(mdata);
+    ret = rsp.mCode;
+    if (ret) {
+        QMessageBox::information(this, "提示", "SendFile %s Over");
+    }
+    else {
+        QMessageBox::information(this, "提示", "SendFile %s Send Failure");
+    }
+}
+
+void ChatWindow::GetFileFirstSuccess(Response rsp)
+{
+    std::string mdata = response.mData;
+    MyProtocolStream stream2(mdata);
+    int ret = rsp.mCode;
+    FileInfo info;
+    std::string filePath;
+    std::string fileName;
+    stream2 >> info.path >> info.filename >> info.filesize;
+    if (ret) {
+        if (info.filesize < 10 * 1024 * 1024) {
+            ftp->GetInstance()->GetFile(filePath, fileName);//ftp获取队列异步获取
+        }
+        else {
+            //询问，或者阻止
+        }
+    }
+    else {
+        QMessageBox::Information(this, "提示", "Server is not allow GetFile");
+    }
+}
+
+
+void ChatWindow::on_toolButton_5_clicked()
+{
+    std::string Remotepath = "/";
+    std::string filename = "./a.txt";
+    bool ret = Processor::SendFile(Remotepath, filename);
 }
