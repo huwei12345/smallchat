@@ -104,5 +104,16 @@ class TransFileProcessor : public RequestProcessor
 
 int stoiAll(const std::string &str);
 
+class ProcessStartUpLoadFileProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response&);
+    bool ProcessStartUpLoadFile(Request &request, FileInfo& info);
+};
+
+//通知服务器发送完毕
+class ProcessUpLoadFileSuccessProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response&);
+    bool ProcessUpLoadFileSuccess(Request &request, FileInfo& info);
+};
+
 #endif
 

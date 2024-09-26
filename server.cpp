@@ -267,9 +267,14 @@ Server::Server(const char *ip, unsigned int port)
     requestProcessor[FunctionCode::StoreFile] = new StoreFileProcessor;
     requestProcessor[FunctionCode::TransFile] = new TransFileProcessor;
 
+    
+    requestProcessor[FunctionCode::StartUpLoadFile] = new ProcessStartUpLoadFileProcessor;
+    requestProcessor[FunctionCode::UpLoadFileSuccess] = new ProcessUpLoadFileSuccessProcessor;
     for (int i = 30; i < 100; i++) {
         requestProcessor[i] = new RequestProcessor;
     }
+
+    
 }
 
 void Server::run()
