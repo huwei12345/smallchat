@@ -21,13 +21,13 @@ signals:
     void loginSuccessful(UserInfo info);
     void loginFailure();
     void FindFriendSuccess(Response response);
-    void FindGroupSuccess(Response response);
+void FindGroupSuccess(Response response);
     void findAllFriendSuccess(Response response);
     void AddFriendSuccess(int mCode);
     void getAllMessageSuccess(Response response);
     void getAllFriendRequestSuccess(Response response);
     void UpDateUserStateSuccess(Response response);
-    void ReciveMessageSuccess(Response response);
+void ReciveMessageSuccess(Response response);
     void MessageArriveClient(Response response);
 
     void createGroupSuccess(Response response);
@@ -38,11 +38,15 @@ signals:
     void StartUpLoadFileSuccess(Response response);
     void UpLoadFileSuccess(Response response);
     void GetFileFirstSuccess(Response response);
+    void GetFileSuccess(Response response);
 private:
     ClientNetWork();
     QTcpSocket mSocket;
     static ClientNetWork* clientNetwork;
 
+private slots:
+    void ftpFileSendOver(std::string filename);
+    void ftpFileGetOver(std::string filename);
 };
 
 #endif // NETWORK_H

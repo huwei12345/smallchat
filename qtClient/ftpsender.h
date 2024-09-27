@@ -7,9 +7,9 @@ class FtpSender
 public:
     FtpSender();
 
-public slots:
+signals:
     void ftpFileSendOver(std::string name);
-
+    void ftpFileGetOver(std::string name);
 };
 
 #endif // FTPSENDER_H

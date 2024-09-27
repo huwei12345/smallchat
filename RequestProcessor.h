@@ -115,5 +115,16 @@ class ProcessUpLoadFileSuccessProcessor : public RequestProcessor {
     bool ProcessUpLoadFileSuccess(Request &request, FileInfo& info);
 };
 
+//主动获取，告知服务器要获取的文件， Response:验证文件是否存在和大小等参数
+class GetFile : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response&);
+    bool ProcessGetFile(Request &request, FileInfo& info);
+};
+
+class GetFileSuccess : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response&);
+    bool ProcessGetFileSuccess(Request &request, FileInfo& info);
+};
+
 #endif
 

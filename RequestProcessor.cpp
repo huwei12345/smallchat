@@ -784,33 +784,6 @@ void CreateGroupProcessor::Exec(Connection *conn, Request &request, Response &re
     }
 }
 
-
-bool checkDisk(FileInfo& info) {
-
-}
-
-bool checkUserLimit(FileInfo& info ) {
-
-}
-
-void ProcessStartUpLoadFileProcessor::Exec(Connection* conn, Request &request, Response &response)
-{
-    FileInfo info;
-    bool ret = ProcessStartUpLoadFile(request, info);
-    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
-    if (response.mCode) {
-        response.mhasData = true;
-        std::string &data = response.mData;
-        MyProtocolStream stream(data);
-        //或许名字和路径需要加工一下
-        stream << info.path << info.filename;
-    }
-    else {
-        response.mhasData = false;
-        //some error info add
-    }
-}
-
 /*
     std::string group_name = "Sample Group"; // Replace with actual group name
     std::string description = "This is a sample group"; // Replace with actual description
@@ -889,29 +862,6 @@ void JoinGroupProcessor::Exec(Connection *conn, Request &request, Response &resp
     }
     else {
         response.mhasData = false;
-    }
-}
-
-bool ProcessStartUpLoadFileProcessor::ProcessStartUpLoadFile(Request &request, FileInfo& info)
-{
-    //Request : 通知服务器要发送文件，告知文件参数 Response: 告知允许上传，及部分参数
-
-    string& data = request.mData;
-    MyProtocolStream stream(data);
-    stream >> info.path >> info.filename >> info.fileType >> info.filesize >> info.fileMode;
-    bool ret = checkDisk(info);
-    bool ret2 = checkUserLimit(info);
-    return ret && ret2;
-}
-void ProcessUpLoadFileSuccessProcessor::Exec(Connection* conn, Request &request, Response &response)
-{
-    FileInfo info;
-    bool ret = ProcessUpLoadFileSuccess(request, info);
-    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
-    if (response.mCode) {
-    }
-    else {
-        //some error info add
     }
 }
 
@@ -1084,6 +1034,56 @@ bool TransFileProcessor::TransFile(Request &request, TransObject& object)
         std::cerr << "Failed to record offline transfer." << std::endl;
     }
 */
+
+bool checkDisk(FileInfo& info) {
+
+}
+
+bool checkUserLimit(FileInfo& info ) {
+
+}
+
+void ProcessStartUpLoadFileProcessor::Exec(Connection* conn, Request &request, Response &response)
+{
+    FileInfo info;
+    bool ret = ProcessStartUpLoadFile(request, info);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        response.mhasData = true;
+        std::string &data = response.mData;
+        MyProtocolStream stream(data);
+        //或许名字和路径需要加工一下
+        stream << info.path << info.filename;
+    }
+    else {
+        response.mhasData = false;
+        //some error info add
+    }
+}
+
+bool ProcessStartUpLoadFileProcessor::ProcessStartUpLoadFile(Request &request, FileInfo& info)
+{
+    //Request : 通知服务器要发送文件，告知文件参数 Response: 告知允许上传，及部分参数
+
+    string& data = request.mData;
+    MyProtocolStream stream(data);
+    stream >> info.path >> info.filename >> info.fileType >> info.filesize >> info.fileMode;
+    bool ret = checkDisk(info);
+    bool ret2 = checkUserLimit(info);
+    return ret && ret2;
+}
+void ProcessUpLoadFileSuccessProcessor::Exec(Connection* conn, Request &request, Response &response)
+{
+    FileInfo info;
+    bool ret = ProcessUpLoadFileSuccess(request, info);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+    }
+    else {
+        //some error info add
+    }
+}
+
 bool checkmd5(FileInfo& info) {
 }
 
@@ -1096,3 +1096,62 @@ bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadFileSuccess(Request &reques
     return ret;
 }
 
+void GetFile::Exec(Connection *conn, Request &request, Response &response)
+{
+    FileInfo info;
+    bool ret = ProcessGetFile(request, info);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        response.mhasData = true;
+        std::string &data = response.mData;
+        MyProtocolStream stream(data);
+        //传给客户端使用ftp获取时的一些参数，可能包括密码
+        stream << info.path << info.filename;
+    }
+    else {
+        //some error info add
+    }
+}
+
+bool GetFile::ProcessGetFile(Request &request, FileInfo &info)
+{
+    string& data = request.mData;
+    MyProtocolStream stream(data);
+    stream >> info.path >> info.filename >> info.filesize;
+    /*
+        ret = stat(info.filename);
+        if (ret == true) {
+            if (size < info.size) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+    */
+    return false;
+}
+
+void GetFileSuccess::Exec(Connection *conn, Request &request, Response &response)
+{
+    FileInfo info;
+    bool ret = ProcessGetFileSuccess(request, info);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+    }
+    else {
+        //some error info add
+    }
+}
+
+bool GetFileSuccess::ProcessGetFileSuccess(Request &request, FileInfo &info)
+{
+    string& data = request.mData;
+    MyProtocolStream stream(data);
+    stream >> info.filename >> info.md5sum;
+    bool ret = checkmd5(info);
+    return ret;
+}

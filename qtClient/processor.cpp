@@ -337,6 +337,26 @@ bool Processor::SendMessageSuccess(string filename)
     return false;
 }
 
+//告诉服务器接收到了文件
+bool Processor::GetMessageSuccess(string filename)
+{
+    int md5sum = 0xfffe1111;
+    std::string data;
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    MyProtocolStream stream(data);
+    stream << filename << md5sum;
+    Request req(1, FunctionCode::GetFileSuccess, 3, 4, 5, data, user_id);
+
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
 bool Processor::GetFile(string path, string filename)
 {
     int filesizeLimit = 10000;

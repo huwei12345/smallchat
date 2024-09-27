@@ -19,6 +19,7 @@ SOURCES += \
     framelessWidget.cpp \
     friendpage.cpp \
     ftpsender.cpp \
+    ftpsender.cpp \
     main.cpp \
     mainpage.cpp \
     mainwindow.cpp \
@@ -41,6 +42,7 @@ HEADERS += \
     findfriendpage.h \
     framelessWidget.h \
     friendpage.h \
+    ftpsender.h \
     ftpsender.h \
     mainpage.h \
     mainwindow.h \

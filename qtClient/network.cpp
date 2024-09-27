@@ -8,7 +8,7 @@
 QTcpSocket socket;
 QByteArray buffer;  // 缓冲区
 quint32 expectedPacketSize = 0;  // 预期数据包长度
-#define SERVERIP "192.168.58.132"
+#define SERVERIP "192.168.100.102"
 #define PORT 8080
 extern int user_id;
 ClientNetWork::ClientNetWork()
@@ -31,7 +31,7 @@ bool ClientNetWork::process(QByteArray& array) {
     rsp.deserial(array.toStdString());
     rsp.print();
     std::string mdata = rsp.mData;
-    switch(rsp.mFunctionCode) {
+switch(rsp.mFunctionCode) {
     case FunctionCode::Login: {
         MyProtocolStream stream2(mdata);
         UserInfo info;
@@ -48,7 +48,7 @@ bool ClientNetWork::process(QByteArray& array) {
             return false;
         }
         return false;
-        break;
+break;
     }
     case FunctionCode::Register: {
         if (rsp.mCode == 1) {
@@ -57,20 +57,20 @@ bool ClientNetWork::process(QByteArray& array) {
         }
         printf("Register Failure\n");
         return false;
-        break;
+break;
     }
     case FunctionCode::SendMessage: {
         if (rsp.mhasData == false) {
-            //消息确认
-            if (rsp.mCode == 1) {
-                printf("send Message Success\n");
-                return true;
-            }
-            else {
-                printf("send Message Failure Server Error\n");
-                return false;
-            }
+//消息确认
+        if (rsp.mCode == 1) {
+            printf("send Message Success\n");
+            return true;
         }
+else {
+        printf("send Message Failure Server Error\n");
+        return false;
+    }
+    }
         else {
             //消息到达
             emit MessageArriveClient(rsp);
@@ -79,27 +79,27 @@ bool ClientNetWork::process(QByteArray& array) {
     }
     case FunctionCode::FindFriend: {
         emit FindFriendSuccess(rsp);
-        break;
+break;
     }
     case FunctionCode::AddFriend: {
         emit AddFriendSuccess(rsp.mCode);
-        break;
+break;
     }
     case FunctionCode::SearchAllFriend: {
-        emit findAllFriendSuccess(rsp);
-        break;
+                emit findAllFriendSuccess(rsp);
+break;
     }
     case FunctionCode::GetAllMessage: {
         emit getAllMessageSuccess(rsp);
-        break;
+break;
     }
     case FunctionCode::GetAllFriendRequest: {
         emit getAllFriendRequestSuccess(rsp);
-        break;
+break;
     }
     case FunctionCode::UpdateUserState: {
         emit UpDateUserStateSuccess(rsp);
-        break;
+break;
     }
     case FunctionCode::ReciveMessage: {
         //弃用,使用SendMessage功能2代替
@@ -135,7 +135,7 @@ bool ClientNetWork::process(QByteArray& array) {
     }
 
     }
-	else if (rsp.mFunctionCode == FunctionCode::StartUpLoadFile) {
+    else if (rsp.mFunctionCode == FunctionCode::StartUpLoadFile) {
         emit StartUpLoadFileSuccess(rsp);
     }
     else if (rsp.mFunctionCode == FunctionCode::UpLoadFileSuccess) {
@@ -143,6 +143,9 @@ bool ClientNetWork::process(QByteArray& array) {
     }
     else if (rsp.mFunctionCode == FunctionCode::GetFile) {
         emit GetFileFirstSuccess(rsp);
+    }
+    else if (rsp.mFunctionCode == FunctionCode::GetFileSuccess) {
+        emit GetFileSuccess(rsp);
     }
     return true;
 }

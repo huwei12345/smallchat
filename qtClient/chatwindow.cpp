@@ -1,4 +1,4 @@
-﻿#include "chatwindow.h"
+#include "chatwindow.h"
 #include "ui_chatwindow.h"
 #include "processor.h"
 #include "network.h"
@@ -14,11 +14,14 @@ ChatWindow::ChatWindow(QWidget *parent) :
     mUserId = 1;
     connect(this, &ChatWindow::confirmMessage, ClientNetWork::GetInstance(), &ClientNetWork::confirmMessage);
     connect(this, &ChatWindow::friendPageUpdate, (FriendPage*)this->parent(), &FriendPage::friendPageUpdate);
-connect(ClientNetWork::GetInstance(), &ClientNetWork::StartUpLoadFileSuccess, this, &ChatWindow::StartUpLoadFileSuccess);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::StartUpLoadFileSuccess, this, &ChatWindow::StartUpLoadFileSuccess);
 
-    connect(ftpSender::GetInstance(), ftpSender::ftpFileSendOver, this, &ChatWindow::ftpSendFileSuccess);
+    //这两个应该放在网络线程（通用 通信确认业务），但同时，发送完文件也应该通知聊天框，看具体业务。
+    connect(FtpSender::GetInstance(), &FtpSender::ftpFileSendOver, this, &ChatWindow::ftpSendFileSuccess);
+    connect(FtpSender::GetInstance(), &FtpSender::ftpFileGetOver, this, &ChatWindow::ftpGetFileSuccess);
     connect(ClientNetWork::GetInstance(), ClientNetWork::UpLoadFileSuccess, this, &ChatWindow::UpLoadFileSuccess);
     connect(ClientNetWork::GetInstance(), ClientNetWork::GetFileFirstSuccess, this, &ChatWindow::GetFileFirstSuccess);
+    connect(ClientNetWork::GetInstance(), ClientNetWork::GetFileSuccess, this, &ChatWindow::GetFileSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::offlineTransFileSuccess, this, &ChatWindow::offlineTransFileSuccess);
 }
 
@@ -39,7 +42,7 @@ void ChatWindow::messageUpdate() {
     int smallNum = INT_MAX;
     int bigNum = 0;
     for (int i = 0; i < (int)mUnReadMessageList.size(); i++) {
-        smallNum = min(smallNum, mUnReadMessageList[i].id);
+                smallNum = min(smallNum, mUnReadMessageList[i].id);
         bigNum = max(bigNum, mUnReadMessageList[i].id);
     }
     emit confirmMessage(mUserId, ::user_id, smallNum, bigNum);//网络发送给服务器确认收到【start，end】的消息
@@ -60,7 +63,7 @@ void ChatWindow::showChatContent()
 
 void ChatWindow::addMessage(MessageInfo info)
 {
-    //单条消息，显示 切换 显示
+//单条消息，显示 切换 显示
     if (this->isVisible()) {
         printf("isVis");
         fflush(stdout);
@@ -70,8 +73,8 @@ void ChatWindow::addMessage(MessageInfo info)
         messageUpdate();
     }
     else {
-        mUnReadMessageList.push_back(info);
-    }
+    mUnReadMessageList.push_back(info);
+}
 }
 
 void ChatWindow::keyPressEvent(QKeyEvent *event)
@@ -93,7 +96,7 @@ void ChatWindow::on_pushButton_clicked()
 {
     std::string content = ui->plainTextEdit_2->toPlainText().toStdString();
     if (content != "") {
-        QDateTime currentDateTime = QDateTime::currentDateTime();
+QDateTime currentDateTime = QDateTime::currentDateTime();
         std::string name = ((FriendPage*)returnWindow)->mInfo.username;
         // 将日期和时间转换为字符串
         QString currentDateTimeStr = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
@@ -106,13 +109,13 @@ void ChatWindow::on_pushButton_clicked()
         if (!ret) {
             QMessageBox::information(this,"提示","网络不可达！");
             QString s = QString::fromStdString(content);
-            ui->plainTextEdit->appendPlainText(QString::fromStdString(name) + "           " + currentDateTimeStr);
+ui->plainTextEdit->appendPlainText(QString::fromStdString(name) + "           " + currentDateTimeStr);
             ui->plainTextEdit->appendPlainText(s);
             ui->plainTextEdit->appendPlainText("Trans failure......Try Again\n");
             return;
         }
         QString s = QString::fromStdString(content);
-        ui->plainTextEdit->appendPlainText(QString::fromStdString(name) + "           " + currentDateTimeStr);
+ui->plainTextEdit->appendPlainText(QString::fromStdString(name) + "           " + currentDateTimeStr);
         ui->plainTextEdit->appendPlainText(s);
         mCurrentMessageList.push_back(info);
     }
@@ -153,6 +156,10 @@ void ChatWindow::ftpSendFileSuccess(string filename)
     bool ret = Processor::SendMessageSuccess(filename);
 }
 
+void ChatWindow::ftpGetFileSuccess(string filename)
+{
+    bool ret = Processor::GetMessageSuccess(filename);
+}
 
 void ChatWindow::UpLoadFileSuccess(Response rsp)
 {
@@ -186,6 +193,19 @@ void ChatWindow::GetFileFirstSuccess(Response rsp)
     }
     else {
         QMessageBox::Information(this, "提示", "Server is not allow GetFile");
+    }
+}
+
+void ChatWindow::GetFileSuccess(Response rsp)
+{
+    std::string mdata = response.mData;
+    MyProtocolStream stream2(mdata);
+    ret = rsp.mCode;
+    if (ret) {
+        QMessageBox::information(this, "提示", "GetFile %s Over");
+    }
+    else {
+        QMessageBox::information(this, "提示", "GetFile %s Send Failure");
     }
 }
 
