@@ -270,6 +270,13 @@ Server::Server(const char *ip, unsigned int port)
     
     requestProcessor[FunctionCode::StartUpLoadFile] = new ProcessStartUpLoadFileProcessor;
     requestProcessor[FunctionCode::UpLoadFileSuccess] = new ProcessUpLoadFileSuccessProcessor;
+
+    requestProcessor[FunctionCode::GetFile] = new ProcessGetFileProcessor;
+    requestProcessor[FunctionCode::GetFileSuccess] = new ProcessGetFileSuccessProcessor;
+    
+    requestProcessor[FunctionCode::NofifyFileComing] = new ProcessNofifyFileComingProcessor;
+    requestProcessor[FunctionCode::TransFileOver] = new ProcessTransFileOverProcessor;
+
     for (int i = 30; i < 100; i++) {
         requestProcessor[i] = new RequestProcessor;
     }

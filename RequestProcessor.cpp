@@ -1036,11 +1036,11 @@ bool TransFileProcessor::TransFile(Request &request, TransObject& object)
 */
 
 bool checkDisk(FileInfo& info) {
-
+    return true;
 }
 
 bool checkUserLimit(FileInfo& info ) {
-
+    return true;
 }
 
 void ProcessStartUpLoadFileProcessor::Exec(Connection* conn, Request &request, Response &response)
@@ -1085,6 +1085,7 @@ void ProcessUpLoadFileSuccessProcessor::Exec(Connection* conn, Request &request,
 }
 
 bool checkmd5(FileInfo& info) {
+    return true;
 }
 
 bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadFileSuccess(Request &request, FileInfo& info)
@@ -1096,7 +1097,7 @@ bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadFileSuccess(Request &reques
     return ret;
 }
 
-void GetFile::Exec(Connection *conn, Request &request, Response &response)
+void ProcessGetFileProcessor::Exec(Connection *conn, Request &request, Response &response)
 {
     FileInfo info;
     bool ret = ProcessGetFile(request, info);
@@ -1113,7 +1114,7 @@ void GetFile::Exec(Connection *conn, Request &request, Response &response)
     }
 }
 
-bool GetFile::ProcessGetFile(Request &request, FileInfo &info)
+bool ProcessGetFileProcessor::ProcessGetFile(Request &request, FileInfo &info)
 {
     string& data = request.mData;
     MyProtocolStream stream(data);
@@ -1132,10 +1133,10 @@ bool GetFile::ProcessGetFile(Request &request, FileInfo &info)
             return false;
         }
     */
-    return false;
+    return true;
 }
 
-void GetFileSuccess::Exec(Connection *conn, Request &request, Response &response)
+void ProcessGetFileSuccessProcessor::Exec(Connection *conn, Request &request, Response &response)
 {
     FileInfo info;
     bool ret = ProcessGetFileSuccess(request, info);
@@ -1147,11 +1148,50 @@ void GetFileSuccess::Exec(Connection *conn, Request &request, Response &response
     }
 }
 
-bool GetFileSuccess::ProcessGetFileSuccess(Request &request, FileInfo &info)
+bool ProcessGetFileSuccessProcessor::ProcessGetFileSuccess(Request &request, FileInfo &info)
 {
     string& data = request.mData;
     MyProtocolStream stream(data);
     stream >> info.filename >> info.md5sum;
     bool ret = checkmd5(info);
     return ret;
+}
+
+std::queue<FileInfo> getFileInfoList() {
+    return {};
+}
+
+void ProcessNofifyFileComingProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    //获取即将发送给用户的文件列表
+    std::queue<FileInfo> infoList = getFileInfoList();
+    while (infoList.empty()) {
+        FileInfo info = infoList.front();
+        infoList.pop();
+        bool ret = NofifyFileComing(request, info);
+        response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+        if (response.mCode) {
+        }
+        else {
+            //some error info add
+        }
+    }
+}
+
+bool ProcessNofifyFileComingProcessor::NofifyFileComing(Request &request, FileInfo &info)
+{
+    string& data = request.mData;
+    MyProtocolStream stream(data);
+    int send_id = 0, recv_id = 0;
+    stream << send_id << recv_id << info.path << info.filename << info.filesize << info.fileType;
+    return true;
+}
+
+void ProcessTransFileOverProcessor::Exec(Connection *conn, Request &request, Response &)
+{
+}
+
+bool ProcessTransFileOverProcessor::TransFileOver(Request &request, FileInfo &info)
+{
+    return false;
 }

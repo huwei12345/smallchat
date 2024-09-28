@@ -10,6 +10,9 @@
 #include <QThread>
 #include <QTimer>
 #include <QPushButton>
+#include <QMessageBox>
+#include <QMessageBox>
+#include <QDir>
 #include "findfriendpage.h"
 #include "creategrouppage.h"
 #include "chatwindow.h"
@@ -40,6 +43,9 @@ bool FriendPage::initPage() {
     connect(ClientNetWork::GetInstance(), &ClientNetWork::MessageArriveClient, this, &FriendPage::MessageArriveClient);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::storeFileSuccess, this, &FriendPage::storeFileSuccess);
 
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::NofifyFileComing, this, &FriendPage::NofifyFileComing);
+
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::ChangeOwnerPic, this, &FriendPage::ChangeOwnerPic);
     return true;
 }
 
@@ -77,7 +83,7 @@ int FriendPage::init() {
 
 bool FriendPage::initMyPhoto() {
     std::string path("/userPhoto/");
-    std::string photo = QString::num(mUserId) + "photonow";
+    std::string photo = "txhuwei.jpg";
     bool ret = Processor::GetFile(path, photo);
     if (!ret) {
         QMessageBox::information(this,"提示","网络不可达！");
@@ -454,6 +460,50 @@ void FriendPage::on_toolButton_2_clicked()
     mFriendRequestSet.erase(request);
 //    if (mFriendRequestSet.size() == 0) {
 //        mFriendRequestTimer->stop();
-//    }
+    //    }
+}
+
+void FriendPage::NofifyFileComing(Response response)
+{
+    //在线消息到达
+    std::string &mData = response.mData;
+    MyProtocolStream stream(mData);
+    FileInfo info;
+    int send_id = 0, recv_id = 0;
+    stream >> send_id >> recv_id >> info.path >> info.filename >> info.filesize >> info.fileType;
+    //判断是否接收
+    if (info.filesize < 1000 * 1000 * 10) {
+        Processor::AgreeRecvFile(true, info);
+    }
+    else {
+        int ret = QMessageBox::information(this, "提示", "", QMessageBox::Yes | QMessageBox::No);
+        if (ret) {
+            Processor::AgreeRecvFile(true, info);
+        }
+        else {
+            Processor::AgreeRecvFile(false, info);
+        }
+    }
+}
+
+void FriendPage::ChangeOwnerPic()
+{
+    QString filePath = QCoreApplication::applicationDirPath() + "/userPhoto/txhuwei.jpg";
+    qDebug() << "当前工作目录:" << filePath;
+    qDebug() << "11111111111111111111111--------------";
+    if (QFile::exists(filePath)) {
+        // 如果文件存在，加载图像并设置为头像
+            qDebug() << "22222222222222222222222--------------";
+        QIcon icon(filePath);
+        // 或者
+        // QIcon icon("path/to/your/image.png"); // 使用本地文件路径
+        ui->toolButton_5->setIcon(icon);
+
+        ui->toolButton_5->setIconSize(QSize(50, 50)); // 设置图片大小
+        // 这里可以将 avatarLabel 添加到你的窗口或布局中
+    } else {
+        // 文件不存在，给用户提示
+        QMessageBox::warning(nullptr, "警告", "头像文件不存在。");
+    }
 }
 

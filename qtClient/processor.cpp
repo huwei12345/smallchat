@@ -4,7 +4,7 @@
 #include "network.h"
 #include "MyProtocolStream.h"
 #include "Protocol.h"
-
+#include "ftpsender.h"
 int user_id;
 
 Processor::Processor()
@@ -229,7 +229,7 @@ bool Processor::processMessageRead(std::vector<int> messageList)
     MyProtocolStream stream(data);
     //多个一起确认
     stream << (int)messageList.size();
-    for (int i = 0; (int)i < messageList.size(); i++) {
+    for (int i = 0; i < (int)messageList.size(); i++) {
         stream << messageList[i];
     }
     Request req(1, FunctionCode::ProcessMessageRead, 3, 4, 5, data, user_id);
@@ -375,18 +375,14 @@ bool Processor::GetFile(string path, string filename)
     return false;
 }
 
-bool Processor::processMessageRead(std::vector<int> messageList)
+bool Processor::AgreeRecvFile(bool agree, FileInfo info)
 {
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     std::string data;
     MyProtocolStream stream(data);
-    //多个一起确认
-    stream << (int)messageList.size();
-    for (int i = 0; i < messageList.size(); i++) {
-        stream << messageList[i];
-    }
-    Request req(1, FunctionCode::ProcessMessageRead, 3, 4, 5, data, user_id);
-
+    //或许需要一个Id,便于服务器标识
+    stream << agree << info.path << info.filename;
+    Request req(1, FunctionCode::NofifyFileComing, 3, 4, 5, data, user_id);
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());
     int r = clientSocket->SendPacket(array);
@@ -394,8 +390,16 @@ bool Processor::processMessageRead(std::vector<int> messageList)
         req.print();
         return true;
     }
+    if (agree) {
+        FtpSender::GetInstance()->GetFile(info);
+    }
+    else {
+
+    }
     return false;
 }
+
+
 /*
 #include "client.h"
 #include <errno.h>

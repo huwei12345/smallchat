@@ -4,6 +4,11 @@ debug/creategrouppage.o
 debug/findfriendpage.o
 debug/framelessWidget.o
 debug/friendpage.o
+debug/ftpmanager.o
+debug/qftp.o
+debug/qurlinfo.o
+debug/ftpsender.o
+debug/globalvaria.o
 debug/main.o
 debug/mainpage.o
 debug/mainwindow.o
@@ -22,6 +27,8 @@ debug/moc_creategrouppage.o
 debug/moc_findfriendpage.o
 debug/moc_framelessWidget.o
 debug/moc_friendpage.o
+debug/moc_FtpManager.o
+debug/moc_ftpsender.o
 debug/moc_mainpage.o
 debug/moc_mainwindow.o
 debug/moc_netthread.o

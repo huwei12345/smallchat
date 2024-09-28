@@ -116,14 +116,26 @@ class ProcessUpLoadFileSuccessProcessor : public RequestProcessor {
 };
 
 //主动获取，告知服务器要获取的文件， Response:验证文件是否存在和大小等参数
-class GetFile : public RequestProcessor {
+class ProcessGetFileProcessor : public RequestProcessor {
     void Exec(Connection* conn, Request& request, Response&);
     bool ProcessGetFile(Request &request, FileInfo& info);
 };
 
-class GetFileSuccess : public RequestProcessor {
+class ProcessGetFileSuccessProcessor : public RequestProcessor {
     void Exec(Connection* conn, Request& request, Response&);
     bool ProcessGetFileSuccess(Request &request, FileInfo& info);
+};
+
+//被动接收，告知服务器要获取的文件， Response:验证文件是否存在和大小等参数
+class ProcessNofifyFileComingProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response&);
+    bool NofifyFileComing(Request &request, FileInfo& info);
+};
+
+//暂未用到，目前提示文件收发结束都由客户端处理
+class ProcessTransFileOverProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response&);
+    bool TransFileOver(Request &request, FileInfo& info);
 };
 
 #endif

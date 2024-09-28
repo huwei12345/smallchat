@@ -31,6 +31,7 @@ public:
     bool initFriendList();
     bool initMessageList();
     bool initFriendRequest();
+    bool initMyPhoto();
 
     bool initPage();
     void friendPageUpdate(int uid);
@@ -63,6 +64,8 @@ private slots:
     void friendMessageArrive(FriendRequest info);
     void storeFileSuccess(Response response);
     void on_toolButton_2_clicked();
+    void NofifyFileComing(Response response);
+    void ChangeOwnerPic();
 private:
     Ui::FriendPage *ui;
     QWidget* returnWindow;

@@ -1,8 +1,9 @@
-#include "chatwindow.h"
+﻿#include "chatwindow.h"
 #include "ui_chatwindow.h"
 #include "processor.h"
 #include "network.h"
 #include "friendpage.h"
+#include "ftpsender.h"
 #include <QDateTime>
 #include <QMessageBox>
 ChatWindow::ChatWindow(QWidget *parent) :
@@ -17,11 +18,10 @@ ChatWindow::ChatWindow(QWidget *parent) :
     connect(ClientNetWork::GetInstance(), &ClientNetWork::StartUpLoadFileSuccess, this, &ChatWindow::StartUpLoadFileSuccess);
 
     //这两个应该放在网络线程（通用 通信确认业务），但同时，发送完文件也应该通知聊天框，看具体业务。
-    connect(FtpSender::GetInstance(), &FtpSender::ftpFileSendOver, this, &ChatWindow::ftpSendFileSuccess);
-    connect(FtpSender::GetInstance(), &FtpSender::ftpFileGetOver, this, &ChatWindow::ftpGetFileSuccess);
-    connect(ClientNetWork::GetInstance(), ClientNetWork::UpLoadFileSuccess, this, &ChatWindow::UpLoadFileSuccess);
-    connect(ClientNetWork::GetInstance(), ClientNetWork::GetFileFirstSuccess, this, &ChatWindow::GetFileFirstSuccess);
-    connect(ClientNetWork::GetInstance(), ClientNetWork::GetFileSuccess, this, &ChatWindow::GetFileSuccess);
+    //connect(FtpSender::GetInstance(), &FtpSender::ftpFileSendOver, this, &ChatWindow::ftpSendFileSuccess);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::UpLoadFileSuccess, this, &ChatWindow::UpLoadFileSuccess);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::GetFileFirstSuccess, this, &ChatWindow::GetFileFirstSuccess);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::GetFileSuccess, this, &ChatWindow::GetFileSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::offlineTransFileSuccess, this, &ChatWindow::offlineTransFileSuccess);
 }
 
@@ -132,21 +132,19 @@ void ChatWindow::userMessageRead()
         //闪烁
     }
 }
-void ChatWindow::StartUpLoadFileSuccess(Response rsp)
+void ChatWindow::StartUpLoadFileSuccess(Response response)
 {
     std::string mdata = response.mData;
     MyProtocolStream stream2(mdata);
     //Response: 告知允许上传，及部分参数
-    int ret = rsp.mCode;
-    std::string filePath;
-    std::string fileName;
-    stream2 >> filePath >> fileName;
+    int ret = response.mCode;
+    FileInfo info;
     if (ret) {
-        stream2 >> filePath >> fileName;
-        ftp->GetInstance()->SendFile(filePath, fileName);//ftp发送队列异步发送
+        stream2 >> info.path >> info.filename;
+        FtpSender::GetInstance()->SendFile(info);//ftp发送队列异步发送
     }
     else {
-        QMessageBox::Information(this, "提示", "Server is not allow SendFile");
+        QMessageBox::information(this, "提示", "Server is not allow SendFile");
     }
 }
 
@@ -161,11 +159,11 @@ void ChatWindow::ftpGetFileSuccess(string filename)
     bool ret = Processor::GetMessageSuccess(filename);
 }
 
-void ChatWindow::UpLoadFileSuccess(Response rsp)
+void ChatWindow::UpLoadFileSuccess(Response response)
 {
     std::string mdata = response.mData;
     MyProtocolStream stream2(mdata);
-    ret = rsp.mCode;
+    bool ret = response.mCode;
     if (ret) {
         QMessageBox::information(this, "提示", "SendFile %s Over");
     }
@@ -174,33 +172,34 @@ void ChatWindow::UpLoadFileSuccess(Response rsp)
     }
 }
 
-void ChatWindow::GetFileFirstSuccess(Response rsp)
+void ChatWindow::GetFileFirstSuccess(Response response)
 {
     std::string mdata = response.mData;
     MyProtocolStream stream2(mdata);
-    int ret = rsp.mCode;
+    int ret = response.mCode;
     FileInfo info;
     std::string filePath;
     std::string fileName;
     stream2 >> info.path >> info.filename >> info.filesize;
     if (ret) {
         if (info.filesize < 10 * 1024 * 1024) {
-            ftp->GetInstance()->GetFile(filePath, fileName);//ftp获取队列异步获取
+            qDebug() << "Will Ftp Get .............................";
+            FtpSender::GetInstance()->GetFile(info);//ftp获取队列异步获取
         }
         else {
             //询问，或者阻止
         }
     }
     else {
-        QMessageBox::Information(this, "提示", "Server is not allow GetFile");
+        QMessageBox::information(this, "提示", "Server is not allow GetFile");
     }
 }
 
-void ChatWindow::GetFileSuccess(Response rsp)
+void ChatWindow::GetFileSuccess(Response response)
 {
     std::string mdata = response.mData;
     MyProtocolStream stream2(mdata);
-    ret = rsp.mCode;
+    bool ret = response.mCode;
     if (ret) {
         QMessageBox::information(this, "提示", "GetFile %s Over");
     }
@@ -216,3 +215,4 @@ void ChatWindow::on_toolButton_5_clicked()
     std::string filename = "./a.txt";
     bool ret = Processor::SendFile(Remotepath, filename);
 }
+

@@ -8,14 +8,21 @@
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QAction>
-
+#include "globalvaria.h"
+#include "ftpsender.h"
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    GlobalVaria::GetInstance();
+    FtpSender* ftpSender = FtpSender::GetInstance();
     ClientNetWork *client = ClientNetWork::GetInstance();
     client->Client();
+    qDebug() << "Show Window";
     MainWindow w1;
     w1.show();
+
+
+    ftpSender->start();
     /*framelessWidget w;
     w.setWindowFlag(Qt::FramelessWindowHint);//设置无边框属性
     w.setAttribute(Qt::WA_TranslucentBackground);//设置背景透明

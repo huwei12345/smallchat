@@ -26,6 +26,8 @@ static bool CreateGroup(GroupInfo& info);
     static bool SendMessageSuccess(std::string file);
     static bool GetMessageSuccess(std::string file);
     static bool GetFile(std::string path, std::string filename);
+
+    static bool AgreeRecvFile(bool agree, FileInfo info);
     bool processMessageRead(std::vector<int> messageList);
 };
 

@@ -5,15 +5,29 @@
 #include <QAbstractSocket>
 #include <QMessageBox>
 #include "Protocol.h"
+#include "globalvaria.h"
 QTcpSocket socket;
 QByteArray buffer;  // 缓冲区
 quint32 expectedPacketSize = 0;  // 预期数据包长度
-#define SERVERIP "192.168.100.102"
 #define PORT 8080
 extern int user_id;
 ClientNetWork::ClientNetWork()
 {
+    mServerIp = GlobalVaria::GetInstance()->serverIp();
+}
 
+void ClientNetWork::ftpFileSendOver(QString filename)
+{
+    Q_UNUSED(filename);
+}
+
+void ClientNetWork::ftpFileGetOver(QString filename)
+{
+    Q_UNUSED(filename);
+    qDebug() << "filename :                                " << filename;
+    if (filename.indexOf("userPhoto/tx") != -1) {
+        emit ChangeOwnerPic();
+    }
 }
 
 ClientNetWork* ClientNetWork::clientNetwork = NULL;
@@ -31,7 +45,7 @@ bool ClientNetWork::process(QByteArray& array) {
     rsp.deserial(array.toStdString());
     rsp.print();
     std::string mdata = rsp.mData;
-switch(rsp.mFunctionCode) {
+    switch(rsp.mFunctionCode) {
     case FunctionCode::Login: {
         MyProtocolStream stream2(mdata);
         UserInfo info;
@@ -61,16 +75,16 @@ break;
     }
     case FunctionCode::SendMessage: {
         if (rsp.mhasData == false) {
-//消息确认
-        if (rsp.mCode == 1) {
-            printf("send Message Success\n");
-            return true;
+            //消息确认
+            if (rsp.mCode == 1) {
+                printf("send Message Success\n");
+                return true;
+            }
+            else {
+                printf("send Message Failure Server Error\n");
+                return false;
+            }
         }
-else {
-        printf("send Message Failure Server Error\n");
-        return false;
-    }
-    }
         else {
             //消息到达
             emit MessageArriveClient(rsp);
@@ -130,22 +144,29 @@ break;
         emit FindFriendSuccess(rsp);
         break;
     }
+    case FunctionCode::StartUpLoadFile: {
+        emit StartUpLoadFileSuccess(rsp);
+        break;
+    }
+    case FunctionCode::UpLoadFileSuccess: {
+        emit UpLoadFileSuccess(rsp);
+        break;
+    }
+    case FunctionCode::GetFile: {
+        emit GetFileFirstSuccess(rsp);
+        break;
+    }
+    case FunctionCode::GetFileSuccess: {
+        emit GetFileSuccess(rsp);
+        break;
+    }
+    case FunctionCode::NofifyFileComing: {
+        emit NofifyFileComing(rsp);
+    }
     default: {
         break;
     }
 
-    }
-    else if (rsp.mFunctionCode == FunctionCode::StartUpLoadFile) {
-        emit StartUpLoadFileSuccess(rsp);
-    }
-    else if (rsp.mFunctionCode == FunctionCode::UpLoadFileSuccess) {
-        emit UpLoadFileSuccess(rsp);
-    }
-    else if (rsp.mFunctionCode == FunctionCode::GetFile) {
-        emit GetFileFirstSuccess(rsp);
-    }
-    else if (rsp.mFunctionCode == FunctionCode::GetFileSuccess) {
-        emit GetFileSuccess(rsp);
     }
     return true;
 }
@@ -169,9 +190,9 @@ bool ClientNetWork::confirmMessage(int sendId, int recvId, int start, int end) {
 
 int ClientNetWork::Client() {
     //return -1;
-    mSocket.connectToHost(SERVERIP, PORT); // 连接到服务器
+    mSocket.connectToHost(mServerIp, PORT); // 连接到服务器
 
-    if (mSocket.waitForConnected(30000)) {
+    if (mSocket.waitForConnected(3000)) {
         qDebug() << "Connected to server!";
         //mSocket.write("Hello, server!"); // 发送数据
         //mSocket.waitForBytesWritten();

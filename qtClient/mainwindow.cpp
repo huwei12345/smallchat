@@ -26,6 +26,7 @@ MainWindow::MainWindow(QWidget *parent)
     registerPage = NULL;
     friendPage = NULL;
     ui->pushButton_4->setShortcut(tr("return"));
+
     QShortcut *keyEnter = new QShortcut(QKeySequence("Enter"),ui->pushButton);
     keyEnter->setContext(Qt::WindowShortcut);
     connect(keyEnter, &QShortcut::activated,ui->pushButton,&QPushButton::click);

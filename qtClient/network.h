@@ -21,7 +21,9 @@ signals:
     void loginSuccessful(UserInfo info);
     void loginFailure();
     void FindFriendSuccess(Response response);
-void FindGroupSuccess(Response response);
+    void ChangeOwnerPic();
+
+    void FindGroupSuccess(Response response);
     void findAllFriendSuccess(Response response);
     void AddFriendSuccess(int mCode);
     void getAllMessageSuccess(Response response);
@@ -39,14 +41,15 @@ void ReciveMessageSuccess(Response response);
     void UpLoadFileSuccess(Response response);
     void GetFileFirstSuccess(Response response);
     void GetFileSuccess(Response response);
+    void NofifyFileComing(Response response);
 private:
     ClientNetWork();
     QTcpSocket mSocket;
     static ClientNetWork* clientNetwork;
-
-private slots:
-    void ftpFileSendOver(std::string filename);
-    void ftpFileGetOver(std::string filename);
+    QString mServerIp;
+public slots:
+    void ftpFileSendOver(QString filename);
+    void ftpFileGetOver(QString filename);
 };
 
 #endif // NETWORK_H

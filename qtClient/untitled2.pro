@@ -18,8 +18,11 @@ SOURCES += \
     findfriendpage.cpp \
     framelessWidget.cpp \
     friendpage.cpp \
+    ftp/ftpmanager.cpp \
+    ftp/qftp.cpp \
+    ftp/qurlinfo.cpp \
     ftpsender.cpp \
-    ftpsender.cpp \
+    globalvaria.cpp \
     main.cpp \
     mainpage.cpp \
     mainwindow.cpp \
@@ -42,8 +45,11 @@ HEADERS += \
     findfriendpage.h \
     framelessWidget.h \
     friendpage.h \
+    ftp/FtpManager.h \
+    ftp/qftp.h \
+    ftp/qurlinfo.h \
     ftpsender.h \
-    ftpsender.h \
+    globalvaria.h \
     mainpage.h \
     mainwindow.h \
     netthread.h \

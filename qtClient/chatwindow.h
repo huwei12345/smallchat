@@ -1,4 +1,4 @@
-#ifndef CHATWINDOW_H
+﻿#ifndef CHATWINDOW_H
 #define CHATWINDOW_H
 
 #include <QWidget>
@@ -21,13 +21,15 @@ public:
     vector<MessageInfo> mUnReadMessageList;
 vector<MessageInfo> mCurrentMessageList;//包括已读取和已发送和一些历史记录，可能需要持久化
     int mUserId;
-void showChatContent();
+    void showChatContent();
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
 private slots:
     void on_pushButton_clicked();
 void offlineTransFileSuccess(Response rsp);
+void on_toolButton_5_clicked();
+
 signals:
     void confirmMessage(int sender, int reciver, int start, int end);
     void friendPageUpdate(int);
@@ -35,6 +37,7 @@ public slots:
     void userMessageRead();
     void StartUpLoadFileSuccess(Response rsp);
     void ftpSendFileSuccess(std::string name);
+    void ftpGetFileSuccess(string filename);
     void UpLoadFileSuccess(Response rsp);
     void GetFileFirstSuccess(Response rsp);
     void GetFileSuccess(Response rsp);

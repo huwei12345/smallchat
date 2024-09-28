@@ -373,7 +373,16 @@ namespace net
         m_pos += sizeof(int64_t);
         return true;
     }
-
+    bool MyProtocolStream::getll(long long &i)
+    {
+        if (m_pos + sizeof(long long) > m_str.length())
+            return false;
+        char *p = &m_str[m_pos];
+        memcpy(&i, p, sizeof(long long));
+        i = ntohll(i);
+        m_pos += sizeof(long long);
+        return true;
+    }
     bool MyProtocolStream::getInt32(int32_t &i)
     {
         if (m_pos + sizeof(int32_t) > m_str.length())
@@ -499,6 +508,11 @@ namespace net
         loadInt64(i);
         return *this;
     }
+    MyProtocolStream &MyProtocolStream::operator<<(long long i) {
+        // TODO: insert return statement here
+        loadInt64(i);
+        return *this;
+    }
     MyProtocolStream& MyProtocolStream::operator<<(int32_t i) {
         loadInt32(i);
         return *this;
@@ -536,6 +550,12 @@ namespace net
     }
     MyProtocolStream& MyProtocolStream::operator>>(int64_t& i) {
         getInt64(i);
+        return *this;
+    }
+    MyProtocolStream &MyProtocolStream::operator>>(long long& i)
+    {
+        // TODO: insert return statement here
+        getll(i);
         return *this;
     }
     MyProtocolStream& MyProtocolStream::operator>>(int32_t& i) {

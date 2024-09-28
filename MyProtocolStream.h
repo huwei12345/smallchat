@@ -52,6 +52,7 @@ public:
     bool getShort(short& s);
     bool getChar(char& c);
 	bool getBool(bool& c);
+    bool getll(long long &i);
     MyProtocolStream& operator>>(std::string &str);
     MyProtocolStream& operator>>(float& f);
     MyProtocolStream& operator>>(double& d);
