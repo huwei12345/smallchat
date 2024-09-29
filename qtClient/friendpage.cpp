@@ -19,7 +19,7 @@
 #include "userbutton.h"
 #include "network.h"
 #include "processor.h"
-
+#include "ftpsender.h"
 bool FriendPage::initPage() {
     QIcon windowIcon(QPixmap(":/main/title.jpeg")); // 假设你的图标文件位于资源文件中或者项目目录下
     setWindowIcon(windowIcon);
@@ -46,6 +46,8 @@ bool FriendPage::initPage() {
     connect(ClientNetWork::GetInstance(), &ClientNetWork::NofifyFileComing, this, &FriendPage::NofifyFileComing);
 
     connect(ClientNetWork::GetInstance(), &ClientNetWork::ChangeOwnerPic, this, &FriendPage::ChangeOwnerPic);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::GetFileFirstSuccess, this, &FriendPage::GetFileFirstSuccess);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::GetFileSuccess, this, &FriendPage::GetFileSuccess);
     return true;
 }
 
@@ -82,7 +84,7 @@ int FriendPage::init() {
 
 
 bool FriendPage::initMyPhoto() {
-    std::string path("/userPhoto/");
+    std::string path("userPhoto/");
     std::string photo = "txhuwei.jpg";
     bool ret = Processor::GetFile(path, photo);
     if (!ret) {
@@ -507,3 +509,44 @@ void FriendPage::ChangeOwnerPic()
     }
 }
 
+void FriendPage::GetFileFirstSuccess(Response response)
+{
+    std::string mdata = response.mData;
+    MyProtocolStream stream2(mdata);
+    int ret = response.mCode;
+    FileInfo info;
+    std::string filePath;
+    std::string fileName;
+    stream2 >> info.path >> info.filename >> info.filesize;
+    if (ret) {
+        if (info.filesize < 10 * 1024 * 1024) {
+            qDebug() << "Will Ftp Get .............................";
+            FtpSender::GetInstance()->GetFile(info);//ftp获取队列异步获取
+        }
+        else {
+            //询问，或者阻止
+        }
+    }
+    else {
+        QMessageBox::information(this, "提示", "Server is not allow GetFile");
+    }
+}
+
+void FriendPage::GetFileSuccess(Response response)
+{
+    std::string mdata = response.mData;
+    MyProtocolStream stream2(mdata);
+    bool ret = response.mCode;
+    if (ret) {
+        QMessageBox::information(this, "提示", "GetFile %s Over");
+    }
+    else {
+        QMessageBox::information(this, "提示", "GetFile %s Send Failure");
+    }
+}
+
+
+void FriendPage::ftpGetFileSuccess(string filename)
+{
+    bool ret = Processor::GetMessageSuccess(filename);
+}

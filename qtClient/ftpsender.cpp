@@ -55,6 +55,7 @@ void FtpSender::Run() {
             }
         }
         if (!mFtpGetList.empty()) {
+            qDebug() << "mFtpGetList" << mFtpGetList.size();
             FileInfo info = mFtpGetList.front();
             mFtpGetList.pop();
             qDebug() << "Will Get Ftp File .......................";

@@ -20,8 +20,7 @@ ChatWindow::ChatWindow(QWidget *parent) :
     //这两个应该放在网络线程（通用 通信确认业务），但同时，发送完文件也应该通知聊天框，看具体业务。
     //connect(FtpSender::GetInstance(), &FtpSender::ftpFileSendOver, this, &ChatWindow::ftpSendFileSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::UpLoadFileSuccess, this, &ChatWindow::UpLoadFileSuccess);
-    connect(ClientNetWork::GetInstance(), &ClientNetWork::GetFileFirstSuccess, this, &ChatWindow::GetFileFirstSuccess);
-    connect(ClientNetWork::GetInstance(), &ClientNetWork::GetFileSuccess, this, &ChatWindow::GetFileSuccess);
+
     connect(ClientNetWork::GetInstance(), &ClientNetWork::offlineTransFileSuccess, this, &ChatWindow::offlineTransFileSuccess);
 }
 
@@ -169,42 +168,6 @@ void ChatWindow::UpLoadFileSuccess(Response response)
     }
     else {
         QMessageBox::information(this, "提示", "SendFile %s Send Failure");
-    }
-}
-
-void ChatWindow::GetFileFirstSuccess(Response response)
-{
-    std::string mdata = response.mData;
-    MyProtocolStream stream2(mdata);
-    int ret = response.mCode;
-    FileInfo info;
-    std::string filePath;
-    std::string fileName;
-    stream2 >> info.path >> info.filename >> info.filesize;
-    if (ret) {
-        if (info.filesize < 10 * 1024 * 1024) {
-            qDebug() << "Will Ftp Get .............................";
-            FtpSender::GetInstance()->GetFile(info);//ftp获取队列异步获取
-        }
-        else {
-            //询问，或者阻止
-        }
-    }
-    else {
-        QMessageBox::information(this, "提示", "Server is not allow GetFile");
-    }
-}
-
-void ChatWindow::GetFileSuccess(Response response)
-{
-    std::string mdata = response.mData;
-    MyProtocolStream stream2(mdata);
-    bool ret = response.mCode;
-    if (ret) {
-        QMessageBox::information(this, "提示", "GetFile %s Over");
-    }
-    else {
-        QMessageBox::information(this, "提示", "GetFile %s Send Failure");
     }
 }
 

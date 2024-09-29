@@ -36,6 +36,8 @@ public:
     bool initPage();
     void friendPageUpdate(int uid);
     UserInfo mInfo;
+    void ftpGetFileSuccess(string filename);
+    void GetFileSuccess(Response response);
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -66,6 +68,7 @@ private slots:
     void on_toolButton_2_clicked();
     void NofifyFileComing(Response response);
     void ChangeOwnerPic();
+    void GetFileFirstSuccess(Response response);
 private:
     Ui::FriendPage *ui;
     QWidget* returnWindow;

@@ -39,8 +39,6 @@ public slots:
     void ftpSendFileSuccess(std::string name);
     void ftpGetFileSuccess(string filename);
     void UpLoadFileSuccess(Response rsp);
-    void GetFileFirstSuccess(Response rsp);
-    void GetFileSuccess(Response rsp);
 private:
     Ui::ChatWindow *ui;
     UserInfo mInfo;

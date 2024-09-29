@@ -391,6 +391,7 @@ bool Processor::AgreeRecvFile(bool agree, FileInfo info)
         return true;
     }
     if (agree) {
+        qDebug() << "LPL";
         FtpSender::GetInstance()->GetFile(info);
     }
     else {
