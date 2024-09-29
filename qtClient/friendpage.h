@@ -38,6 +38,7 @@ public:
     UserInfo mInfo;
     void ftpGetFileSuccess(string filename);
     void GetFileSuccess(Response response);
+    void StartUpLoadFileSuccess(Response response);
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -69,6 +70,8 @@ private slots:
     void NofifyFileComing(Response response);
     void ChangeOwnerPic();
     void GetFileFirstSuccess(Response response);
+    void on_toolButton_5_clicked();
+
 private:
     Ui::FriendPage *ui;
     QWidget* returnWindow;

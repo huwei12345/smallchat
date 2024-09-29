@@ -32,10 +32,8 @@ void on_toolButton_5_clicked();
 
 signals:
     void confirmMessage(int sender, int reciver, int start, int end);
-    void friendPageUpdate(int);
 public slots:
     void userMessageRead();
-    void StartUpLoadFileSuccess(Response rsp);
     void ftpSendFileSuccess(std::string name);
     void ftpGetFileSuccess(string filename);
     void UpLoadFileSuccess(Response rsp);

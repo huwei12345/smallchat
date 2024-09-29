@@ -48,6 +48,7 @@ bool FriendPage::initPage() {
     connect(ClientNetWork::GetInstance(), &ClientNetWork::ChangeOwnerPic, this, &FriendPage::ChangeOwnerPic);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::GetFileFirstSuccess, this, &FriendPage::GetFileFirstSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::GetFileSuccess, this, &FriendPage::GetFileSuccess);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::StartUpLoadFileSuccess, this, &FriendPage::StartUpLoadFileSuccess);
     return true;
 }
 
@@ -85,7 +86,7 @@ int FriendPage::init() {
 
 bool FriendPage::initMyPhoto() {
     std::string path("userPhoto/");
-    std::string photo = "txhuwei.jpg";
+    std::string photo = "tx" + mInfo.username + ".jpg";
     bool ret = Processor::GetFile(path, photo);
     if (!ret) {
         QMessageBox::information(this,"提示","网络不可达！");
@@ -490,7 +491,7 @@ void FriendPage::NofifyFileComing(Response response)
 
 void FriendPage::ChangeOwnerPic()
 {
-    QString filePath = QCoreApplication::applicationDirPath() + "/userPhoto/txhuwei.jpg";
+    QString filePath = QCoreApplication::applicationDirPath() + "/userPhoto/tx" + QString::fromStdString(mInfo.username) + ".jpg";
     qDebug() << "当前工作目录:" << filePath;
     qDebug() << "11111111111111111111111--------------";
     if (QFile::exists(filePath)) {
@@ -549,4 +550,31 @@ void FriendPage::GetFileSuccess(Response response)
 void FriendPage::ftpGetFileSuccess(string filename)
 {
     bool ret = Processor::GetMessageSuccess(filename);
+}
+
+void FriendPage::on_toolButton_5_clicked()
+{
+    //上传头像
+    std::string path("userPhoto/");
+    std::string photo = "tx" + mInfo.username + ".jpg";
+    bool ret = Processor::SendFile("D:/", "txhuwei.jpg");
+    if (!ret) {
+        QMessageBox::information(this,"提示","网络不可达！");
+    }
+}
+
+void FriendPage::StartUpLoadFileSuccess(Response response)
+{
+    std::string mdata = response.mData;
+    MyProtocolStream stream2(mdata);
+    //Response: 告知允许上传，及部分参数
+    int ret = response.mCode;
+    FileInfo info;
+    if (ret) {
+        stream2 >> info.path >> info.filename;
+        FtpSender::GetInstance()->SendFile(info);//ftp发送队列异步发送
+    }
+    else {
+        QMessageBox::information(this, "提示", "Server is not allow SendFile");
+    }
 }

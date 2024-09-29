@@ -15,7 +15,6 @@ ChatWindow::ChatWindow(QWidget *parent) :
     mUserId = 1;
     connect(this, &ChatWindow::confirmMessage, ClientNetWork::GetInstance(), &ClientNetWork::confirmMessage);
     connect(this, &ChatWindow::friendPageUpdate, (FriendPage*)this->parent(), &FriendPage::friendPageUpdate);
-    connect(ClientNetWork::GetInstance(), &ClientNetWork::StartUpLoadFileSuccess, this, &ChatWindow::StartUpLoadFileSuccess);
 
     //这两个应该放在网络线程（通用 通信确认业务），但同时，发送完文件也应该通知聊天框，看具体业务。
     //connect(FtpSender::GetInstance(), &FtpSender::ftpFileSendOver, this, &ChatWindow::ftpSendFileSuccess);
@@ -131,22 +130,6 @@ void ChatWindow::userMessageRead()
         //闪烁
     }
 }
-void ChatWindow::StartUpLoadFileSuccess(Response response)
-{
-    std::string mdata = response.mData;
-    MyProtocolStream stream2(mdata);
-    //Response: 告知允许上传，及部分参数
-    int ret = response.mCode;
-    FileInfo info;
-    if (ret) {
-        stream2 >> info.path >> info.filename;
-        FtpSender::GetInstance()->SendFile(info);//ftp发送队列异步发送
-    }
-    else {
-        QMessageBox::information(this, "提示", "Server is not allow SendFile");
-    }
-}
-
 
 void ChatWindow::ftpSendFileSuccess(string filename)
 {

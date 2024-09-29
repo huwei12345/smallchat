@@ -47,12 +47,10 @@ void FtpSender::Run() {
             mFtpSendList.pop();
             if (ftpUtil->ftpState() != QFtp::Connected) {
                 //ftpUtil->connect();
-                ftpUtil->connectFtp();
-                QThread::sleep(1);
+//                ftpUtil->connectFtp();
+//                QThread::sleep(1);
             }
-            if (ftpUtil->ftpState() == QFtp::Connected) {
-                ProcessSendList(info);
-            }
+            ProcessSendList(info);
         }
         if (!mFtpGetList.empty()) {
             qDebug() << "mFtpGetList" << mFtpGetList.size();

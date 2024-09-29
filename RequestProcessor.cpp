@@ -1068,6 +1068,7 @@ bool ProcessStartUpLoadFileProcessor::ProcessStartUpLoadFile(Request &request, F
     string& data = request.mData;
     MyProtocolStream stream(data);
     stream >> info.path >> info.filename >> info.fileType >> info.filesize >> info.fileMode;
+    info.path = "userPhoto/";
     bool ret = checkDisk(info);
     bool ret2 = checkUserLimit(info);
     return ret && ret2;
