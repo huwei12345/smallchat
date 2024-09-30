@@ -1053,7 +1053,7 @@ void ProcessStartUpLoadFileProcessor::Exec(Connection* conn, Request &request, R
         std::string &data = response.mData;
         MyProtocolStream stream(data);
         //或许名字和路径需要加工一下
-        stream << info.path << info.filename;
+        stream << info.id << info.serverPath << info.serverFileName;
     }
     else {
         response.mhasData = false;
@@ -1067,8 +1067,8 @@ bool ProcessStartUpLoadFileProcessor::ProcessStartUpLoadFile(Request &request, F
 
     string& data = request.mData;
     MyProtocolStream stream(data);
-    stream >> info.path >> info.filename >> info.fileType >> info.filesize >> info.fileMode;
-    info.path = "userPhoto/";
+    stream >> info.id >> info.serverPath >> info.serverFileName >> info.fileType >> info.filesize >> info.fileMode;
+    info.serverPath = "userPhoto/";
     bool ret = checkDisk(info);
     bool ret2 = checkUserLimit(info);
     return ret && ret2;
@@ -1093,7 +1093,7 @@ bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadFileSuccess(Request &reques
 {
     string& data = request.mData;
     MyProtocolStream stream(data);
-    stream >> info.filename >> info.md5sum;
+    stream >> info.serverFileName >> info.md5sum;
     bool ret = checkmd5(info);
     return ret;
 }
@@ -1108,7 +1108,7 @@ void ProcessGetFileProcessor::Exec(Connection *conn, Request &request, Response 
         std::string &data = response.mData;
         MyProtocolStream stream(data);
         //传给客户端使用ftp获取时的一些参数，可能包括密码
-        stream << info.path << info.filename;
+        stream << info.id << info.serverPath << info.serverFileName << info.filesize;
     }
     else {
         //some error info add
@@ -1119,7 +1119,7 @@ bool ProcessGetFileProcessor::ProcessGetFile(Request &request, FileInfo &info)
 {
     string& data = request.mData;
     MyProtocolStream stream(data);
-    stream >> info.path >> info.filename >> info.filesize;
+    stream >> info.id >> info.serverPath >> info.serverFileName >> info.filesize;
     /*
         ret = stat(info.filename);
         if (ret == true) {
@@ -1153,7 +1153,7 @@ bool ProcessGetFileSuccessProcessor::ProcessGetFileSuccess(Request &request, Fil
 {
     string& data = request.mData;
     MyProtocolStream stream(data);
-    stream >> info.filename >> info.md5sum;
+    stream >> info.serverFileName >> info.md5sum;
     bool ret = checkmd5(info);
     return ret;
 }
@@ -1162,21 +1162,54 @@ std::queue<FileInfo> getFileInfoList() {
     return {};
 }
 
+
+bool ProcessNofifyFileComingProcessor::sendNotifyFileByNet(Connection* conn, FileInfo info) {
+    std::string data;
+    int clientSocket = conn->clientSocket; 
+    MyProtocolStream stream(data);
+    int send_id = 0, recv_id = 0;
+    stream << send_id << recv_id << info.serverPath << info.serverFileName << info.filesize << info.fileType;
+    Response rsp(1, FunctionCode::NofifyFileComing, 3, 4, 5, 1, send_id, 1, true, data);
+    string str = rsp.serial();
+    bool success = sendResponse(clientSocket, &rsp);
+    if (success > 0) {
+        return true;
+    }
+    return false;
+}
+
 void ProcessNofifyFileComingProcessor::Exec(Connection *conn, Request &request, Response &response)
 {
+    static int flag = 0;
+    if (flag == 1) {
+        response.returnFlag = false;
+        return;
+    }
+    flag = 1;
     //获取即将发送给用户的文件列表
     std::queue<FileInfo> infoList = getFileInfoList();
-    while (infoList.empty()) {
+    FileInfo info;
+    info.serverPath = "userInfo/";
+    info.serverFileName = "a.txt";
+    printf("11111111111111111111111111\n");
+    infoList.push(info);
+    while (!infoList.empty()) {
+        printf("111111111111111111111111112\n");
         FileInfo info = infoList.front();
         infoList.pop();
-        bool ret = NofifyFileComing(request, info);
-        response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+        //bool ret = NofifyFileComing(request, info);
+        Session* session = Server::GetInstance()->mUserSessionMap[49];//huwei
+        if (session != NULL) {
+            Connection* friendConn = session->mConn;
+            sendNotifyFileByNet(friendConn, info);
+        }
         if (response.mCode) {
         }
         else {
-            //some error info add
         }
     }
+    
+    response.returnFlag = false;
 }
 
 bool ProcessNofifyFileComingProcessor::NofifyFileComing(Request &request, FileInfo &info)
@@ -1184,7 +1217,7 @@ bool ProcessNofifyFileComingProcessor::NofifyFileComing(Request &request, FileIn
     string& data = request.mData;
     MyProtocolStream stream(data);
     int send_id = 0, recv_id = 0;
-    stream << send_id << recv_id << info.path << info.filename << info.filesize << info.fileType;
+    stream << send_id << recv_id << info.serverPath << info.serverFileName << info.filesize << info.fileType;
     return true;
 }
 

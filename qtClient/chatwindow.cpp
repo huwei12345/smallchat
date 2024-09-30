@@ -154,11 +154,13 @@ void ChatWindow::UpLoadFileSuccess(Response response)
     }
 }
 
-
+//发送给好友文件
 void ChatWindow::on_toolButton_5_clicked()
 {
-    std::string Remotepath = "/";
-    std::string filename = "./a.txt";
-    bool ret = Processor::SendFile(Remotepath, filename);
+    FileInfo info;
+    info.Generate();
+    info.ClientPath = std::string("/") + "a.txt";
+    FtpSender::GetInstance()->addFile(info);
+    bool ret = Processor::SendFile(info);
 }
 

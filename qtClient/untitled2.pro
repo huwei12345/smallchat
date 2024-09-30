@@ -58,6 +58,7 @@ HEADERS += \
     processqueue.h \
     registerpage.h \
     request.h \
+    soft.h \
     threadtest.h \
     tiplabel.h \
     userbutton.h

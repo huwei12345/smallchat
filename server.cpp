@@ -170,8 +170,9 @@ bool process(int fd, char* buf) {
         // Clean up response if necessary
         return false;
     }
-
-    bool success = sendResponse(fd, response);
+    bool success = true;
+    if (response->returnFlag)
+        success = sendResponse(fd, response);
     delete response; // Clean up response after use
     return success;
 }
@@ -276,7 +277,7 @@ Server::Server(const char *ip, unsigned int port)
     
     requestProcessor[FunctionCode::NofifyFileComing] = new ProcessNofifyFileComingProcessor;
     requestProcessor[FunctionCode::TransFileOver] = new ProcessTransFileOverProcessor;
-
+    requestProcessor[FunctionCode::AgreeRecvFile] = new RequestProcessor;
     for (int i = 30; i < 100; i++) {
         requestProcessor[i] = new RequestProcessor;
     }
@@ -422,7 +423,6 @@ bool Connection::processRead()
 
     response = new Response;
     requestProcessor[request->mFunctionCode]->Exec(this, *request, *response);
-    response->print();
     delete request; // Clean up request after use
     if (!response) {
         // Clean up response if necessary
@@ -434,7 +434,11 @@ bool Connection::processRead()
         delete response;
         return true;
     }
-    bool success = sendResponse(clientSocket, response);
+    bool success = true;
+    if (response->returnFlag) {
+        response->print();
+        success = sendResponse(clientSocket, response);
+    }
     delete response; // Clean up response after use
     return success;
 }

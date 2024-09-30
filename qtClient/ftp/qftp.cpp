@@ -675,6 +675,7 @@ void QFtpDTP::socketReadyRead()
         while (socket->canReadLine()) {
             QUrlInfo i;
             QByteArray line = socket->readLine();
+
 #if defined(QFTPDTP_DEBUG)
             qDebug("QFtpDTP read (list): '%s'", line.constData());
 #endif
@@ -743,8 +744,8 @@ void QFtpDTP::socketConnectionClosed()
     if (!is_ba && data.dev) {
         clearData();
     }
-
     bytesFromSocket = socket->readAll();
+    qDebug() << "mmmmmmmmmmmmmmmmmm4 why readAll when close" << bytesFromSocket;
 #if defined(QFTPDTP_DEBUG)
     qDebug("QFtpDTP::connectState(CsClosed)");
 #endif

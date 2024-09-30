@@ -10,6 +10,7 @@
 #include "qftp.h"
 #include "qurlinfo.h"
 #include <QString>
+#include "Protocol.h"
 struct sFtpData;
 class FtpManager : public QObject
 {
@@ -29,8 +30,8 @@ public:
     static FtpManager *getInstance();
     void connectFtp();
     void disconnectFtp();
-    void uploadFile(const QString &fileName);
-    void downloadFile(const QString &fileName);
+    void uploadFile(FileInfo &info);
+    void downloadFile(FileInfo &info);
     void renameFile(const QString &oldName, const QString &newName);
     void deleteFile(const QString &fileName);
     bool isConnected() const;
@@ -41,7 +42,10 @@ signals:
     void sigUploaded(bool);
     void sigDelete(bool);
     void sigRename(bool);
+
     void FileGetOver(QString);
+    void ftpFileSendOver(QString);
+
 private slots:
     void ftpCommandFinished(int cmdId, bool error);
     void ftpStateChanged(int state);

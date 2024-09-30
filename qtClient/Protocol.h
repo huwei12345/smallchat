@@ -4,7 +4,11 @@
 #include<iostream>
 #include<string>
 #include<vector>
+#ifndef SERVER
+#include <QMutex>
+#endif
 #include"MyProtocolStream.h"
+#include "soft.h"
 using namespace std;
 using namespace net;
 class Session;
@@ -60,8 +64,8 @@ namespace FunctionCode {
         StoreFile                             = 16,
         TransFile                             = 17,
         FindGroup                             = 18,
-		
-		//上送文件，头像、图片、文件等
+
+        //上送文件，头像、图片、文件等
         StartUpLoadFile                       = 19,//Request : 通知服务器要发送文件，告知文件参数 Response: 告知允许上传，及部分参数
         UpLoadFileSuccess                     = 20,//Request: 告知服务器文件已通过FTP传输完毕。 Response:验证文件后，告知是否上传成功
 
@@ -75,8 +79,9 @@ namespace FunctionCode {
 
         //被动接收
         NofifyFileComing                      = 24,//服务器发个客户端告知有文件将传来，Response: 客户端相应服务器，是否接收，若准备接受，切换为接收状态
+        AgreeRecvFile                         = 25,
         //现在改为本地FTP Get后似乎不用第二步了，直接复用22响应就可以了。或者以后可以再加一步，作为ftp的进一步协商
-        TransFileOver                         = 25,//服务器告知客户端文件已传输完毕，Response: 客户端相应服务器接收情况。服务器必须收到接受情况后才完成此次任务，否则将文件传输状态回滚。
+        TransFileOver                         = 26,//服务器告知客户端文件已传输完毕，Response: 客户端相应服务器接收情况。服务器必须收到接受情况后才完成此次任务，否则将文件传输状态回滚。
 
         //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
     };
@@ -110,6 +115,7 @@ namespace FunctionCode {
         "GetFileSecond       ",
         "GetFileThird        ",
         "NofifyFileComing    ",
+        "AgreeRecvFile       ",
         "TransFileOver       "
     };
 };
@@ -178,13 +184,26 @@ public:
 
 class FileInfo {
 public:
-    string path;
-    string filename;
+    FileInfo() : id(0) {}
+    int id;
+    string serverPath;
+    string serverFileName;
+    string ClientPath;
     string fileType;
     int filesize;
     int fileMode;
     long long md5sum;
+#ifndef SERVER
+    static int GenerateId;
+    static QMutex genMutex;
+    void Generate() {
+        QMutexLocker locker(&FileInfo::genMutex);
+        id = ++FileInfo::GenerateId;
+        std::cout << "Gen Id : " << id << std::endl;
+    }
+#endif
 };
+
 
 class FriendRequest {
 public:
@@ -257,7 +276,7 @@ struct friendEqual {
 //    return std::hash<int>()(request.user_id);
 //}
 
-//// 普通函数作为相等函数
+// 普通函数作为相等函数
 //bool friendEqual(const FriendRequest& lhs, const FriendRequest& rhs) {
 //    // 实现自定义的相等比较逻辑，例如比较对象的所有成员变量
 //    return lhs.user_id == rhs.user_id;
@@ -338,17 +357,17 @@ public:
     int mSecret;
     bool mhasData;
     std::string mData;
-
+    bool returnFlag;
     // 无参构造函数
     Response()
         : mType(0), mFunctionCode(0), mFlag(0), mDirection(0),
-          mTimeStamp(0), mCode(0), mUserId(0), mSecret(0), mhasData(false), mData("") {}
+          mTimeStamp(0), mCode(0), mUserId(0), mSecret(0), mhasData(false), mData(""), returnFlag(true) {}
 
     // 有参构造函数
     Response(int type, int funcCode, int flag, int dir, int timeStamp,
              int code, int userId, int secret, bool hasData, const std::string& data)
         : mType(type), mFunctionCode(funcCode), mFlag(flag), mDirection(dir),
-          mTimeStamp(timeStamp), mCode(code), mUserId(userId), mSecret(secret), mhasData(hasData), mData(data) {}
+          mTimeStamp(timeStamp), mCode(code), mUserId(userId), mSecret(secret), mhasData(hasData), mData(data), returnFlag(true) {}
 
     // 成员函数，用于打印 Response 对象的内容到一行
     void print() const {

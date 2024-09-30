@@ -19,9 +19,11 @@ public:
 
     void SendFile(FileInfo &info);
     void GetFile(FileInfo &info);
+
+    void addFile(FileInfo& info);
+    void removeFile(FileInfo& info);
+    FileInfo file(int id);
 signals:
-    void ftpFileSendOver(QString name);
-    void ftpFileGetOver(QString name);
 
 private:
     FtpSender();
@@ -29,7 +31,7 @@ private:
     std::queue<FileInfo> mFtpSendList;
     std::queue<FileInfo> mFtpGetList;
     FtpManager* ftpUtil;
-
+    std::map<int, FileInfo> mCurrentFileMap;
 protected:
     // 在这里定义线程运行时需要执行的任务
     void run() override {

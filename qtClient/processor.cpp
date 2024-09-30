@@ -297,7 +297,7 @@ bool Processor::FindGroup(int groupId)
 }
 
 
-bool Processor::SendFile(string path, string filename)
+bool Processor::SendFile(FileInfo info)
 {
     int filesize = 100;
     int fileMode = 777;
@@ -305,7 +305,7 @@ bool Processor::SendFile(string path, string filename)
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     std::string data;
     MyProtocolStream stream(data);
-    stream << path << filename << fileType << filesize << fileMode;
+    stream << info.id <<  info.serverPath << info.serverFileName << info.fileType << info.filesize << info.fileMode;
     Request req(1, FunctionCode::StartUpLoadFile, 3, 4, 5, data, user_id);
 
     string str = req.serial();
@@ -357,13 +357,13 @@ bool Processor::GetMessageSuccess(string filename)
     return false;
 }
 
-bool Processor::GetFile(string path, string filename)
+bool Processor::GetFile(FileInfo info)
 {
     int filesizeLimit = 10000;
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     std::string data;
     MyProtocolStream stream(data);
-    stream << path << filename << filesizeLimit;
+    stream << info.id << info.serverPath << info.serverFileName << filesizeLimit;
     Request req(1, FunctionCode::GetFile, 3, 4, 5, data, user_id);
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());
@@ -381,21 +381,20 @@ bool Processor::AgreeRecvFile(bool agree, FileInfo info)
     std::string data;
     MyProtocolStream stream(data);
     //或许需要一个Id,便于服务器标识
-    stream << agree << info.path << info.filename;
-    Request req(1, FunctionCode::NofifyFileComing, 3, 4, 5, data, user_id);
+    stream << agree << info.id << info.serverPath << info.serverFileName;
+    Request req(1, FunctionCode::AgreeRecvFile, 3, 4, 5, data, user_id);
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());
     int r = clientSocket->SendPacket(array);
     if (r > 0) {
         req.print();
+        if (agree) {
+            qDebug() << "LPL";
+            FtpSender::GetInstance()->GetFile(info);
+        }
         return true;
     }
-    if (agree) {
-        qDebug() << "LPL";
-        FtpSender::GetInstance()->GetFile(info);
-    }
     else {
-
     }
     return false;
 }

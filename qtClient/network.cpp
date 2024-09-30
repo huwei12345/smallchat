@@ -19,16 +19,19 @@ ClientNetWork::ClientNetWork()
 void ClientNetWork::ftpFileSendOver(QString filename)
 {
     Q_UNUSED(filename);
+    //告知服务器发送文件顺利完成，服务器对可能的数据库项，或者文件项执行一些操作
 }
 
 void ClientNetWork::ftpFileGetOver(QString filename)
 {
     Q_UNUSED(filename);
+    //告知服务器接收文件顺利完成，服务器对可能的数据库项，或者文件项执行一些操作
     qDebug() << "filename :                                " << filename;
     if (filename.indexOf("userPhoto/tx") != -1) {
         emit ChangeOwnerPic();
     }
 }
+
 
 ClientNetWork* ClientNetWork::clientNetwork = NULL;
 

@@ -32,6 +32,7 @@ void on_toolButton_5_clicked();
 
 signals:
     void confirmMessage(int sender, int reciver, int start, int end);
+    void friendPageUpdate(int);
 public slots:
     void userMessageRead();
     void ftpSendFileSuccess(std::string name);

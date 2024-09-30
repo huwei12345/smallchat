@@ -41,7 +41,7 @@ class AddFriendProcessor  : public RequestProcessor  {
 class SendMessageProcessor : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
     bool SendMessage(const Request &request, MessageInfo &info);
-    bool sendMessageByNet(Connection *conn, MessageInfo message);
+        bool sendMessageByNet(Connection *conn, MessageInfo message);
 };
 
 class GetAllMessageProcessor : public RequestProcessor  {
@@ -130,6 +130,7 @@ class ProcessGetFileSuccessProcessor : public RequestProcessor {
 class ProcessNofifyFileComingProcessor : public RequestProcessor {
     void Exec(Connection* conn, Request& request, Response&);
     bool NofifyFileComing(Request &request, FileInfo& info);
+    bool sendNotifyFileByNet(Connection *conn, FileInfo info);
 };
 
 //暂未用到，目前提示文件收发结束都由客户端处理

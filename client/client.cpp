@@ -230,6 +230,32 @@ bool SendMessage(int clientSocket, UserInfo& info, MessageInfo& message) {
     return false;
 }
 
+bool NotifyFile(int clientSocket, UserInfo& info, FileInfo& fileInfo) {
+    int send_id = 0, recv_id = 0;
+    string data;
+    MyProtocolStream stream(data);
+    fileInfo.serverPath = "/userInfo/";
+    fileInfo.serverFileName = "a.txt";
+    fileInfo.filesize = 10;
+    send_id = 13;
+    recv_id = 1;
+	stream >> send_id >> recv_id >> fileInfo.serverPath >> fileInfo.serverFileName >> fileInfo.filesize >> fileInfo.fileType;
+    Request req(1, FunctionCode::NofifyFileComing, 3, 4, 5, data, info.user_id);
+    int r = Trans::send(clientSocket, req);
+	if (r > 0) {
+		printf("send success\n");
+	}
+	Response rsp;
+	int x = Trans::receive(clientSocket, rsp);
+	rsp.print();
+    if (rsp.mCode == 1) {
+        printf("send Message Success\n");
+        return true;
+    }
+    printf("send Message Failure\n");
+    return false;
+}
+
 void ReciveMessageAll() {
 
 }
@@ -307,7 +333,7 @@ std::string Client::sendAndRecv(const char *str, int code)
                 AddFriend(clientSocket, info, id);
                 break;
             }
-            case FunctionCode::SendMessage:
+            case FunctionCode::SendMessage: {
                 printf("please input user_id and Message\n");
                 int user_id = 0;
                 char Message[2000];
@@ -318,6 +344,12 @@ std::string Client::sendAndRecv(const char *str, int code)
                 printf("message %d %d\n", message.sender_id, message.receiver_id);
                 SendMessage(clientSocket, info, message);
                 break;
+            }
+            case FunctionCode::NofifyFileComing: {
+                FileInfo infox;
+                NotifyFile(clientSocket, info, infox);
+                break;
+            }
         }
     }
 	return "";

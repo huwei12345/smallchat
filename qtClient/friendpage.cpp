@@ -13,6 +13,7 @@
 #include <QMessageBox>
 #include <QMessageBox>
 #include <QDir>
+#include <QFileDialog>
 #include "findfriendpage.h"
 #include "creategrouppage.h"
 #include "chatwindow.h"
@@ -85,9 +86,13 @@ int FriendPage::init() {
 
 
 bool FriendPage::initMyPhoto() {
-    std::string path("userPhoto/");
-    std::string photo = "tx" + mInfo.username + ".jpg";
-    bool ret = Processor::GetFile(path, photo);
+    FileInfo info;
+    info.Generate();
+    info.serverPath = "userPhoto/";
+    info.serverFileName = "tx" + mInfo.username + ".jpg";
+    info.ClientPath = QCoreApplication::applicationDirPath().toStdString() + "/userPhoto/" + info.serverFileName;
+    FtpSender::GetInstance()->addFile(info);
+    bool ret = Processor::GetFile(info);
     if (!ret) {
         QMessageBox::information(this,"提示","网络不可达！");
     }
@@ -466,21 +471,27 @@ void FriendPage::on_toolButton_2_clicked()
     //    }
 }
 
+
+//服务器告知客户端有文件传输而来，客户端大概准备接收文件
 void FriendPage::NofifyFileComing(Response response)
 {
-    //在线消息到达
     std::string &mData = response.mData;
     MyProtocolStream stream(mData);
     FileInfo info;
+    info.Generate();
     int send_id = 0, recv_id = 0;
-    stream >> send_id >> recv_id >> info.path >> info.filename >> info.filesize >> info.fileType;
+    stream >> send_id >> recv_id >> info.serverPath >> info.serverFileName >> info.filesize >> info.fileType;
     //判断是否接收
+    info.ClientPath = std::string("D:/userInfo/") + info.serverFileName;
+    info.filesize = 10;
     if (info.filesize < 1000 * 1000 * 10) {
+        FtpSender::GetInstance()->addFile(info);
         Processor::AgreeRecvFile(true, info);
     }
     else {
-        int ret = QMessageBox::information(this, "提示", "", QMessageBox::Yes | QMessageBox::No);
+        int ret = QMessageBox::information(this, "提示", "是否接收", QMessageBox::Yes | QMessageBox::No);
         if (ret) {
+            FtpSender::GetInstance()->addFile(info);
             Processor::AgreeRecvFile(true, info);
         }
         else {
@@ -492,18 +503,12 @@ void FriendPage::NofifyFileComing(Response response)
 void FriendPage::ChangeOwnerPic()
 {
     QString filePath = QCoreApplication::applicationDirPath() + "/userPhoto/tx" + QString::fromStdString(mInfo.username) + ".jpg";
-    qDebug() << "当前工作目录:" << filePath;
-    qDebug() << "11111111111111111111111--------------";
+    qDebug() << "修改个人头像，当前工作目录:" << filePath;
     if (QFile::exists(filePath)) {
         // 如果文件存在，加载图像并设置为头像
-            qDebug() << "22222222222222222222222--------------";
         QIcon icon(filePath);
-        // 或者
-        // QIcon icon("path/to/your/image.png"); // 使用本地文件路径
         ui->toolButton_5->setIcon(icon);
-
-        ui->toolButton_5->setIconSize(QSize(50, 50)); // 设置图片大小
-        // 这里可以将 avatarLabel 添加到你的窗口或布局中
+        ui->toolButton_5->setIconSize(QSize(50, 50));
     } else {
         // 文件不存在，给用户提示
         QMessageBox::warning(nullptr, "警告", "头像文件不存在。");
@@ -515,11 +520,12 @@ void FriendPage::GetFileFirstSuccess(Response response)
     std::string mdata = response.mData;
     MyProtocolStream stream2(mdata);
     int ret = response.mCode;
-    FileInfo info;
-    std::string filePath;
-    std::string fileName;
-    stream2 >> info.path >> info.filename >> info.filesize;
     if (ret) {
+        int id = -1; stream2 >> id;
+        FileInfo info = FtpSender::GetInstance()->file(id);//这样缓存了clientPath和clientFileName
+        stream2 >> info.serverPath >> info.serverFileName >> info.filesize;
+        std::cout << "        t   " << info.id << info. serverPath << info.serverFileName << info.filesize << std::endl;
+        info.filesize = 10;
         if (info.filesize < 10 * 1024 * 1024) {
             qDebug() << "Will Ftp Get .............................";
             FtpSender::GetInstance()->GetFile(info);//ftp获取队列异步获取
@@ -555,9 +561,32 @@ void FriendPage::ftpGetFileSuccess(string filename)
 void FriendPage::on_toolButton_5_clicked()
 {
     //上传头像
-    std::string path("userPhoto/");
-    std::string photo = "tx" + mInfo.username + ".jpg";
-    bool ret = Processor::SendFile("D:/", "txhuwei.jpg");
+    // 弹出文件选择对话框
+
+    /*
+        tr("Open Image"),
+            "",
+            tr("Images (*.png *.jpg *.jpeg *.bmp *.gif);;All Files (*)"));
+    */
+    QString fileName = QFileDialog::getOpenFileName(this,
+        tr("Open File"),
+        "",
+        tr("All Files (*);;Text Files (*.txt)"));
+    //D:/easybcd.zip
+    if (!fileName.isEmpty()) {
+        qDebug() << "Selected file:" << fileName;
+    } else {
+        qDebug() << "No file selected.";
+        return;
+    }
+
+    FileInfo info;
+    info.Generate();
+    info.ClientPath = fileName.toStdString();
+    info.serverPath = "userPhoto/";
+    info.serverFileName = "tx" + mInfo.username + ".jpg";
+    FtpSender::GetInstance()->addFile(info);
+    bool ret = Processor::SendFile(info);
     if (!ret) {
         QMessageBox::information(this,"提示","网络不可达！");
     }
@@ -569,9 +598,10 @@ void FriendPage::StartUpLoadFileSuccess(Response response)
     MyProtocolStream stream2(mdata);
     //Response: 告知允许上传，及部分参数
     int ret = response.mCode;
-    FileInfo info;
     if (ret) {
-        stream2 >> info.path >> info.filename;
+        int id = -1; stream2 >> id;
+        FileInfo info = FtpSender::GetInstance()->file(id);
+        stream2 >> info.serverPath >> info.serverFileName;
         FtpSender::GetInstance()->SendFile(info);//ftp发送队列异步发送
     }
     else {

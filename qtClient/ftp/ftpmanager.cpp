@@ -7,31 +7,23 @@
 #include <QTimer>
 #include <QTime>
 #include "globalvaria.h"
-
-
 struct sFtpData
 {
+    int id = 0;
     QFile *downloadFile = nullptr;
     QFile *uploadFile = nullptr;
     QFtp *ftp = nullptr;
     QTimer *timer = nullptr;
     QFtp::State mState;
+    //FileInfo* info;
 };
+
 
 FtpManager *FtpManager::mFtpManager = nullptr;
 
 FtpManager::FtpManager(QObject *parent) : QObject(parent)
 {
     d = new sFtpData;
-//    d->timer = new QTimer(this);
-//    connect(d->timer,&QTimer::timeout,this,[=]()
-//    {
-//        if(!d->ftp)
-//            return;
-//        if(isConnected())
-//            downloadFile("timer.txt");	// 间隔20s下载一次文件，保持长连接
-//    });
-//    d->timer->start(20000);
 }
 
 FtpManager::FtpManager(QString serverIp, unsigned short port, QString user, QString password, QObject *parent) :
@@ -62,20 +54,22 @@ FtpManager *FtpManager::getInstance()
     return mFtpManager;
 }
 
-void FtpManager::uploadFile(const QString &fileName)
+//TODO:使用id串联整个文件传输流程
+
+void FtpManager::uploadFile(FileInfo& info)
 {
-    if(fileName.isEmpty())
-        return;
-    if(!isConnected())
-    {
+    if(!isConnected()) {
         emit sigUploaded(false);
         return;
     }
-    QString localPath = QCoreApplication::applicationDirPath() + fileName;
-    d->uploadFile = new QFile(localPath );
-    if(d->uploadFile->open(QIODevice::ReadOnly | QIODevice::Text))
+    QString localPath = QString::fromStdString(info.ClientPath);
+    qDebug() << "localPath: " << localPath;
+    d->uploadFile = new QFile(localPath);
+
+    if(d->uploadFile->open(QIODevice::ReadOnly))
     {
-        d->ftp->put(d->uploadFile,fileName);
+        //TODO:是否需要切换目录，还是直接带目录发送就可以
+        d->ftp->put(d->uploadFile,QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName));
     }
 }
 
@@ -140,10 +134,8 @@ void FtpManager::ftpCommandFinished(int cmdId, bool error)
     }break;
     case QFtp::Get:
     {
-        qDebug() << "hello world1111111111111111111";
         if(d->downloadFile && d->downloadFile->isOpen())
         {
-            qDebug() << "hello world222222222222";
             emit FileGetOver(d->downloadFile->fileName());
             d->downloadFile->close();
             delete d->downloadFile;
@@ -158,6 +150,7 @@ void FtpManager::ftpCommandFinished(int cmdId, bool error)
             emit sigUploaded(true);
         if(d->uploadFile && d->uploadFile->isOpen())
         {
+            emit ftpFileSendOver(d->downloadFile->fileName());
             d->uploadFile->close();
             delete d->uploadFile;
         }
@@ -236,6 +229,7 @@ void FtpManager::disconnectFtp()
 {
     if(d->ftp)
     {
+        qDebug() << "Ftp Connected Close!";
         d->ftp->state();
         d->ftp->abort();
         d->ftp->deleteLater();
@@ -244,17 +238,17 @@ void FtpManager::disconnectFtp()
     }
 }
 
-void FtpManager::downloadFile(const QString &fileName)
+
+void FtpManager::downloadFile(FileInfo& info)
 {
-    QString localPath = QCoreApplication::applicationDirPath() + "/" + fileName;
+
+    QString localPath = QString::fromStdString(info.ClientPath);
     qDebug() << "localPath " << localPath;
-    d->downloadFile = new QFile(localPath );
+    d->downloadFile = new QFile(localPath);
     bool ret = d->downloadFile->open(QIODevice::WriteOnly);
-    qDebug() << "tttttttttttttttttttttttttttttttt  " << ret;
-    //TODO:为什么文件会损坏呢，md5验证一下
     if(ret)
     {
-        d->ftp->get(fileName,d->downloadFile);
+        d->ftp->get(QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName), d->downloadFile);
     }
 }
 
