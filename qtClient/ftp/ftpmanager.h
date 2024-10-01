@@ -11,7 +11,18 @@
 #include "qurlinfo.h"
 #include <QString>
 #include "Protocol.h"
-struct sFtpData;
+#include <QFile>
+#include <QTimer>
+
+struct sFtpData
+{
+    int id = 0;
+    QFile *downloadFile = nullptr;
+    FileInfo mInfo;
+    QFile *uploadFile = nullptr;
+    //FileInfo* info;
+};
+
 class FtpManager : public QObject
 {
     Q_OBJECT
@@ -23,15 +34,17 @@ public:
 private:
 
 private:
-    sFtpData *d;
+    //sFtpData *d;
     static FtpManager *mFtpManager;
 
 public:
     static FtpManager *getInstance();
     void connectFtp();
     void disconnectFtp();
+
     void uploadFile(FileInfo &info);
     void downloadFile(FileInfo &info);
+
     void renameFile(const QString &oldName, const QString &newName);
     void deleteFile(const QString &fileName);
     bool isConnected() const;
@@ -43,8 +56,8 @@ signals:
     void sigDelete(bool);
     void sigRename(bool);
 
-    void FileGetOver(QString);
-    void ftpFileSendOver(QString);
+    void FileGetOver(FileInfo info);
+    void ftpFileSendOver(FileInfo info);
 
 private slots:
     void ftpCommandFinished(int cmdId, bool error);
@@ -57,6 +70,12 @@ private:
     unsigned short Ftp_Port;
     QString Ftp_Username;
     QString Ftp_Password;
+    QFtp *mFtp = nullptr;
+    QTimer *mTimer = nullptr;
+
+    std::map<int, sFtpData> mTaskMap;
+
+    QFtp::State mFtpState;
 };
 
 #endif // FTPMANAGER_H

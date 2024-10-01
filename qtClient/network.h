@@ -27,6 +27,7 @@ signals:
     void findAllFriendSuccess(Response response);
     void AddFriendSuccess(int mCode);
     void getAllMessageSuccess(Response response);
+    void getAllOfflineFileSuccess(Response response);
     void getAllFriendRequestSuccess(Response response);
     void UpDateUserStateSuccess(Response response);
 void ReciveMessageSuccess(Response response);
@@ -48,8 +49,8 @@ private:
     static ClientNetWork* clientNetwork;
     QString mServerIp;
 public slots:
-    void ftpFileSendOver(QString filename);
-    void ftpFileGetOver(QString filename);
+    void ftpFileSendOver(FileInfo filename);
+    void ftpFileGetOver(FileInfo filename);
 };
 
 #endif // NETWORK_H

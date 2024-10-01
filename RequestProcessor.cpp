@@ -1067,10 +1067,17 @@ bool ProcessStartUpLoadFileProcessor::ProcessStartUpLoadFile(Request &request, F
 
     string& data = request.mData;
     MyProtocolStream stream(data);
-    stream >> info.id >> info.serverPath >> info.serverFileName >> info.fileType >> info.filesize >> info.fileMode;
-    info.serverPath = "userPhoto/";
+    stream >> info.id >> info.serviceType >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.fileType >> info.filesize >> info.fileMode >> info.md5sum;
+    if (info.serviceType == FileServerType::TOUXIANG) {
+        info.serverPath = "userPhoto/";
+    }
+    else {
+        info.serverPath = to_string(info.send_id) + "/";
+    }
+    //可能需要创建目录，和检查
     bool ret = checkDisk(info);
     bool ret2 = checkUserLimit(info);
+
     return ret && ret2;
 }
 void ProcessUpLoadFileSuccessProcessor::Exec(Connection* conn, Request &request, Response &response)
@@ -1093,10 +1100,52 @@ bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadFileSuccess(Request &reques
 {
     string& data = request.mData;
     MyProtocolStream stream(data);
-    stream >> info.serverFileName >> info.md5sum;
+    stream >> info.id >> info.serviceType >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.fileType >> info.filesize >> info.fileMode >> info.md5sum;
     bool ret = checkmd5(info);
+
+    if (info.recv_id != 0) {
+        ProcessUpLoadSQL(request, info);        
+    }
+
     return ret;
 }
+
+bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadSQL(Request &request, FileInfo &info)
+{
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == nullptr) {
+        std::cerr << "Failed to get database connection." << std::endl;
+        return false;
+    }
+    std::cout << info.send_id << "   " << info.recv_id << "  " << info.serverPath << " + " << info.serverFileName << info.fileType << "  " << info.filesize;
+    // Prepare SQL statement to insert into offline_transfer table
+    info.fileType = "zip";
+    info.filesize = 10;
+    sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
+        INSERT INTO offline_transfers (sender_id, receiver_id, file_name, file_type, file_size)
+        VALUES (?, ?, ?, ?, ?)
+    )");
+    pstmt->setInt(1, info.send_id);
+    pstmt->setInt(2, info.recv_id);
+    pstmt->setString(3, info.serverPath + info.serverFileName);
+    pstmt->setString(4, info.fileType);
+    pstmt->setInt(5, info.filesize);
+    try {
+        pstmt->execute();
+        pstmt->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return true;
+    } catch (sql::SQLException& e) {
+        std::cerr << "SQL error: " << e.what() << std::endl;
+        std::cerr << "Error code: " << e.getErrorCode() << std::endl;
+        std::cerr << "SQLState: " << e.getSQLState() << std::endl;
+        pstmt->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    return false;
+}
+
 
 void ProcessGetFileProcessor::Exec(Connection *conn, Request &request, Response &response)
 {
@@ -1178,38 +1227,43 @@ bool ProcessNofifyFileComingProcessor::sendNotifyFileByNet(Connection* conn, Fil
     return false;
 }
 
+//但这里应该首先保证该文件已经传输完成，在传输完成的响应后，添加入库，然后发送通知，而不是直接发送，
+//所以Notify其实就等于本地客户先UpLoadFile，根据标志位再notify其他用户get
+//其实是发送文件，某人发送给另一个人
+//如果send_id = -1 ，说明是系统发送的
+//如果send_id = 0， 说明是群组发送的
+//如果send_id > 0, 说明是人发送的
+//先入库，然后如果在线，直接发送通知，等客户端收到数据，然后再改库
 void ProcessNofifyFileComingProcessor::Exec(Connection *conn, Request &request, Response &response)
 {
-    static int flag = 0;
-    if (flag == 1) {
-        response.returnFlag = false;
-        return;
-    }
-    flag = 1;
-    //获取即将发送给用户的文件列表
-    std::queue<FileInfo> infoList = getFileInfoList();
-    FileInfo info;
+    FileInfo info;//返回值
+    bool ret = false;
     info.serverPath = "userInfo/";
     info.serverFileName = "a.txt";
-    printf("11111111111111111111111111\n");
-    infoList.push(info);
-    while (!infoList.empty()) {
-        printf("111111111111111111111111112\n");
-        FileInfo info = infoList.front();
-        infoList.pop();
-        //bool ret = NofifyFileComing(request, info);
-        Session* session = Server::GetInstance()->mUserSessionMap[49];//huwei
-        if (session != NULL) {
-            Connection* friendConn = session->mConn;
-            sendNotifyFileByNet(friendConn, info);
-        }
-        if (response.mCode) {
-        }
-        else {
+    
+    //ret = SendFileBySQL(request, info);
+    
+    //在线时，直接通过网络发送文件给客户端，（接收消息和朋友请求的逻辑）
+    if (Server::GetInstance()->mUserSessionMap.count(info.recv_id)) {
+        //从userId索引到Connection再得到clientSocket
+        //思路1：在线，直接发送，入库read=0, 等消息确认相应，再修改read=1
+        //思路2：直接入库read=0，不发送，等客户端进行心跳连接时，相应新消息和朋友请求
+        //思路3：当在库中新增一项时，触发某任务，向客户发送消息，异步发送
+        Session* session = Server::GetInstance()->mUserSessionMap[info.recv_id];
+        Connection* friendConn = session->mConn;
+        if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
+            bool ret = sendNotifyFileByNet(friendConn, info);
         }
     }
-    
-    response.returnFlag = false;
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        //TODO:发出去的消息，相应需要带ID吗？
+        //向当前用户返回true
+    }
+    else {
+        //some error info add
+    }
+    //响应返回给本用户表示发送成功，通知给其他用户。如何区分？flag
 }
 
 bool ProcessNofifyFileComingProcessor::NofifyFileComing(Request &request, FileInfo &info)
@@ -1226,6 +1280,84 @@ void ProcessTransFileOverProcessor::Exec(Connection *conn, Request &request, Res
 }
 
 bool ProcessTransFileOverProcessor::TransFileOver(Request &request, FileInfo &info)
+{
+    return false;
+}
+
+void ProcessGetAllOfflineFileProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    std::vector<FileInfo> infoList;
+    bool ret = GetAllOfflineFile(request, infoList);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        response.mhasData = true;
+        std::string &data = response.mData;
+        MyProtocolStream stream(data);
+        stream << (int)infoList.size();
+        for (int i = 0; i < infoList.size(); i++) {
+            stream << infoList[i].send_id;
+            stream << infoList[i].recv_id;
+            stream << infoList[i].serviceType;
+            stream << infoList[i].serverPath;
+            stream << infoList[i].serverFileName;
+            stream << infoList[i].timestamp;
+        }
+    }
+    else {
+        response.mhasData = false;
+        //some error info add
+    }
+}
+
+bool ProcessGetAllOfflineFileProcessor::GetAllOfflineFile(Request &request, vector<FileInfo> &infoList)
+{
+    std::string mData = request.mData;
+    MyProtocolStream stream(mData);
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == NULL) {
+        return false;
+    }
+
+	sql::PreparedStatement* state2 = conn->prepareStatement(R"(select transfer_id, sender_id, receiver_id, file_name, file_type, file_size, upload_time from offline_transfers
+        where downloaded = ? and receiver_id = ?;)");
+    state2->setInt(1, 0);
+    state2->setInt(2, request.mUserId);
+    sql::ResultSet *st = state2->executeQuery();
+    int id = -1;
+    try {
+        while (st->next()) {
+            FileInfo info;
+            info.id = st->getInt("transfer_id");
+            info.send_id = st->getInt("sender_id");
+            info.recv_id = request.mUserId;
+            info.serviceType = FileServerType::ARRIVEFROMPOG;
+            //name和path需要分开吗
+            info.serverFileName = st->getString("file_name");
+            info.fileType = st->getString("file_type");
+            info.filesize = st->getInt("file_size");
+            info.timestamp = st->getString("file_type");
+            infoList.push_back(info);
+        }
+    }
+    catch(sql::SQLException& e) {
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    st->close();
+    state2->close();
+    MysqlPool::GetInstance()->releaseConncetion(conn);
+    return true;
+}
+
+void ProcessGetOfflineFileProcessor::Exec(Connection *conn, Request &request, Response &)
+{
+    
+}
+
+bool ProcessGetOfflineFileProcessor::GetOfflineFile(Request &request, FileInfo &info)
 {
     return false;
 }

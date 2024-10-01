@@ -113,6 +113,7 @@ class ProcessStartUpLoadFileProcessor : public RequestProcessor {
 class ProcessUpLoadFileSuccessProcessor : public RequestProcessor {
     void Exec(Connection* conn, Request& request, Response&);
     bool ProcessUpLoadFileSuccess(Request &request, FileInfo& info);
+    bool ProcessUpLoadSQL(Request &request, FileInfo& info);
 };
 
 //主动获取，告知服务器要获取的文件， Response:验证文件是否存在和大小等参数
@@ -137,6 +138,17 @@ class ProcessNofifyFileComingProcessor : public RequestProcessor {
 class ProcessTransFileOverProcessor : public RequestProcessor {
     void Exec(Connection* conn, Request& request, Response&);
     bool TransFileOver(Request &request, FileInfo& info);
+};
+
+
+class ProcessGetAllOfflineFileProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response&);
+    bool GetAllOfflineFile(Request &request, vector<FileInfo> &infoList);
+};
+
+class ProcessGetOfflineFileProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response&);
+    bool GetOfflineFile(Request &request, FileInfo& info);
 };
 
 #endif

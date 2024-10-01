@@ -32,13 +32,16 @@ public:
     bool initMessageList();
     bool initFriendRequest();
     bool initMyPhoto();
+    bool initAllOfflineFile();
 
     bool initPage();
     void friendPageUpdate(int uid);
     UserInfo mInfo;
-    void ftpGetFileSuccess(string filename);
     void GetFileSuccess(Response response);
+    void SendFileSuccess(Response response);
+
     void StartUpLoadFileSuccess(Response response);
+
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -59,13 +62,12 @@ private slots:
     void chatWithFriend(QListWidgetItem* item);
     void findAllFriendSuccess(Response response);
     void getAllMessageSuccess(Response);
+    void getAllOfflineFileSuccess(Response);
     void getAllFriendRequestSuccess(Response);
     void UpDateUserStateSuccess(Response response);
-    void ReciveMessageSuccess(Response response);
     void MessageArriveClient(Response response);
     void on_comboBox_currentIndexChanged(int index);
     void friendMessageArrive(FriendRequest info);
-    void storeFileSuccess(Response response);
     void on_toolButton_2_clicked();
     void NofifyFileComing(Response response);
     void ChangeOwnerPic();

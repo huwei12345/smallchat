@@ -4,11 +4,12 @@
 #include<iostream>
 #include<string>
 #include<vector>
+#include"MyProtocolStream.h"
+#include "soft.h"
+
 #ifndef SERVER
 #include <QMutex>
 #endif
-#include"MyProtocolStream.h"
-#include "soft.h"
 using namespace std;
 using namespace net;
 class Session;
@@ -57,7 +58,6 @@ namespace FunctionCode {
         ProcessFriendRequest                  = 10,
         ProcessMessageRead                    = 11,
         ReciveMessage                         = 12,
-
         CreateGroup                           = 13,
         JoinGroup                             = 14,
         ResponseJoinGroup                     = 15,
@@ -83,6 +83,8 @@ namespace FunctionCode {
         //现在改为本地FTP Get后似乎不用第二步了，直接复用22响应就可以了。或者以后可以再加一步，作为ftp的进一步协商
         TransFileOver                         = 26,//服务器告知客户端文件已传输完毕，Response: 客户端相应服务器接收情况。服务器必须收到接受情况后才完成此次任务，否则将文件传输状态回滚。
 
+        GetAllOfflineFile                         = 27,
+        GetOfflineFile                            = 28,
         //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
     };
 
@@ -182,17 +184,30 @@ public:
     }
 };
 
+enum FileServerType {
+    TOUXIANG,
+    SENDTOPERSON,
+    SENDTOGROUP,
+    STOREFILE,
+    STORETIMEFILE,
+    ARRIVEFROMPOG//从他人或者群来的文件
+};
+
 class FileInfo {
 public:
     FileInfo() : id(0) {}
     int id;
+    int send_id;
+    int recv_id;
     string serverPath;
     string serverFileName;
     string ClientPath;
     string fileType;
+    int serviceType;
     int filesize;
     int fileMode;
     long long md5sum;
+    std::string timestamp;
 #ifndef SERVER
     static int GenerateId;
     static QMutex genMutex;

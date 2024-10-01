@@ -149,6 +149,7 @@ DIST          =  MyProtocolStream.h \
 		processqueue.h \
 		registerpage.h \
 		request.h \
+		soft.h \
 		threadtest.h \
 		tiplabel.h \
 		userbutton.h MyProtocolStream.cpp \
@@ -193,7 +194,7 @@ qmake: FORCE
 qmake_all: FORCE
 
 dist:
-	$(ZIP) untitled2.zip $(SOURCES) $(DIST) untitled2.pro ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\spec_pre.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\qdevice.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\device_config.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\common\sanitize.conf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\common\gcc-base.conf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\common\g++-base.conf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\common\angle.conf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\win32\windows_vulkan_sdk.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\common\windows-vulkan.conf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\common\g++-win32.conf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\common\windows-desktop.conf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\qconfig.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3danimation.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3danimation_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dcore.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dcore_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dextras.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dextras_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dinput.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dinput_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dlogic.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dlogic_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquick.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquick_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickanimation.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickanimation_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickextras.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickextras_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickinput.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickinput_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickrender.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickrender_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickscene2d.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickscene2d_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3drender.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3drender_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_accessibility_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_axbase.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_axbase_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_axcontainer.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_axcontainer_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_axserver.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_axserver_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_bluetooth.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_bluetooth_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_bodymovin_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_bootstrap_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_charts.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_charts_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_concurrent.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_concurrent_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_core.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_core_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_datavisualization.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_datavisualization_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_dbus.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_dbus_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_designer.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_designer_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_designercomponents_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_devicediscovery_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_edid_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_egl_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_eventdispatcher_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_fb_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_fontdatabase_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_gamepad.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_gamepad_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_gui.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_gui_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_help.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_help_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_location.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_location_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_multimedia.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_multimedia_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_multimediawidgets.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_multimediawidgets_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_network.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_network_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_networkauth.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_networkauth_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_nfc.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_nfc_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_opengl.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_opengl_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_openglextensions.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_openglextensions_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_packetprotocol_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_platformcompositor_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_positioning.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_positioning_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_positioningquick.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_positioningquick_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_printsupport.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_printsupport_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_purchasing.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_purchasing_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qml.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qml_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qmldebug_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qmldevtools_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qmlmodels.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qmlmodels_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qmltest.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qmltest_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qmlworkerscript.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qmlworkerscript_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qtmultimediaquicktools_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3d.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3d_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3dassetimport.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3dassetimport_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3drender.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3drender_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3druntimerender.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3druntimerender_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3dutils.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3dutils_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quickcontrols2.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quickcontrols2_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quickparticles_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quickshapes_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quicktemplates2.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quicktemplates2_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quickwidgets.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quickwidgets_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_remoteobjects.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_remoteobjects_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_repparser.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_repparser_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_script.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_script_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_scripttools.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_scripttools_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_scxml.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_scxml_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_sensors.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_sensors_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_serialbus.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_serialbus_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_serialport.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_serialport_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_sql.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_sql_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_svg.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_svg_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_testlib.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_testlib_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_texttospeech.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_texttospeech_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_theme_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_uiplugin.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_uitools.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_uitools_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_virtualkeyboard.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_virtualkeyboard_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_vulkan_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_webchannel.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_webchannel_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_websockets.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_websockets_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_widgets.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_widgets_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_windowsuiautomation_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_winextras.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_winextras_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_xml.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_xml_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_xmlpatterns.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_xmlpatterns_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_zlib_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\qt_functions.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\qt_config.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\win32-g++\qmake.conf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\spec_post.prf .qmake.stash ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\exclusive_builds.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\toolchain.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\default_pre.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\win32\default_pre.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\resolve_config.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\exclusive_builds_post.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\default_post.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\build_pass.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\qml_debug.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\precompile_header.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\warn_on.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\qt.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\resources_functions.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\resources.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\moc.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\win32\opengl.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\uic.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\qmake_use.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\file_copies.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\win32\windows.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\testcase_targets.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\exceptions.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\yacc.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\lex.prf untitled2.pro source.qrc ..\..\qt5.14\5.14.2\mingw73_64\lib\Qt5Widgets.prl ..\..\qt5.14\5.14.2\mingw73_64\lib\Qt5Gui.prl ..\..\qt5.14\5.14.2\mingw73_64\lib\Qt5Network.prl ..\..\qt5.14\5.14.2\mingw73_64\lib\Qt5Core.prl ..\..\qt5.14\5.14.2\mingw73_64\lib\qtmain.prl   source.qrc ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\data\dummy.cpp MyProtocolStream.h Protocol.h Trans.h chatwindow.h creategrouppage.h findfriendpage.h framelessWidget.h friendpage.h ftp\FtpManager.h ftp\qftp.h ftp\qurlinfo.h ftpsender.h globalvaria.h mainpage.h mainwindow.h netthread.h network.h processor.h processqueue.h registerpage.h request.h threadtest.h tiplabel.h userbutton.h  MyProtocolStream.cpp chatwindow.cpp creategrouppage.cpp findfriendpage.cpp framelessWidget.cpp friendpage.cpp ftp\ftpmanager.cpp ftp\qftp.cpp ftp\qurlinfo.cpp ftpsender.cpp globalvaria.cpp main.cpp mainpage.cpp mainwindow.cpp netthread.cpp network.cpp processor.cpp processqueue.cpp registerpage.cpp request.cpp threadtest.cpp tiplabel.cpp userbutton.cpp chatwindow.ui creategrouppage.ui findfriendpage.ui framelessWidget.ui friendpage.ui mainpage.ui mainwindow.ui registerpage.ui    
+	$(ZIP) untitled2.zip $(SOURCES) $(DIST) untitled2.pro ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\spec_pre.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\qdevice.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\device_config.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\common\sanitize.conf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\common\gcc-base.conf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\common\g++-base.conf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\common\angle.conf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\win32\windows_vulkan_sdk.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\common\windows-vulkan.conf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\common\g++-win32.conf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\common\windows-desktop.conf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\qconfig.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3danimation.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3danimation_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dcore.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dcore_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dextras.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dextras_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dinput.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dinput_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dlogic.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dlogic_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquick.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquick_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickanimation.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickanimation_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickextras.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickextras_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickinput.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickinput_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickrender.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickrender_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickscene2d.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3dquickscene2d_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3drender.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_3drender_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_accessibility_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_axbase.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_axbase_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_axcontainer.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_axcontainer_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_axserver.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_axserver_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_bluetooth.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_bluetooth_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_bodymovin_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_bootstrap_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_charts.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_charts_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_concurrent.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_concurrent_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_core.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_core_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_datavisualization.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_datavisualization_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_dbus.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_dbus_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_designer.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_designer_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_designercomponents_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_devicediscovery_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_edid_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_egl_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_eventdispatcher_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_fb_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_fontdatabase_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_gamepad.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_gamepad_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_gui.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_gui_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_help.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_help_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_location.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_location_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_multimedia.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_multimedia_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_multimediawidgets.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_multimediawidgets_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_network.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_network_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_networkauth.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_networkauth_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_nfc.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_nfc_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_opengl.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_opengl_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_openglextensions.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_openglextensions_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_packetprotocol_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_platformcompositor_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_positioning.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_positioning_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_positioningquick.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_positioningquick_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_printsupport.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_printsupport_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_purchasing.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_purchasing_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qml.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qml_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qmldebug_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qmldevtools_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qmlmodels.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qmlmodels_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qmltest.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qmltest_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qmlworkerscript.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qmlworkerscript_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_qtmultimediaquicktools_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3d.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3d_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3dassetimport.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3dassetimport_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3drender.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3drender_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3druntimerender.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3druntimerender_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3dutils.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick3dutils_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quick_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quickcontrols2.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quickcontrols2_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quickparticles_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quickshapes_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quicktemplates2.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quicktemplates2_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quickwidgets.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_quickwidgets_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_remoteobjects.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_remoteobjects_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_repparser.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_repparser_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_script.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_script_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_scripttools.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_scripttools_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_scxml.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_scxml_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_sensors.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_sensors_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_serialbus.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_serialbus_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_serialport.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_serialport_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_sql.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_sql_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_svg.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_svg_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_testlib.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_testlib_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_texttospeech.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_texttospeech_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_theme_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_uiplugin.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_uitools.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_uitools_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_virtualkeyboard.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_virtualkeyboard_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_vulkan_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_webchannel.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_webchannel_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_websockets.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_websockets_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_widgets.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_widgets_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_windowsuiautomation_support_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_winextras.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_winextras_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_xml.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_xml_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_xmlpatterns.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_xmlpatterns_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\modules\qt_lib_zlib_private.pri ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\qt_functions.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\qt_config.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\win32-g++\qmake.conf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\spec_post.prf .qmake.stash ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\exclusive_builds.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\toolchain.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\default_pre.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\win32\default_pre.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\resolve_config.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\exclusive_builds_post.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\default_post.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\build_pass.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\qml_debug.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\precompile_header.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\warn_on.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\qt.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\resources_functions.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\resources.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\moc.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\win32\opengl.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\uic.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\qmake_use.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\file_copies.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\win32\windows.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\testcase_targets.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\exceptions.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\yacc.prf ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\lex.prf untitled2.pro source.qrc ..\..\qt5.14\5.14.2\mingw73_64\lib\Qt5Widgets.prl ..\..\qt5.14\5.14.2\mingw73_64\lib\Qt5Gui.prl ..\..\qt5.14\5.14.2\mingw73_64\lib\Qt5Network.prl ..\..\qt5.14\5.14.2\mingw73_64\lib\Qt5Core.prl ..\..\qt5.14\5.14.2\mingw73_64\lib\qtmain.prl   source.qrc ..\..\qt5.14\5.14.2\mingw73_64\mkspecs\features\data\dummy.cpp MyProtocolStream.h Protocol.h Trans.h chatwindow.h creategrouppage.h findfriendpage.h framelessWidget.h friendpage.h ftp\FtpManager.h ftp\qftp.h ftp\qurlinfo.h ftpsender.h globalvaria.h mainpage.h mainwindow.h netthread.h network.h processor.h processqueue.h registerpage.h request.h soft.h threadtest.h tiplabel.h userbutton.h  MyProtocolStream.cpp chatwindow.cpp creategrouppage.cpp findfriendpage.cpp framelessWidget.cpp friendpage.cpp ftp\ftpmanager.cpp ftp\qftp.cpp ftp\qurlinfo.cpp ftpsender.cpp globalvaria.cpp main.cpp mainpage.cpp mainwindow.cpp netthread.cpp network.cpp processor.cpp processqueue.cpp registerpage.cpp request.cpp threadtest.cpp tiplabel.cpp userbutton.cpp chatwindow.ui creategrouppage.ui findfriendpage.ui framelessWidget.ui friendpage.ui mainpage.ui mainwindow.ui registerpage.ui    
 
 clean: compiler_clean 
 	-$(DEL_FILE) debug\MyProtocolStream.o debug\chatwindow.o debug\creategrouppage.o debug\findfriendpage.o debug\framelessWidget.o debug\friendpage.o debug\ftpmanager.o debug\qftp.o debug\qurlinfo.o debug\ftpsender.o debug\globalvaria.o debug\main.o debug\mainpage.o debug\mainwindow.o debug\netthread.o debug\network.o debug\processor.o debug\processqueue.o debug\registerpage.o debug\request.o debug\threadtest.o debug\tiplabel.o debug\userbutton.o debug\qrc_source.o debug\moc_chatwindow.o debug\moc_creategrouppage.o debug\moc_findfriendpage.o debug\moc_framelessWidget.o debug\moc_friendpage.o debug\moc_FtpManager.o debug\moc_ftpsender.o debug\moc_mainpage.o debug\moc_mainwindow.o debug\moc_netthread.o debug\moc_network.o debug\moc_processqueue.o debug\moc_registerpage.o debug\moc_request.o debug\moc_tiplabel.o
@@ -339,7 +340,9 @@ debug/moc_chatwindow.cpp: chatwindow.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qvector2d.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qtouchdevice.h \
 		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		MyProtocolStream.h \
+		soft.h \
 		debug/moc_predefs.h \
 		../../qt5.14/5.14.2/mingw73_64/bin/moc.exe
 	D:\qt5.14\5.14.2\mingw73_64\bin\moc.exe $(DEFINES) --include D:/BaiduNetdiskDownload/untitled2/debug/moc_predefs.h -ID:/qt5.14/5.14.2/mingw73_64/mkspecs/win32-g++ -ID:/BaiduNetdiskDownload/untitled2 -ID:/BaiduNetdiskDownload/untitled2/libs/include -ID:/qt5.14/5.14.2/mingw73_64/include -ID:/qt5.14/5.14.2/mingw73_64/include/QtWidgets -ID:/qt5.14/5.14.2/mingw73_64/include/QtGui -ID:/qt5.14/5.14.2/mingw73_64/include/QtANGLE -ID:/qt5.14/5.14.2/mingw73_64/include/QtNetwork -ID:/qt5.14/5.14.2/mingw73_64/include/QtCore -ID:\vs\ide\VC\Tools\MSVC\14.29.30133\ATLMFC\include -ID:\vs\ide\VC\Tools\MSVC\14.29.30133\include -I"D:\Windows Kits\10\include\10.0.19041.0\ucrt" -I"D:\Windows Kits\10\include\10.0.19041.0\shared" -I"D:\Windows Kits\10\include\10.0.19041.0\um" -I"D:\Windows Kits\10\include\10.0.19041.0\winrt" -I"D:\Windows Kits\10\include\10.0.19041.0\cppwinrt" chatwindow.h -o debug\moc_chatwindow.cpp
@@ -450,7 +453,9 @@ debug/moc_creategrouppage.cpp: creategrouppage.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qvector2d.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qtouchdevice.h \
 		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		MyProtocolStream.h \
+		soft.h \
 		debug/moc_predefs.h \
 		../../qt5.14/5.14.2/mingw73_64/bin/moc.exe
 	D:\qt5.14\5.14.2\mingw73_64\bin\moc.exe $(DEFINES) --include D:/BaiduNetdiskDownload/untitled2/debug/moc_predefs.h -ID:/qt5.14/5.14.2/mingw73_64/mkspecs/win32-g++ -ID:/BaiduNetdiskDownload/untitled2 -ID:/BaiduNetdiskDownload/untitled2/libs/include -ID:/qt5.14/5.14.2/mingw73_64/include -ID:/qt5.14/5.14.2/mingw73_64/include/QtWidgets -ID:/qt5.14/5.14.2/mingw73_64/include/QtGui -ID:/qt5.14/5.14.2/mingw73_64/include/QtANGLE -ID:/qt5.14/5.14.2/mingw73_64/include/QtNetwork -ID:/qt5.14/5.14.2/mingw73_64/include/QtCore -ID:\vs\ide\VC\Tools\MSVC\14.29.30133\ATLMFC\include -ID:\vs\ide\VC\Tools\MSVC\14.29.30133\include -I"D:\Windows Kits\10\include\10.0.19041.0\ucrt" -I"D:\Windows Kits\10\include\10.0.19041.0\shared" -I"D:\Windows Kits\10\include\10.0.19041.0\um" -I"D:\Windows Kits\10\include\10.0.19041.0\winrt" -I"D:\Windows Kits\10\include\10.0.19041.0\cppwinrt" creategrouppage.h -o debug\moc_creategrouppage.cpp
@@ -581,7 +586,9 @@ debug/moc_findfriendpage.cpp: findfriendpage.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qrubberband.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/QWidget \
 		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		MyProtocolStream.h \
+		soft.h \
 		debug/moc_predefs.h \
 		../../qt5.14/5.14.2/mingw73_64/bin/moc.exe
 	D:\qt5.14\5.14.2\mingw73_64\bin\moc.exe $(DEFINES) --include D:/BaiduNetdiskDownload/untitled2/debug/moc_predefs.h -ID:/qt5.14/5.14.2/mingw73_64/mkspecs/win32-g++ -ID:/BaiduNetdiskDownload/untitled2 -ID:/BaiduNetdiskDownload/untitled2/libs/include -ID:/qt5.14/5.14.2/mingw73_64/include -ID:/qt5.14/5.14.2/mingw73_64/include/QtWidgets -ID:/qt5.14/5.14.2/mingw73_64/include/QtGui -ID:/qt5.14/5.14.2/mingw73_64/include/QtANGLE -ID:/qt5.14/5.14.2/mingw73_64/include/QtNetwork -ID:/qt5.14/5.14.2/mingw73_64/include/QtCore -ID:\vs\ide\VC\Tools\MSVC\14.29.30133\ATLMFC\include -ID:\vs\ide\VC\Tools\MSVC\14.29.30133\include -I"D:\Windows Kits\10\include\10.0.19041.0\ucrt" -I"D:\Windows Kits\10\include\10.0.19041.0\shared" -I"D:\Windows Kits\10\include\10.0.19041.0\um" -I"D:\Windows Kits\10\include\10.0.19041.0\winrt" -I"D:\Windows Kits\10\include\10.0.19041.0\cppwinrt" findfriendpage.h -o debug\moc_findfriendpage.cpp
@@ -833,7 +840,9 @@ debug/moc_friendpage.cpp: friendpage.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qtoolbutton.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qabstractbutton.h \
 		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		MyProtocolStream.h \
+		soft.h \
 		debug/moc_predefs.h \
 		../../qt5.14/5.14.2/mingw73_64/bin/moc.exe
 	D:\qt5.14\5.14.2\mingw73_64\bin\moc.exe $(DEFINES) --include D:/BaiduNetdiskDownload/untitled2/debug/moc_predefs.h -ID:/qt5.14/5.14.2/mingw73_64/mkspecs/win32-g++ -ID:/BaiduNetdiskDownload/untitled2 -ID:/BaiduNetdiskDownload/untitled2/libs/include -ID:/qt5.14/5.14.2/mingw73_64/include -ID:/qt5.14/5.14.2/mingw73_64/include/QtWidgets -ID:/qt5.14/5.14.2/mingw73_64/include/QtGui -ID:/qt5.14/5.14.2/mingw73_64/include/QtANGLE -ID:/qt5.14/5.14.2/mingw73_64/include/QtNetwork -ID:/qt5.14/5.14.2/mingw73_64/include/QtCore -ID:\vs\ide\VC\Tools\MSVC\14.29.30133\ATLMFC\include -ID:\vs\ide\VC\Tools\MSVC\14.29.30133\include -I"D:\Windows Kits\10\include\10.0.19041.0\ucrt" -I"D:\Windows Kits\10\include\10.0.19041.0\shared" -I"D:\Windows Kits\10\include\10.0.19041.0\um" -I"D:\Windows Kits\10\include\10.0.19041.0\winrt" -I"D:\Windows Kits\10\include\10.0.19041.0\cppwinrt" friendpage.h -o debug\moc_friendpage.cpp
@@ -939,6 +948,10 @@ debug/moc_FtpManager.cpp: ftp/FtpManager.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QIODevice \
 		ftp/qftp.h \
 		ftp/qurlinfo.h \
+		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
+		MyProtocolStream.h \
+		soft.h \
 		debug/moc_predefs.h \
 		../../qt5.14/5.14.2/mingw73_64/bin/moc.exe
 	D:\qt5.14\5.14.2\mingw73_64\bin\moc.exe $(DEFINES) --include D:/BaiduNetdiskDownload/untitled2/debug/moc_predefs.h -ID:/qt5.14/5.14.2/mingw73_64/mkspecs/win32-g++ -ID:/BaiduNetdiskDownload/untitled2 -ID:/BaiduNetdiskDownload/untitled2/libs/include -ID:/qt5.14/5.14.2/mingw73_64/include -ID:/qt5.14/5.14.2/mingw73_64/include/QtWidgets -ID:/qt5.14/5.14.2/mingw73_64/include/QtGui -ID:/qt5.14/5.14.2/mingw73_64/include/QtANGLE -ID:/qt5.14/5.14.2/mingw73_64/include/QtNetwork -ID:/qt5.14/5.14.2/mingw73_64/include/QtCore -ID:\vs\ide\VC\Tools\MSVC\14.29.30133\ATLMFC\include -ID:\vs\ide\VC\Tools\MSVC\14.29.30133\include -I"D:\Windows Kits\10\include\10.0.19041.0\ucrt" -I"D:\Windows Kits\10\include\10.0.19041.0\shared" -I"D:\Windows Kits\10\include\10.0.19041.0\um" -I"D:\Windows Kits\10\include\10.0.19041.0\winrt" -I"D:\Windows Kits\10\include\10.0.19041.0\cppwinrt" ftp\FtpManager.h -o debug\moc_FtpManager.cpp
@@ -1062,7 +1075,9 @@ debug/moc_ftpsender.cpp: ftpsender.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QThread \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qthread.h \
 		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		MyProtocolStream.h \
+		soft.h \
 		debug/moc_predefs.h \
 		../../qt5.14/5.14.2/mingw73_64/bin/moc.exe
 	D:\qt5.14\5.14.2\mingw73_64\bin\moc.exe $(DEFINES) --include D:/BaiduNetdiskDownload/untitled2/debug/moc_predefs.h -ID:/qt5.14/5.14.2/mingw73_64/mkspecs/win32-g++ -ID:/BaiduNetdiskDownload/untitled2 -ID:/BaiduNetdiskDownload/untitled2/libs/include -ID:/qt5.14/5.14.2/mingw73_64/include -ID:/qt5.14/5.14.2/mingw73_64/include/QtWidgets -ID:/qt5.14/5.14.2/mingw73_64/include/QtGui -ID:/qt5.14/5.14.2/mingw73_64/include/QtANGLE -ID:/qt5.14/5.14.2/mingw73_64/include/QtNetwork -ID:/qt5.14/5.14.2/mingw73_64/include/QtCore -ID:\vs\ide\VC\Tools\MSVC\14.29.30133\ATLMFC\include -ID:\vs\ide\VC\Tools\MSVC\14.29.30133\include -I"D:\Windows Kits\10\include\10.0.19041.0\ucrt" -I"D:\Windows Kits\10\include\10.0.19041.0\shared" -I"D:\Windows Kits\10\include\10.0.19041.0\um" -I"D:\Windows Kits\10\include\10.0.19041.0\winrt" -I"D:\Windows Kits\10\include\10.0.19041.0\cppwinrt" ftpsender.h -o debug\moc_ftpsender.cpp
@@ -1285,7 +1300,9 @@ debug/moc_mainwindow.cpp: mainwindow.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qtabwidget.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qicon.h \
 		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		MyProtocolStream.h \
+		soft.h \
 		debug/moc_predefs.h \
 		../../qt5.14/5.14.2/mingw73_64/bin/moc.exe
 	D:\qt5.14\5.14.2\mingw73_64\bin\moc.exe $(DEFINES) --include D:/BaiduNetdiskDownload/untitled2/debug/moc_predefs.h -ID:/qt5.14/5.14.2/mingw73_64/mkspecs/win32-g++ -ID:/BaiduNetdiskDownload/untitled2 -ID:/BaiduNetdiskDownload/untitled2/libs/include -ID:/qt5.14/5.14.2/mingw73_64/include -ID:/qt5.14/5.14.2/mingw73_64/include/QtWidgets -ID:/qt5.14/5.14.2/mingw73_64/include/QtGui -ID:/qt5.14/5.14.2/mingw73_64/include/QtANGLE -ID:/qt5.14/5.14.2/mingw73_64/include/QtNetwork -ID:/qt5.14/5.14.2/mingw73_64/include/QtCore -ID:\vs\ide\VC\Tools\MSVC\14.29.30133\ATLMFC\include -ID:\vs\ide\VC\Tools\MSVC\14.29.30133\include -I"D:\Windows Kits\10\include\10.0.19041.0\ucrt" -I"D:\Windows Kits\10\include\10.0.19041.0\shared" -I"D:\Windows Kits\10\include\10.0.19041.0\um" -I"D:\Windows Kits\10\include\10.0.19041.0\winrt" -I"D:\Windows Kits\10\include\10.0.19041.0\cppwinrt" mainwindow.h -o debug\moc_mainwindow.cpp
@@ -1438,7 +1455,9 @@ debug/moc_network.cpp: network.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qsharedpointer_impl.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtNetwork/QAbstractSocket \
 		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		MyProtocolStream.h \
+		soft.h \
 		debug/moc_predefs.h \
 		../../qt5.14/5.14.2/mingw73_64/bin/moc.exe
 	D:\qt5.14\5.14.2\mingw73_64\bin\moc.exe $(DEFINES) --include D:/BaiduNetdiskDownload/untitled2/debug/moc_predefs.h -ID:/qt5.14/5.14.2/mingw73_64/mkspecs/win32-g++ -ID:/BaiduNetdiskDownload/untitled2 -ID:/BaiduNetdiskDownload/untitled2/libs/include -ID:/qt5.14/5.14.2/mingw73_64/include -ID:/qt5.14/5.14.2/mingw73_64/include/QtWidgets -ID:/qt5.14/5.14.2/mingw73_64/include/QtGui -ID:/qt5.14/5.14.2/mingw73_64/include/QtANGLE -ID:/qt5.14/5.14.2/mingw73_64/include/QtNetwork -ID:/qt5.14/5.14.2/mingw73_64/include/QtCore -ID:\vs\ide\VC\Tools\MSVC\14.29.30133\ATLMFC\include -ID:\vs\ide\VC\Tools\MSVC\14.29.30133\include -I"D:\Windows Kits\10\include\10.0.19041.0\ucrt" -I"D:\Windows Kits\10\include\10.0.19041.0\shared" -I"D:\Windows Kits\10\include\10.0.19041.0\um" -I"D:\Windows Kits\10\include\10.0.19041.0\winrt" -I"D:\Windows Kits\10\include\10.0.19041.0\cppwinrt" network.h -o debug\moc_network.cpp
@@ -2200,7 +2219,9 @@ debug/chatwindow.o: chatwindow.cpp chatwindow.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qvector2d.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qtouchdevice.h \
 		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		MyProtocolStream.h \
+		soft.h \
 		ui_chatwindow.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QVariant \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/QApplication \
@@ -2383,7 +2404,9 @@ debug/creategrouppage.o: creategrouppage.cpp creategrouppage.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qvector2d.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qtouchdevice.h \
 		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		MyProtocolStream.h \
+		soft.h \
 		ui_creategrouppage.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QVariant \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/QApplication \
@@ -2556,7 +2579,9 @@ debug/findfriendpage.o: findfriendpage.cpp findfriendpage.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qrubberband.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/QWidget \
 		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		MyProtocolStream.h \
+		soft.h \
 		processor.h \
 		ui_findfriendpage.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QVariant \
@@ -2869,7 +2894,9 @@ debug/friendpage.o: friendpage.cpp friendpage.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qtoolbutton.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qabstractbutton.h \
 		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		MyProtocolStream.h \
+		soft.h \
 		ui_friendpage.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QVariant \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/QApplication \
@@ -2904,6 +2931,11 @@ debug/friendpage.o: friendpage.cpp friendpage.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qbasictimer.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/QPushButton \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qpushbutton.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QDir \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qdir.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qfileinfo.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/QFileDialog \
+		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qfiledialog.h \
 		findfriendpage.h \
 		creategrouppage.h \
 		chatwindow.h \
@@ -2915,7 +2947,9 @@ debug/friendpage.o: friendpage.cpp friendpage.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtNetwork/qtnetwork-config.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtNetwork/qabstractsocket.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtNetwork/QAbstractSocket \
-		processor.h
+		processor.h \
+		ftpsender.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QObject
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o debug\friendpage.o friendpage.cpp
 
 debug/ftpmanager.o: ftp/ftpmanager.cpp ftp/ftpmanager.h \
@@ -3019,6 +3053,10 @@ debug/ftpmanager.o: ftp/ftpmanager.cpp ftp/ftpmanager.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QIODevice \
 		ftp/qftp.h \
 		ftp/qurlinfo.h \
+		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
+		MyProtocolStream.h \
+		soft.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QFile \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qfile.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qfiledevice.h \
@@ -3026,13 +3064,13 @@ debug/ftpmanager.o: ftp/ftpmanager.cpp ftp/ftpmanager.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qdir.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qfileinfo.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QDebug \
-		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QDirIterator \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qdiriterator.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QTimer \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qtimer.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qbasictimer.h \
-		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QTime
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QTime \
+		globalvaria.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o debug\ftpmanager.o ftp\ftpmanager.cpp
 
 debug/qftp.o: ftp/qftp.cpp ftp/qftp.h \
@@ -3241,7 +3279,9 @@ debug/ftpsender.o: ftpsender.cpp ftpsender.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QThread \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qthread.h \
 		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		MyProtocolStream.h \
+		soft.h \
 		ftp/FtpManager.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QCoreApplication \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qcoreapplication.h \
@@ -3292,7 +3332,8 @@ debug/ftpsender.o: ftpsender.cpp ftpsender.h \
 		ftp/qurlinfo.h \
 		network.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtNetwork/QTcpSocket \
-		../../qt5.14/5.14.2/mingw73_64/include/QtNetwork/QAbstractSocket
+		../../qt5.14/5.14.2/mingw73_64/include/QtNetwork/QAbstractSocket \
+		globalvaria.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o debug\ftpsender.o ftpsender.cpp
 
 debug/globalvaria.o: globalvaria.cpp globalvaria.h \
@@ -3328,6 +3369,10 @@ debug/globalvaria.o: globalvaria.cpp globalvaria.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qstringalgorithms.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qstringview.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qstringbuilder.h \
+		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
+		MyProtocolStream.h \
+		soft.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QSettings \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qsettings.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qobject.h \
@@ -3475,7 +3520,9 @@ debug/main.o: main.cpp mainwindow.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qtabwidget.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qicon.h \
 		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		MyProtocolStream.h \
+		soft.h \
 		framelessWidget.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QTimer \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qtimer.h \
@@ -3497,7 +3544,6 @@ debug/main.o: main.cpp mainwindow.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qrunnable.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QQueue \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qqueue.h \
-		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QThreadPool \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qthreadpool.h \
 		request.h \
@@ -3518,7 +3564,8 @@ debug/main.o: main.cpp mainwindow.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qactiongroup.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/QAction \
 		globalvaria.h \
-		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QString
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QString \
+		ftpsender.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o debug\main.o main.cpp
 
 debug/mainpage.o: mainpage.cpp mainpage.h \
@@ -3794,7 +3841,9 @@ debug/mainwindow.o: mainwindow.cpp mainwindow.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qtabwidget.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qicon.h \
 		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		MyProtocolStream.h \
+		soft.h \
 		ui_mainwindow.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QVariant \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/QApplication \
@@ -4017,7 +4066,9 @@ debug/network.o: network.cpp network.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qsharedpointer_impl.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtNetwork/QAbstractSocket \
 		Protocol.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
 		MyProtocolStream.h \
+		soft.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtNetwork/QtNetwork \
 		../../qt5.14/5.14.2/mingw73_64/include/QtNetwork/QtNetworkDepends \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QtCore \
@@ -4244,16 +4295,14 @@ debug/network.o: network.cpp network.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qkeysequence.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qevent.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qvector2d.h \
-		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qtouchdevice.h
+		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qtouchdevice.h \
+		globalvaria.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o debug\network.o network.cpp
 
 debug/processor.o: processor.cpp processor.h \
 		Protocol.h \
-		MyProtocolStream.h \
-		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/QMessageBox \
-		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qmessagebox.h \
-		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qtwidgetsglobal.h \
-		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qtguiglobal.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qmutex.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qglobal.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qconfig-bootstrapped.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qconfig.h \
@@ -4272,9 +4321,14 @@ debug/processor.o: processor.cpp processor.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qatomic_cxx11.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qatomic_msvc.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qglobalstatic.h \
-		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qmutex.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qnumeric.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtCore/qversiontagging.h \
+		MyProtocolStream.h \
+		soft.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/QMessageBox \
+		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qmessagebox.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qtwidgetsglobal.h \
+		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qtguiglobal.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtGui/qtgui-config.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qtwidgets-config.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qdialog.h \
@@ -4579,7 +4633,9 @@ debug/registerpage.o: registerpage.cpp registerpage.h \
 		../../qt5.14/5.14.2/mingw73_64/include/QtWidgets/qdialog.h \
 		processor.h \
 		Protocol.h \
-		MyProtocolStream.h
+		../../qt5.14/5.14.2/mingw73_64/include/QtCore/QMutex \
+		MyProtocolStream.h \
+		soft.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o debug\registerpage.o registerpage.cpp
 
 debug/request.o: request.cpp request.h \

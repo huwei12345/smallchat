@@ -278,6 +278,10 @@ Server::Server(const char *ip, unsigned int port)
     requestProcessor[FunctionCode::NofifyFileComing] = new ProcessNofifyFileComingProcessor;
     requestProcessor[FunctionCode::TransFileOver] = new ProcessTransFileOverProcessor;
     requestProcessor[FunctionCode::AgreeRecvFile] = new RequestProcessor;
+
+    requestProcessor[FunctionCode::GetAllOfflineFile] = new ProcessGetAllOfflineFileProcessor;
+    requestProcessor[FunctionCode::GetOfflineFile] = new ProcessGetOfflineFileProcessor;
+    
     for (int i = 30; i < 100; i++) {
         requestProcessor[i] = new RequestProcessor;
     }

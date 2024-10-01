@@ -5,6 +5,7 @@
 #include "friendpage.h"
 #include "ftpsender.h"
 #include <QDateTime>
+#include <QFileDialog>
 #include <QMessageBox>
 ChatWindow::ChatWindow(QWidget *parent) :
     QWidget(parent),
@@ -18,7 +19,7 @@ ChatWindow::ChatWindow(QWidget *parent) :
 
     //这两个应该放在网络线程（通用 通信确认业务），但同时，发送完文件也应该通知聊天框，看具体业务。
     //connect(FtpSender::GetInstance(), &FtpSender::ftpFileSendOver, this, &ChatWindow::ftpSendFileSuccess);
-    connect(ClientNetWork::GetInstance(), &ClientNetWork::UpLoadFileSuccess, this, &ChatWindow::UpLoadFileSuccess);
+
 
     connect(ClientNetWork::GetInstance(), &ClientNetWork::offlineTransFileSuccess, this, &ChatWindow::offlineTransFileSuccess);
 }
@@ -72,7 +73,35 @@ void ChatWindow::addMessage(MessageInfo info)
     }
     else {
     mUnReadMessageList.push_back(info);
+    }
 }
+
+void ChatWindow::addFileArrive(FileInfo info)
+{
+//    if (this->isVisible()) {
+//        printf("isVis");
+//        fflush(stdout);
+//        mCurrentMessageList.push_back(info);
+//        ui->plainTextEdit->appendPlainText(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(info.timestamp));
+//        ui->plainTextEdit->appendPlainText(QString::fromStdString(info.message_text));
+//        messageUpdate();
+//    }
+//    else {
+//    mUnReadMessageList.push_back(info);
+//    }
+    MessageInfo infom;
+    infom.message_text = "[" + info.serverFileName + " Arrive in " + info.ClientPath + "]";
+    if (this->isVisible()) {
+        printf("isVis");
+        fflush(stdout);
+        mCurrentMessageList.push_back(infom);
+        ui->plainTextEdit->appendPlainText(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(infom.timestamp));
+        ui->plainTextEdit->appendPlainText(QString::fromStdString(infom.message_text));
+        messageUpdate();
+    }
+    else {
+        mUnReadMessageList.push_back(infom);
+    }
 }
 
 void ChatWindow::keyPressEvent(QKeyEvent *event)
@@ -131,36 +160,46 @@ void ChatWindow::userMessageRead()
     }
 }
 
-void ChatWindow::ftpSendFileSuccess(string filename)
-{
-    bool ret = Processor::SendMessageSuccess(filename);
-}
 
-void ChatWindow::ftpGetFileSuccess(string filename)
-{
-    bool ret = Processor::GetMessageSuccess(filename);
-}
-
-void ChatWindow::UpLoadFileSuccess(Response response)
-{
-    std::string mdata = response.mData;
-    MyProtocolStream stream2(mdata);
-    bool ret = response.mCode;
-    if (ret) {
-        QMessageBox::information(this, "提示", "SendFile %s Over");
-    }
-    else {
-        QMessageBox::information(this, "提示", "SendFile %s Send Failure");
-    }
-}
 
 //发送给好友文件
 void ChatWindow::on_toolButton_5_clicked()
 {
+    QString fileName = QFileDialog::getOpenFileName(this,
+        tr("Open File"),
+        "",
+        tr("All Files (*);;Text Files (*.txt)"));
+    //D:/easybcd.zip
+    if (!fileName.isEmpty()) {
+        qDebug() << "Selected file:" << fileName;
+    } else {
+        qDebug() << "No file selected.";
+        return;
+    }
     FileInfo info;
     info.Generate();
-    info.ClientPath = std::string("/") + "a.txt";
+    info.ClientPath = fileName.toStdString();
+    info.serverPath = string("/") + std::to_string(user_id);
+    QFileInfo fileInfo(QString::fromStdString(info.ClientPath));
+    // 获取文件名（包括扩展名）
+    info.serverFileName = fileInfo.fileName().toStdString();
+    info.send_id = user_id;
+    info.recv_id = this->mInfo.user_id;
+    info.serverPath = FileServerType::SENDTOPERSON;
     FtpSender::GetInstance()->addFile(info);
     bool ret = Processor::SendFile(info);
 }
+/*
+QFileInfo fileInfo(filePath);
 
+    // 获取文件名（包括扩展名）
+    QString fileName = fileInfo.fileName();
+    qDebug() << "File name with extension:" << fileName;
+
+    // 获取文件名（不包括扩展名）
+    QString baseName = fileInfo.baseName();
+    qDebug() << "File name without extension:" << baseName;
+
+    // 获取文件扩展名
+    QString extension = fileInfo.suffix();
+*/

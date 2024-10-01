@@ -35,21 +35,32 @@ bool FriendPage::initPage() {
     m_index = 0;
     m_FindFriendPage = NULL;
     m_CreateGroupPage = NULL;
+    //更新头像
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::ChangeOwnerPic, this, &FriendPage::ChangeOwnerPic);
 
     connect(ClientNetWork::GetInstance(), &ClientNetWork::findAllFriendSuccess, this, &FriendPage::findAllFriendSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::getAllMessageSuccess, this, &FriendPage::getAllMessageSuccess);
-    connect(ClientNetWork::GetInstance(), &ClientNetWork::getAllFriendRequestSuccess, this, &FriendPage::getAllFriendRequestSuccess);
-    connect(ClientNetWork::GetInstance(), &ClientNetWork::UpDateUserStateSuccess, this, &FriendPage::UpDateUserStateSuccess);
-    connect(ClientNetWork::GetInstance(), &ClientNetWork::ReciveMessageSuccess, this, &FriendPage::ReciveMessageSuccess);
-    connect(ClientNetWork::GetInstance(), &ClientNetWork::MessageArriveClient, this, &FriendPage::MessageArriveClient);
-    connect(ClientNetWork::GetInstance(), &ClientNetWork::storeFileSuccess, this, &FriendPage::storeFileSuccess);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::getAllOfflineFileSuccess, this, &FriendPage::getAllOfflineFileSuccess);
 
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::getAllFriendRequestSuccess, this, &FriendPage::getAllFriendRequestSuccess);
+
+
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::MessageArriveClient, this, &FriendPage::MessageArriveClient);
+    //被动离线文件到来，转为主动获取
     connect(ClientNetWork::GetInstance(), &ClientNetWork::NofifyFileComing, this, &FriendPage::NofifyFileComing);
 
-    connect(ClientNetWork::GetInstance(), &ClientNetWork::ChangeOwnerPic, this, &FriendPage::ChangeOwnerPic);
+
+    //修改个人在线状态，未完成
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::UpDateUserStateSuccess, this, &FriendPage::UpDateUserStateSuccess);
+
+
+    //主动发送接收
     connect(ClientNetWork::GetInstance(), &ClientNetWork::GetFileFirstSuccess, this, &FriendPage::GetFileFirstSuccess);
-    connect(ClientNetWork::GetInstance(), &ClientNetWork::GetFileSuccess, this, &FriendPage::GetFileSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::StartUpLoadFileSuccess, this, &FriendPage::StartUpLoadFileSuccess);
+
+    //获取 服务器对客户端已经收发完成消息的相应
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::GetFileSuccess, this, &FriendPage::GetFileSuccess);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::UpLoadFileSuccess, this, &FriendPage::SendFileSuccess);
     return true;
 }
 
@@ -123,6 +134,14 @@ bool FriendPage::initFriendRequest() {
     return ret;
 }
 
+bool FriendPage::initAllOfflineFile() {
+    bool ret = Processor::getAllOfflineFile(mUserId);
+    if (!ret) {
+        QMessageBox::information(this,"提示","网络不可达！");
+    }
+    return ret;
+}
+
 void FriendPage::findAllFriendSuccess(Response response)
 {
     std::string mdata = response.mData;
@@ -176,6 +195,40 @@ void FriendPage::getAllMessageSuccess(Response response) {
     }
 }
 
+void FriendPage::getAllOfflineFileSuccess(Response response)
+{
+    std::string mdata = response.mData;
+    MyProtocolStream stream2(mdata);
+    int size = 0;
+    stream2 >> size;
+    qDebug() << "sizeOfflineFile: " << size;
+    for (int i = 0; i < size; i++) {
+        //TODO:ToolButton put in widget
+        FileInfo info;
+        info.Generate();
+        stream2 >> info.send_id;
+        stream2 >> info.recv_id;
+        stream2 >> info.serviceType;
+        stream2 >> info.serverPath;
+        stream2 >> info.serverFileName;
+        stream2 >> info.timestamp;
+        //info.print();
+        FtpSender::GetInstance()->addFile(info);
+        FtpSender::GetInstance()->GetFile(info);
+        //当获取后还需要提醒窗口已下载完成
+
+        QString str = mFriendButton[info.send_id]->text();
+        int index = str.indexOf("[New");
+        if (index != -1)
+            str = str.remove(index, str.length() - index);
+        //有新消息来时添加text,点击后，出现新消息后，删除text
+        mFriendButton[info.send_id]->setText(str + "  [New Message]");
+
+        //这个ChatWindow一定一定已经在上面一个函数里创建了
+        mChatWindowMap[info.send_id]->addFileArrive(info);
+    }
+}
+
 void FriendPage::friendPageUpdate(int uid) {
     printf("mmmmmmmmmmmmmmmmmmmmmmmmmm\n");
     fflush(stdout);
@@ -212,34 +265,6 @@ void FriendPage::UpDateUserStateSuccess(Response response) {
     if (response.mCode) {
         QMessageBox::information(this,"提示","修改状态成功！");
     }
-}
-
-void FriendPage::ReciveMessageSuccess(Response response)
-{
-//    std::string &mData = response.mData;
-//    MessageInfo info;
-//    //TODO: stream 应该重载>>(MessageInfo\UserInfo...)
-//    if (response.mhasData) {
-//        MyProtocolStream stream(mData);
-//        stream >> info.id >> info.sender_id >> info.message_text >> info.timestamp;
-//        int x = mChatWindowMap[info.sender_id]->windowState();
-//        if (mChatWindowMap[info.sender_id]->windowState() == Qt::WindowNoState) {
-//            printf("iiiiiiiiiiiiiiiiiiiiiiii  %d  \n", x);
-//        }
-//        else {
-//            printf("iiiiiiiiiiiiiiiiiiiiiiii  %d  \n", x);
-//        }
-//        info.print();
-//        mChatWindowMap[info.sender_id]->addMessage(info);
-//        QString str = mFriendButton[info.sender_id]->text();
-//        int index = str.indexOf("[New");
-//        if (index != -1)
-//            str = str.remove(index, str.length() - index);
-//        //有新消息来时添加text,点击后，出现新消息后，删除text
-//        mFriendButton[info.sender_id]->setText(str + "  [New Message]");
-//        //如果ChatWindow已经打开：
-//        //如果ChatWindow没有打开：
-//    }
 }
 
 void FriendPage::MessageArriveClient(Response response)
@@ -438,12 +463,6 @@ void FriendPage::friendMessageArrive(FriendRequest info)
     mFriendRequestTimer->start();
 }
 
-void FriendPage::storeFileSuccess(Response response)
-{
-
-}
-
-
 void FriendPage::on_toolButton_2_clicked()
 {
     if (mFriendRequestSet.size() == 0) {
@@ -471,10 +490,10 @@ void FriendPage::on_toolButton_2_clicked()
     //    }
 }
 
-
 //服务器告知客户端有文件传输而来，客户端大概准备接收文件
 void FriendPage::NofifyFileComing(Response response)
 {
+    //在线 离线文件到达
     std::string &mData = response.mData;
     MyProtocolStream stream(mData);
     FileInfo info;
@@ -484,12 +503,14 @@ void FriendPage::NofifyFileComing(Response response)
     //判断是否接收
     info.ClientPath = std::string("D:/userInfo/") + info.serverFileName;
     info.filesize = 10;
+    int ret = false;
     if (info.filesize < 1000 * 1000 * 10) {
         FtpSender::GetInstance()->addFile(info);
         Processor::AgreeRecvFile(true, info);
+        ret =true;
     }
     else {
-        int ret = QMessageBox::information(this, "提示", "是否接收", QMessageBox::Yes | QMessageBox::No);
+        ret = QMessageBox::information(this, "提示", "是否接收", QMessageBox::Yes | QMessageBox::No);
         if (ret) {
             FtpSender::GetInstance()->addFile(info);
             Processor::AgreeRecvFile(true, info);
@@ -498,7 +519,20 @@ void FriendPage::NofifyFileComing(Response response)
             Processor::AgreeRecvFile(false, info);
         }
     }
+
+    if (ret) {
+        //界面显示，具体怎么提示是否接收，怎么显示后续再看...
+        QString str = mFriendButton[info.send_id]->text();
+        int index = str.indexOf("[New");
+        if (index != -1)
+            str = str.remove(index, str.length() - index);
+        //有新消息来时添加text,点击后，出现新消息后，删除text
+        mFriendButton[info.send_id]->setText(str + "  [New Message]");
+
+        mChatWindowMap[info.send_id]->addFileArrive(info);
+    }
 }
+
 
 void FriendPage::ChangeOwnerPic()
 {
@@ -539,25 +573,34 @@ void FriendPage::GetFileFirstSuccess(Response response)
     }
 }
 
+//服务器可返回，也可不返回
 void FriendPage::GetFileSuccess(Response response)
 {
     std::string mdata = response.mData;
     MyProtocolStream stream2(mdata);
     bool ret = response.mCode;
     if (ret) {
-        QMessageBox::information(this, "提示", "GetFile %s Over");
+        qDebug() << "GetFile Over";
     }
     else {
-        QMessageBox::information(this, "提示", "GetFile %s Send Failure");
+        qDebug() << "GetFile Failure";
+    }
+}
+//服务器可返回，也可不返回
+void FriendPage::SendFileSuccess(Response response)
+{
+    std::string mdata = response.mData;
+    MyProtocolStream stream2(mdata);
+    bool ret = response.mCode;
+    if (ret) {
+        QMessageBox::information(this, "提示", "SendFile %s Over");
+    }
+    else {
+        QMessageBox::information(this, "提示", "SendFile %s Send Failure");
     }
 }
 
-
-void FriendPage::ftpGetFileSuccess(string filename)
-{
-    bool ret = Processor::GetMessageSuccess(filename);
-}
-
+//头像按钮
 void FriendPage::on_toolButton_5_clicked()
 {
     //上传头像
@@ -584,6 +627,7 @@ void FriendPage::on_toolButton_5_clicked()
     info.Generate();
     info.ClientPath = fileName.toStdString();
     info.serverPath = "userPhoto/";
+    info.serviceType = FileServerType::TOUXIANG;
     info.serverFileName = "tx" + mInfo.username + ".jpg";
     FtpSender::GetInstance()->addFile(info);
     bool ret = Processor::SendFile(info);

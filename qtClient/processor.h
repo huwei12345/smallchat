@@ -22,14 +22,15 @@ public:
 static bool CreateGroup(GroupInfo& info);
     static bool JoinGroup(int groupId);
     static bool FindGroup(int groupId);
-    static bool SendMessageSuccess(std::string file);
-    static bool GetMessageSuccess(std::string file);
 
     static bool SendFile(FileInfo info);
     static bool GetFile(FileInfo info);
+    static bool GetFileSuccess(FileInfo info);
+    static bool SendFileSuccess(FileInfo info);
 
     static bool AgreeRecvFile(bool agree, FileInfo info);
     bool processMessageRead(std::vector<int> messageList);
+    static bool getAllOfflineFile(int userId);
 };
 
 #endif // PROCESSOR_H

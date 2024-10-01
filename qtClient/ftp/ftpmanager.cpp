@@ -7,23 +7,11 @@
 #include <QTimer>
 #include <QTime>
 #include "globalvaria.h"
-struct sFtpData
-{
-    int id = 0;
-    QFile *downloadFile = nullptr;
-    QFile *uploadFile = nullptr;
-    QFtp *ftp = nullptr;
-    QTimer *timer = nullptr;
-    QFtp::State mState;
-    //FileInfo* info;
-};
-
 
 FtpManager *FtpManager::mFtpManager = nullptr;
 
 FtpManager::FtpManager(QObject *parent) : QObject(parent)
 {
-    d = new sFtpData;
 }
 
 FtpManager::FtpManager(QString serverIp, unsigned short port, QString user, QString password, QObject *parent) :
@@ -38,7 +26,6 @@ FtpManager::FtpManager(QString serverIp, unsigned short port, QString user, QStr
 FtpManager::~FtpManager()
 {
     disconnectFtp();
-    delete d;
 }
 
 FtpManager *FtpManager::getInstance()
@@ -64,21 +51,41 @@ void FtpManager::uploadFile(FileInfo& info)
     }
     QString localPath = QString::fromStdString(info.ClientPath);
     qDebug() << "localPath: " << localPath;
-    d->uploadFile = new QFile(localPath);
-
-    if(d->uploadFile->open(QIODevice::ReadOnly))
+    sFtpData data;
+    data.uploadFile = new QFile(localPath);
+    data.mInfo = info;
+    if(data.uploadFile->open(QIODevice::ReadOnly))
     {
         //TODO:是否需要切换目录，还是直接带目录发送就可以
-        d->ftp->put(d->uploadFile,QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName));
+        int cmdId = mFtp->put(data.uploadFile,QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName));
+        mTaskMap[cmdId] = data;
     }
 }
+
+
+void FtpManager::downloadFile(FileInfo& info)
+{
+
+    QString localPath = QString::fromStdString(info.ClientPath);
+    qDebug() << "localPath " << localPath;
+    sFtpData data;
+    data.downloadFile = new QFile(localPath);
+    data.mInfo = info;
+    bool ret = data.downloadFile->open(QIODevice::WriteOnly);
+    if(ret)
+    {
+        int cmdId = mFtp->get(QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName), data.downloadFile);
+        mTaskMap[cmdId] = data;
+    }
+}
+
 
 void FtpManager::renameFile(const QString &oldName, const QString &newName)
 {
     if(oldName.isEmpty() || newName.isEmpty())
         return;
     if(isConnected())
-        d->ftp->rename(oldName,newName);
+        mFtp->rename(oldName,newName);
     else
         emit sigRename(false);
 }
@@ -88,7 +95,7 @@ void FtpManager::deleteFile(const QString &fileName)
     if(fileName.isEmpty())
         return;
     if(isConnected())
-        d->ftp->remove(fileName);
+        mFtp->remove(fileName);
     else
         emit sigDelete(false);
 }
@@ -103,15 +110,15 @@ bool FtpManager::isConnected() const
 
 QFtp::State FtpManager::ftpState() const
 {
-    return d->mState;
+    return mFtp->state();
 }
 
 void FtpManager::ftpCommandFinished(int cmdId, bool error)
 {
-    if(!d->ftp)
+    sFtpData data = mTaskMap[cmdId];
+    if(!mFtp)
         return;
-
-    switch (d->ftp->currentCommand()) {
+    switch (mFtp->currentCommand()) {
     case QFtp::ConnectToHost:
     {
         if(error)
@@ -134,12 +141,13 @@ void FtpManager::ftpCommandFinished(int cmdId, bool error)
     }break;
     case QFtp::Get:
     {
-        if(d->downloadFile && d->downloadFile->isOpen())
+        if(data.downloadFile && data.downloadFile->isOpen())
         {
-            emit FileGetOver(d->downloadFile->fileName());
-            d->downloadFile->close();
-            delete d->downloadFile;
-            d->downloadFile = nullptr;
+            emit FileGetOver(mTaskMap[cmdId].mInfo);
+            data.downloadFile->close();
+            delete data.downloadFile;
+            data.downloadFile = nullptr;
+            mTaskMap.erase(cmdId);
         }
     }break;
     case QFtp::Put:
@@ -148,11 +156,12 @@ void FtpManager::ftpCommandFinished(int cmdId, bool error)
             emit sigUploaded(false);
         else
             emit sigUploaded(true);
-        if(d->uploadFile && d->uploadFile->isOpen())
+        if(data.uploadFile && data.uploadFile->isOpen())
         {
-            emit ftpFileSendOver(d->downloadFile->fileName());
-            d->uploadFile->close();
-            delete d->uploadFile;
+            emit ftpFileSendOver(mTaskMap[cmdId].mInfo);
+            data.uploadFile->close();
+            delete data.uploadFile;
+            mTaskMap.erase(cmdId);
         }
     }break;
     case QFtp::Rename:
@@ -177,10 +186,10 @@ void FtpManager::ftpCommandFinished(int cmdId, bool error)
 
 void FtpManager::ftpStateChanged(int state)
 {
-    if(!d->ftp)
+    if(!mFtp)
         return;
-    d->mState = d->ftp->state();
-    switch (d->ftp->state()) {
+    mFtpState = mFtp->state();
+    switch (mFtp->state()) {
     case QFtp::Connecting:
     {
         qDebug() << "ftp connecting";
@@ -213,45 +222,31 @@ void FtpManager::updateDataTransferProgress(qint64 readBytes, qint64 totalBytes)
 
 void FtpManager::connectFtp()
 {
-    if(!d->ftp)
+    if(!mFtp)
     {
-        d->ftp = new QFtp(this);
-        QObject::connect(d->ftp, SIGNAL(commandFinished(int,bool)),this, SLOT(ftpCommandFinished(int,bool)));
-        QObject::connect(d->ftp, SIGNAL(stateChanged(int)),this, SLOT(ftpStateChanged(int)));
-        QObject::connect(d->ftp, SIGNAL(listInfo(QUrlInfo)),this, SLOT(addToList(QUrlInfo)));
-        QObject::connect(d->ftp, SIGNAL(dataTransferProgress(qint64,qint64)),this, SLOT(updateDataTransferProgress(qint64,qint64)));
+        mFtp = new QFtp(this);
+        QObject::connect(mFtp, SIGNAL(commandFinished(int,bool)),this, SLOT(ftpCommandFinished(int,bool)));
+        QObject::connect(mFtp, SIGNAL(stateChanged(int)),this, SLOT(ftpStateChanged(int)));
+        QObject::connect(mFtp, SIGNAL(listInfo(QUrlInfo)),this, SLOT(addToList(QUrlInfo)));
+
+        QObject::connect(mFtp, SIGNAL(dataTransferProgress(qint64,qint64)),this, SLOT(updateDataTransferProgress(qint64,qint64)));
     }
-    d->ftp->connectToHost(Ftp_Ip,Ftp_Port);
-    d->ftp->login(Ftp_Username,Ftp_Password);
+    mFtp->connectToHost(Ftp_Ip,Ftp_Port);
+    mFtp->login(Ftp_Username,Ftp_Password);
 }
 
 void FtpManager::disconnectFtp()
 {
-    if(d->ftp)
+    if(mFtp)
     {
         qDebug() << "Ftp Connected Close!";
-        d->ftp->state();
-        d->ftp->abort();
-        d->ftp->deleteLater();
-        d->ftp = nullptr;
+        mFtp->state();
+        mFtp->abort();
+        mFtp->deleteLater();
+        mFtp = nullptr;
         return;
     }
 }
-
-
-void FtpManager::downloadFile(FileInfo& info)
-{
-
-    QString localPath = QString::fromStdString(info.ClientPath);
-    qDebug() << "localPath " << localPath;
-    d->downloadFile = new QFile(localPath);
-    bool ret = d->downloadFile->open(QIODevice::WriteOnly);
-    if(ret)
-    {
-        d->ftp->get(QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName), d->downloadFile);
-    }
-}
-
 
 /*
 1、保持与FTP服务器的长连接，需要进行一次FTP操作，我这里使用定时器隔20S获取一次timer.txt文件，文件内容为空。

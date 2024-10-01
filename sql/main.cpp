@@ -112,7 +112,7 @@ vector<std::string> tableCreateStringMap = {
     sender_id INT NOT NULL,
     receiver_id INT NOT NULL,
     file_name VARCHAR(255) NOT NULL,
-    file_type ENUM('file', 'video', 'zip') NOT NULL,
+    file_type VARCHAR(255) NOT NULL,
     file_size INT,
     upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expiry_time TIMESTAMP,

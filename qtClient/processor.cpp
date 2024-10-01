@@ -170,6 +170,22 @@ bool Processor::getAllMessage(int userId)
     return false;
 }
 
+bool Processor::getAllOfflineFile(int userId) {
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << userId;
+    Request req(1, FunctionCode::GetAllOfflineFile, 3, 4, 5, data, user_id);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
 bool Processor::getAllFriendRequest(int userId)
 {
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
@@ -296,7 +312,8 @@ bool Processor::FindGroup(int groupId)
     return false;
 }
 
-
+//如果recv_id为0，说明只是上传文件，而不是发送给某人或者某群
+//如果是发送给某人，最好在某人接收后，服务器通知发送者某人接收到了文件，仅限于p2p，而不是p2g
 bool Processor::SendFile(FileInfo info)
 {
     int filesize = 100;
@@ -305,7 +322,7 @@ bool Processor::SendFile(FileInfo info)
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     std::string data;
     MyProtocolStream stream(data);
-    stream << info.id <<  info.serverPath << info.serverFileName << info.fileType << info.filesize << info.fileMode;
+    stream << info.id << info.serviceType << info.send_id << info.recv_id <<  info.serverPath << info.serverFileName << info.fileType << info.filesize << info.fileMode << info.md5sum;
     Request req(1, FunctionCode::StartUpLoadFile, 3, 4, 5, data, user_id);
 
     string str = req.serial();
@@ -318,34 +335,16 @@ bool Processor::SendFile(FileInfo info)
     return false;
 }
 
-bool Processor::SendMessageSuccess(string filename)
+bool Processor::SendFileSuccess(FileInfo info)
 {
     int md5sum = 0xfffe1111;
     std::string data;
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     MyProtocolStream stream(data);
-    stream << filename << md5sum;
+
+    stream << info.id << info.serviceType << info.send_id << info.recv_id <<  info.serverPath << info.serverFileName << info.fileType << info.filesize << info.fileMode << info.md5sum;
+
     Request req(1, FunctionCode::UpLoadFileSuccess, 3, 4, 5, data, user_id);
-
-    string str = req.serial();
-    QByteArray array(str.c_str(),str.size());
-    int r = clientSocket->SendPacket(array);
-    if (r > 0) {
-        req.print();
-        return true;
-    }
-    return false;
-}
-
-//告诉服务器接收到了文件
-bool Processor::GetMessageSuccess(string filename)
-{
-    int md5sum = 0xfffe1111;
-    std::string data;
-    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
-    MyProtocolStream stream(data);
-    stream << filename << md5sum;
-    Request req(1, FunctionCode::GetFileSuccess, 3, 4, 5, data, user_id);
 
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());
@@ -374,6 +373,27 @@ bool Processor::GetFile(FileInfo info)
     }
     return false;
 }
+
+//告诉服务器接收到了文件,服务器可不响应
+bool Processor::GetFileSuccess(FileInfo info)
+{
+    int md5sum = 0xfffe1111;
+    std::string data;
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    MyProtocolStream stream(data);
+    stream << info.id << info.serverPath << info.serverFileName << md5sum;
+    Request req(1, FunctionCode::GetFileSuccess, 3, 4, 5, data, user_id);
+
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
 
 bool Processor::AgreeRecvFile(bool agree, FileInfo info)
 {

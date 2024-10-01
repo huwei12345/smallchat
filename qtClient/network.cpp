@@ -6,6 +6,7 @@
 #include <QMessageBox>
 #include "Protocol.h"
 #include "globalvaria.h"
+#include "processor.h"
 QTcpSocket socket;
 QByteArray buffer;  // 缓冲区
 quint32 expectedPacketSize = 0;  // 预期数据包长度
@@ -16,19 +17,31 @@ ClientNetWork::ClientNetWork()
     mServerIp = GlobalVaria::GetInstance()->serverIp();
 }
 
-void ClientNetWork::ftpFileSendOver(QString filename)
+void ClientNetWork::ftpFileSendOver(FileInfo info)
 {
-    Q_UNUSED(filename);
     //告知服务器发送文件顺利完成，服务器对可能的数据库项，或者文件项执行一些操作
+    std::cout << "ftpFileSendOver      : " << info.serverPath + info.serverFileName << std::endl;
+
+
+    bool ret = Processor::SendFileSuccess(info);
+    if (!ret) {
+        QMessageBox::information(NULL,"提示","网络不可达！");
+    }
 }
 
-void ClientNetWork::ftpFileGetOver(QString filename)
+void ClientNetWork::ftpFileGetOver(FileInfo info)
 {
-    Q_UNUSED(filename);
     //告知服务器接收文件顺利完成，服务器对可能的数据库项，或者文件项执行一些操作
-    qDebug() << "filename :                                " << filename;
-    if (filename.indexOf("userPhoto/tx") != -1) {
+    std::cout << "ftpFileGetOver      : " << info.serverPath + info.serverFileName << std::endl;
+    QString fileName = QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName);
+    //具体业务，也许可以使用回调函数
+    if (fileName.indexOf("userPhoto/tx") != -1) {
         emit ChangeOwnerPic();
+    }
+
+    bool ret = Processor::GetFileSuccess(info);
+    if (!ret) {
+        QMessageBox::information(NULL,"提示","网络不可达！");
     }
 }
 
@@ -110,6 +123,9 @@ break;
         emit getAllMessageSuccess(rsp);
 break;
     }
+    case FunctionCode::GetAllOfflineFile: {
+        emit getAllOfflineFileSuccess(rsp);
+    }
     case FunctionCode::GetAllFriendRequest: {
         emit getAllFriendRequestSuccess(rsp);
 break;
@@ -160,6 +176,7 @@ break;
         break;
     }
     case FunctionCode::GetFileSuccess: {
+        //收到服务器 （服务器已知道客户端发送完成） 服务器可以不发
         emit GetFileSuccess(rsp);
         break;
     }
