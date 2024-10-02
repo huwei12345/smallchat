@@ -22,6 +22,11 @@ void ClientNetWork::ftpFileSendOver(FileInfo info)
     //告知服务器发送文件顺利完成，服务器对可能的数据库项，或者文件项执行一些操作
     std::cout << "ftpFileSendOver      : " << info.serverPath + info.serverFileName << std::endl;
 
+    QString fileName = QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName);
+    if (fileName.indexOf("userPhoto/tx") != -1) {
+        //TODO:把该文件移动到头像目录，然后emit
+        emit ChangeOwnerPic();
+    }
 
     bool ret = Processor::SendFileSuccess(info);
     if (!ret) {

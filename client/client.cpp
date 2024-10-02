@@ -230,17 +230,11 @@ bool SendMessage(int clientSocket, UserInfo& info, MessageInfo& message) {
     return false;
 }
 
-bool NotifyFile(int clientSocket, UserInfo& info, FileInfo& fileInfo) {
-    int send_id = 0, recv_id = 0;
+bool SendFile(int clientSocket, UserInfo& info, FileInfo& fileInfo) {
     string data;
     MyProtocolStream stream(data);
-    fileInfo.serverPath = "/userInfo/";
-    fileInfo.serverFileName = "a.txt";
-    fileInfo.filesize = 10;
-    send_id = 13;
-    recv_id = 1;
-	stream >> send_id >> recv_id >> fileInfo.serverPath >> fileInfo.serverFileName >> fileInfo.filesize >> fileInfo.fileType;
-    Request req(1, FunctionCode::NofifyFileComing, 3, 4, 5, data, info.user_id);
+    stream << fileInfo.ftpTaskId << fileInfo.id << fileInfo.serviceType << fileInfo.send_id << fileInfo.recv_id <<  fileInfo.serverPath << fileInfo.serverFileName << fileInfo.fileType << fileInfo.filesize << fileInfo.fileMode << fileInfo.md5sum;
+    Request req(1, FunctionCode::StartUpLoadFile, 3, 4, 5, data, info.user_id);
     int r = Trans::send(clientSocket, req);
 	if (r > 0) {
 		printf("send success\n");
@@ -255,6 +249,27 @@ bool NotifyFile(int clientSocket, UserInfo& info, FileInfo& fileInfo) {
     printf("send Message Failure\n");
     return false;
 }
+
+bool SendFileSuccess(int clientSocket, UserInfo& infox, FileInfo& info) {
+    string data;
+    MyProtocolStream stream(data);
+    stream << info.ftpTaskId << info.id << info.serviceType << info.send_id << info.recv_id <<  info.serverPath << info.serverFileName << info.fileType << info.filesize << info.fileMode << info.md5sum;
+    Request req(1, FunctionCode::UpLoadFileSuccess, 3, 4, 5, data, infox.user_id);
+    int r = Trans::send(clientSocket, req);
+	if (r > 0) {
+		printf("send success\n");
+	}
+	Response rsp;
+	int x = Trans::receive(clientSocket, rsp);
+	rsp.print();
+    if (rsp.mCode == 1) {
+        printf("send Message Success\n");
+        return true;
+    }
+    printf("send Message Failure\n");
+    return false;
+}
+
 
 void ReciveMessageAll() {
 
@@ -345,9 +360,19 @@ std::string Client::sendAndRecv(const char *str, int code)
                 SendMessage(clientSocket, info, message);
                 break;
             }
-            case FunctionCode::NofifyFileComing: {
+            case FunctionCode::StartUpLoadFile: {
                 FileInfo infox;
-                NotifyFile(clientSocket, info, infox);
+                infox.serverPath = "1/";
+                infox.serverFileName = "a.txt";
+                infox.filesize = 10;
+                infox.recv_id = 13;
+                infox.send_id = 1;
+                infox.timestamp = "2024-09-09 07:08:09";
+                SendFile(clientSocket, info, infox);
+
+                sleep(1);
+
+                SendFileSuccess(clientSocket, info, infox);
                 break;
             }
         }

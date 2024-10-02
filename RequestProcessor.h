@@ -112,7 +112,7 @@ class ProcessStartUpLoadFileProcessor : public RequestProcessor {
 //通知服务器发送完毕
 class ProcessUpLoadFileSuccessProcessor : public RequestProcessor {
     void Exec(Connection* conn, Request& request, Response&);
-    bool ProcessUpLoadFileSuccess(Request &request, FileInfo& info);
+    bool ProcessUpLoadFileSuccess(Connection* conn, Request &request, FileInfo& info);
     bool ProcessUpLoadSQL(Request &request, FileInfo& info);
 };
 
@@ -125,12 +125,15 @@ class ProcessGetFileProcessor : public RequestProcessor {
 class ProcessGetFileSuccessProcessor : public RequestProcessor {
     void Exec(Connection* conn, Request& request, Response&);
     bool ProcessGetFileSuccess(Request &request, FileInfo& info);
+    bool setReadedBySQL(Request &request, FileInfo& info);
 };
 
 //被动接收，告知服务器要获取的文件， Response:验证文件是否存在和大小等参数
 class ProcessNofifyFileComingProcessor : public RequestProcessor {
+public:
     void Exec(Connection* conn, Request& request, Response&);
-    bool NofifyFileComing(Request &request, FileInfo& info);
+    bool NofifyFileComing(Connection* conn, Request &request, FileInfo& info);
+    bool SendFileBySQL(Request &request, FileInfo& info);
     bool sendNotifyFileByNet(Connection *conn, FileInfo info);
 };
 

@@ -179,13 +179,13 @@ void ChatWindow::on_toolButton_5_clicked()
     FileInfo info;
     info.Generate();
     info.ClientPath = fileName.toStdString();
-    info.serverPath = string("/") + std::to_string(user_id);
+    info.serverPath = std::to_string(user_id) + string("/");
     QFileInfo fileInfo(QString::fromStdString(info.ClientPath));
     // 获取文件名（包括扩展名）
     info.serverFileName = fileInfo.fileName().toStdString();
     info.send_id = user_id;
     info.recv_id = this->mInfo.user_id;
-    info.serverPath = FileServerType::SENDTOPERSON;
+    info.serviceType = FileServerType::SENDTOPERSON;
     FtpSender::GetInstance()->addFile(info);
     bool ret = Processor::SendFile(info);
 }

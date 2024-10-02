@@ -725,6 +725,7 @@ bool ProcessFriendRequestProcessor::ProcessFriendRequest(Request & request, Frie
 void ProcessMessageReadProcessor::Exec(Connection* conn, Request &request, Response &response)
 {
     ProcessMessageRead(request);
+    response.returnFlag = false;
     //No Response
 }
 
@@ -1053,7 +1054,7 @@ void ProcessStartUpLoadFileProcessor::Exec(Connection* conn, Request &request, R
         std::string &data = response.mData;
         MyProtocolStream stream(data);
         //或许名字和路径需要加工一下
-        stream << info.id << info.serverPath << info.serverFileName;
+        stream << info.ftpTaskId << info.id << info.serverPath << info.serverFileName;
     }
     else {
         response.mhasData = false;
@@ -1067,7 +1068,7 @@ bool ProcessStartUpLoadFileProcessor::ProcessStartUpLoadFile(Request &request, F
 
     string& data = request.mData;
     MyProtocolStream stream(data);
-    stream >> info.id >> info.serviceType >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.fileType >> info.filesize >> info.fileMode >> info.md5sum;
+    stream >> info.ftpTaskId >> info.id >> info.serviceType >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.fileType >> info.filesize >> info.fileMode >> info.md5sum;
     if (info.serviceType == FileServerType::TOUXIANG) {
         info.serverPath = "userPhoto/";
     }
@@ -1083,7 +1084,7 @@ bool ProcessStartUpLoadFileProcessor::ProcessStartUpLoadFile(Request &request, F
 void ProcessUpLoadFileSuccessProcessor::Exec(Connection* conn, Request &request, Response &response)
 {
     FileInfo info;
-    bool ret = ProcessUpLoadFileSuccess(request, info);
+    bool ret = ProcessUpLoadFileSuccess(conn, request, info);
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
     }
@@ -1096,17 +1097,23 @@ bool checkmd5(FileInfo& info) {
     return true;
 }
 
-bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadFileSuccess(Request &request, FileInfo& info)
+bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadFileSuccess(Connection* conn, Request &request, FileInfo& info)
 {
     string& data = request.mData;
     MyProtocolStream stream(data);
-    stream >> info.id >> info.serviceType >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.fileType >> info.filesize >> info.fileMode >> info.md5sum;
+    stream >> info.ftpTaskId >> info.id >> info.serviceType >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.fileType >> info.filesize >> info.fileMode >> info.md5sum;
     bool ret = checkmd5(info);
 
     if (info.recv_id != 0) {
-        ProcessUpLoadSQL(request, info);        
+        if (ProcessUpLoadSQL(request, info) == true) {
+            //通知要接收用户
+            ProcessNofifyFileComingProcessor processor;
+            Response response;
+            if (processor.NofifyFileComing(conn, request, info)) {
+                //在线而发送失败
+            }
+        }
     }
-
     return ret;
 }
 
@@ -1133,7 +1140,22 @@ bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadSQL(Request &request, FileI
     try {
         pstmt->execute();
         pstmt->close();
+        sql::PreparedStatement* state3 = conn->prepareStatement("SELECT LAST_INSERT_ID();");
+        sql::ResultSet* rs = state3->executeQuery();
+        int autoIncKeyFromFunc = -1;
+        if (rs->next()) {
+            autoIncKeyFromFunc = rs->getInt(1);
+        } else {
+            // throw an exception from here
+        }
+        info.id = autoIncKeyFromFunc;
+        printf("id = %d\n", info.id);
+        rs->close();
+        state3->close();
         MysqlPool::GetInstance()->releaseConncetion(conn);
+        if (info.id <= 0) {
+            return false;
+        }
         return true;
     } catch (sql::SQLException& e) {
         std::cerr << "SQL error: " << e.what() << std::endl;
@@ -1157,7 +1179,7 @@ void ProcessGetFileProcessor::Exec(Connection *conn, Request &request, Response 
         std::string &data = response.mData;
         MyProtocolStream stream(data);
         //传给客户端使用ftp获取时的一些参数，可能包括密码
-        stream << info.id << info.serverPath << info.serverFileName << info.filesize;
+        stream << info.ftpTaskId << info.id << info.serverPath << info.serverFileName << info.filesize;
     }
     else {
         //some error info add
@@ -1168,7 +1190,10 @@ bool ProcessGetFileProcessor::ProcessGetFile(Request &request, FileInfo &info)
 {
     string& data = request.mData;
     MyProtocolStream stream(data);
-    stream >> info.id >> info.serverPath >> info.serverFileName >> info.filesize;
+    stream >> info.ftpTaskId >> info.id >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.filesize;
+    if (info.send_id > 0) {
+        //来自用户   
+    }
     /*
         ret = stat(info.filename);
         if (ret == true) {
@@ -1202,30 +1227,53 @@ bool ProcessGetFileSuccessProcessor::ProcessGetFileSuccess(Request &request, Fil
 {
     string& data = request.mData;
     MyProtocolStream stream(data);
-    stream >> info.serverFileName >> info.md5sum;
+    stream >> info.ftpTaskId >> info.id >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.md5sum;
+    if (info.send_id > 0) {
+        //来自用户
+        if (setReadedBySQL(request, info)) {
+            //设置read=1不成功
+        }
+    }
     bool ret = checkmd5(info);
     return ret;
+}
+
+bool ProcessGetFileSuccessProcessor::setReadedBySQL(Request &request, FileInfo &info)
+{
+    //范围确认 start-end
+    //后续可以优化为根据协议如何确认，如type = byte[0] type1:范围确认 type2:单条确认 type3:时间确认 type4:位图确认
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == NULL) {
+        return false;
+    }
+    sql::PreparedStatement* state2 = conn->prepareStatement(R"(update offline_transfers set downloaded = ? 
+        where transfer_id = ? and sender_id = ? and receiver_id = ?;)");
+    printf("[[[[read=1 %d:   %d  %d %s]]]]\n", info.id, info.send_id, info.recv_id, info.serverFileName.c_str());
+    state2->setInt(1, 1);
+    state2->setInt(2, info.id);
+    state2->setInt(3, info.send_id);
+    state2->setInt(4, info.recv_id);
+    try {
+        state2->executeUpdate();
+    }
+    catch(sql::SQLException& e) {
+        //rollback
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        state2->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    state2->close();
+    MysqlPool::GetInstance()->releaseConncetion(conn);    
+    return true;
 }
 
 std::queue<FileInfo> getFileInfoList() {
     return {};
 }
 
-
-bool ProcessNofifyFileComingProcessor::sendNotifyFileByNet(Connection* conn, FileInfo info) {
-    std::string data;
-    int clientSocket = conn->clientSocket; 
-    MyProtocolStream stream(data);
-    int send_id = 0, recv_id = 0;
-    stream << send_id << recv_id << info.serverPath << info.serverFileName << info.filesize << info.fileType;
-    Response rsp(1, FunctionCode::NofifyFileComing, 3, 4, 5, 1, send_id, 1, true, data);
-    string str = rsp.serial();
-    bool success = sendResponse(clientSocket, &rsp);
-    if (success > 0) {
-        return true;
-    }
-    return false;
-}
 
 //但这里应该首先保证该文件已经传输完成，在传输完成的响应后，添加入库，然后发送通知，而不是直接发送，
 //所以Notify其实就等于本地客户先UpLoadFile，根据标志位再notify其他用户get
@@ -1234,27 +1282,14 @@ bool ProcessNofifyFileComingProcessor::sendNotifyFileByNet(Connection* conn, Fil
 //如果send_id = 0， 说明是群组发送的
 //如果send_id > 0, 说明是人发送的
 //先入库，然后如果在线，直接发送通知，等客户端收到数据，然后再改库
+
+//这个Exec貌似不应该作为协议请求，而只是作为Response通知，而后客户端通过GetFile流程获取文件，判断GetFile里的recv_id是否是来自于人还是系统文件
 void ProcessNofifyFileComingProcessor::Exec(Connection *conn, Request &request, Response &response)
 {
-    FileInfo info;//返回值
+    //弃用
     bool ret = false;
-    info.serverPath = "userInfo/";
-    info.serverFileName = "a.txt";
-    
-    //ret = SendFileBySQL(request, info);
-    
-    //在线时，直接通过网络发送文件给客户端，（接收消息和朋友请求的逻辑）
-    if (Server::GetInstance()->mUserSessionMap.count(info.recv_id)) {
-        //从userId索引到Connection再得到clientSocket
-        //思路1：在线，直接发送，入库read=0, 等消息确认相应，再修改read=1
-        //思路2：直接入库read=0，不发送，等客户端进行心跳连接时，相应新消息和朋友请求
-        //思路3：当在库中新增一项时，触发某任务，向客户发送消息，异步发送
-        Session* session = Server::GetInstance()->mUserSessionMap[info.recv_id];
-        Connection* friendConn = session->mConn;
-        if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
-            bool ret = sendNotifyFileByNet(friendConn, info);
-        }
-    }
+    FileInfo info;
+    NofifyFileComing(conn, request, info);
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
         //TODO:发出去的消息，相应需要带ID吗？
@@ -1264,15 +1299,35 @@ void ProcessNofifyFileComingProcessor::Exec(Connection *conn, Request &request, 
         //some error info add
     }
     //响应返回给本用户表示发送成功，通知给其他用户。如何区分？flag
+    response.returnFlag = false;
 }
 
-bool ProcessNofifyFileComingProcessor::NofifyFileComing(Request &request, FileInfo &info)
+bool ProcessNofifyFileComingProcessor::NofifyFileComing(Connection *conn, Request &request, FileInfo &info)
 {
-    string& data = request.mData;
+    bool ret = true;
+    //在线时，直接通过网络发送文件给客户端，（接收消息和朋友请求的逻辑）
+    if (Server::GetInstance()->mUserSessionMap.count(info.recv_id)) {
+        Session* session = Server::GetInstance()->mUserSessionMap[info.recv_id];
+        Connection* friendConn = session->mConn;
+        if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
+            ret = sendNotifyFileByNet(friendConn, info);
+        }
+    }
+    return ret;
+}
+
+bool ProcessNofifyFileComingProcessor::sendNotifyFileByNet(Connection* conn, FileInfo info) {
+    std::string data;
+    int clientSocket = conn->clientSocket; 
     MyProtocolStream stream(data);
-    int send_id = 0, recv_id = 0;
-    stream << send_id << recv_id << info.serverPath << info.serverFileName << info.filesize << info.fileType;
-    return true;
+    stream << info.ftpTaskId << info.id << info.send_id << info.recv_id << info.serverPath << info.serverFileName << info.filesize << info.fileType;
+    Response rsp(1, FunctionCode::NofifyFileComing, 3, 4, 5, 1, info.send_id, 1, true, data);
+    string str = rsp.serial();
+    bool success = sendResponse(clientSocket, &rsp);
+    if (success > 0) {
+        return true;
+    }
+    return false;
 }
 
 void ProcessTransFileOverProcessor::Exec(Connection *conn, Request &request, Response &)
@@ -1295,12 +1350,15 @@ void ProcessGetAllOfflineFileProcessor::Exec(Connection *conn, Request &request,
         MyProtocolStream stream(data);
         stream << (int)infoList.size();
         for (int i = 0; i < infoList.size(); i++) {
+            stream << infoList[i].ftpTaskId;
+            stream << infoList[i].id;
             stream << infoList[i].send_id;
             stream << infoList[i].recv_id;
             stream << infoList[i].serviceType;
             stream << infoList[i].serverPath;
             stream << infoList[i].serverFileName;
             stream << infoList[i].timestamp;
+            infoList[i].print();
         }
     }
     else {
@@ -1320,7 +1378,7 @@ bool ProcessGetAllOfflineFileProcessor::GetAllOfflineFile(Request &request, vect
 
 	sql::PreparedStatement* state2 = conn->prepareStatement(R"(select transfer_id, sender_id, receiver_id, file_name, file_type, file_size, upload_time from offline_transfers
         where downloaded = ? and receiver_id = ?;)");
-    state2->setInt(1, 0);
+    state2->setInt(1, 2);
     state2->setInt(2, request.mUserId);
     sql::ResultSet *st = state2->executeQuery();
     int id = -1;

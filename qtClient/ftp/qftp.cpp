@@ -39,7 +39,7 @@
 **
 ****************************************************************************/
 
-//#define QFTPPI_DEBUG
+#define QFTPPI_DEBUG
 //#define QFTPDTP_DEBUG
 
 #include "qftp.h"
@@ -846,6 +846,7 @@ bool QFtpPI::sendCommands(const QStringList &cmds)
     }
 
     pendingCommands = cmds;
+    qDebug() << "sendCommands";
     startNextCmd();
     return true;
 }
@@ -994,6 +995,7 @@ bool QFtpPI::processReply()
     // connection is really closed to avoid short reads of the DTP
     if (replyCodeInt == 226 || (replyCodeInt == 250 && currentCmd.startsWith(QLatin1String("RETR")))) {
         if (dtp.state() != QTcpSocket::UnconnectedState) {
+            qDebug("QFtpPI: waitForDtpToClose");
             waitForDtpToClose = true;
             return false;
         }
@@ -1158,10 +1160,10 @@ bool QFtpPI::processReply()
 */
 bool QFtpPI::startNextCmd()
 {
-    if (waitForDtpToConnect)
+    if (waitForDtpToConnect) {
         // don't process any new commands until we are connected
         return true;
-
+    }
 #if defined(QFTPPI_DEBUG)
     if (state != Idle)
         qDebug("QFtpPI startNextCmd: Internal error! QFtpPI called in non-Idle state %d", state);
@@ -1235,12 +1237,14 @@ void QFtpPI::dtpConnectState(int s)
             return;
         case QFtpDTP::CsConnected:
             waitForDtpToConnect = false;
+            qDebug() << "dtpConnectState CsConnected";
             startNextCmd();
             return;
         case QFtpDTP::CsHostNotFound:
         case QFtpDTP::CsConnectionRefused:
             emit error(QFtp::ConnectionRefused,
                         QFtp::tr("Connection refused for data connection"));
+            qDebug() << "dtpConnectState CsHostNotFound";
             startNextCmd();
             return;
         default:
@@ -1273,7 +1277,7 @@ public:
     void _q_piFtpReply(int, const QString&);
 
     int addCommand(QFtpCommand *cmd);
-
+    void ActivateCmd();
     QFtpPI pi;
     QList<QFtpCommand *> pending;
     bool close_waitForStateChange;
@@ -1297,6 +1301,13 @@ int QFtpPrivate::addCommand(QFtpCommand *cmd)
         QTimer::singleShot(0, q_func(), SLOT(_q_startNextCommand()));
     }
     return cmd->id;
+}
+
+void QFtpPrivate::ActivateCmd() {
+    if (pending.count() >= 1) {
+        // don't emit the commandStarted() signal before the ID is returned
+        QTimer::singleShot(0, q_func(), SLOT(_q_startNextCommand()));
+    }
 }
 
 /**********************************************************************
@@ -1851,6 +1862,7 @@ int QFtp::get(const QString &file, QIODevice *dev, TransferType type)
     cmds << QLatin1String("SIZE ") + file + QLatin1String("\r\n");
     cmds << QLatin1String(d->transferMode == Passive ? "PASV\r\n" : "PORT\r\n");
     cmds << QLatin1String("RETR ") + file + QLatin1String("\r\n");
+    qDebug() << "[cmds]" << cmds;
     return d->addCommand(new QFtpCommand(Get, cmds, dev));
 }
 
@@ -2093,7 +2105,7 @@ void QFtp::abort()
 {
     if (d->pending.isEmpty())
         return;
-
+    qDebug() << "llllllllll";
     clearPendingCommands();
     d->pi.abort();
 }
@@ -2167,6 +2179,7 @@ bool QFtp::hasPendingCommands() const
 */
 void QFtp::clearPendingCommands()
 {
+    qDebug() << "zzzzzzzzzzzzzzzzzzzzzzz";
     // delete all entires except the first one
     while (d->pending.count() > 1)
         delete d->pending.takeLast();
@@ -2286,8 +2299,9 @@ void QFtpPrivate::_q_startNextCommand()
 
 /*! \internal
 */
-void QFtpPrivate::_q_piFinished(const QString&)
+void QFtpPrivate::_q_piFinished(const QString&s)
 {
+    //qDebug() << "_q_piFinished " << s;
     if (pending.isEmpty())
         return;
     QFtpCommand *c = pending.first();
@@ -2306,10 +2320,10 @@ void QFtpPrivate::_q_piFinished(const QString&)
     pending.removeFirst();
 
     delete c;
-
     if (pending.isEmpty()) {
         emit q_func()->done(false);
     } else {
+        qDebug() << "_q_startNextCommand";
         _q_startNextCommand();
     }
 }
@@ -2334,7 +2348,15 @@ void QFtpPrivate::_q_piError(int errorCode, const QString &text)
     } else if (c->command==QFtp::Put && pi.currentCommand().startsWith(QLatin1String("ALLO "))) {
         return;
     }
+    /*else if (c->command==QFtp::Get && pi.currentCommand().startsWith(QLatin1String("RETR "))) {
+        pi.dtp.setBytesTotal(0);
+        pi.clearPendingCommands();
+        pending.removeFirst();
+        delete c;
+        return;
+    }*/
 
+    qDebug() << "[errorCode]" << errorCode << "cmd " << c->command << "cmd2" << pi.currentCommand();
     error = QFtp::Error(errorCode);
     switch (q->currentCommand()) {
         case QFtp::ConnectToHost:
@@ -2377,17 +2399,19 @@ void QFtpPrivate::_q_piError(int errorCode, const QString &text)
             errorString = text;
             break;
     }
-
     pi.clearPendingCommands();
-    q->clearPendingCommands();
+    if (c->command != QFtp::Get && c->command != QFtp::Put)
+        q->clearPendingCommands();
     emit q->commandFinished(c->id, true);
 
     pending.removeFirst();
     delete c;
     if (pending.isEmpty())
         emit q->done(true);
-    else
+    else {
+        qDebug() << "_q_startNextCommand2";
         _q_startNextCommand();
+    }
 }
 
 /*! \internal

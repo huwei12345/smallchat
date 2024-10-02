@@ -58,7 +58,8 @@ signals:
 
     void FileGetOver(FileInfo info);
     void ftpFileSendOver(FileInfo info);
-
+    void FileGetOverFailure(FileInfo info);
+    void ftpFileSendOverFailure(FileInfo info);
 private slots:
     void ftpCommandFinished(int cmdId, bool error);
     void ftpStateChanged(int state);

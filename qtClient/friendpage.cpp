@@ -58,7 +58,7 @@ bool FriendPage::initPage() {
     connect(ClientNetWork::GetInstance(), &ClientNetWork::GetFileFirstSuccess, this, &FriendPage::GetFileFirstSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::StartUpLoadFileSuccess, this, &FriendPage::StartUpLoadFileSuccess);
 
-    //获取 服务器对客户端已经收发完成消息的相应
+    //获取 服务器对客户端已经收发完成消息的相应，服务器的响应文件操作成功，非FTP的文件操作成功
     connect(ClientNetWork::GetInstance(), &ClientNetWork::GetFileSuccess, this, &FriendPage::GetFileSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::UpLoadFileSuccess, this, &FriendPage::SendFileSuccess);
     return true;
@@ -92,6 +92,7 @@ int FriendPage::init() {
     ret = initFriendRequest();
 
     ret = initMyPhoto();
+    ret = initAllOfflineFile();
     return ret;
 }
 
@@ -148,7 +149,6 @@ void FriendPage::findAllFriendSuccess(Response response)
     MyProtocolStream stream2(mdata);
     int size = 0;
     stream2 >> size;
-    qDebug() << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  " << size;
     for (int i = 0; i < size; i++) {
         //TODO:ToolButton put in widget
         UserInfo info;
@@ -206,13 +206,16 @@ void FriendPage::getAllOfflineFileSuccess(Response response)
         //TODO:ToolButton put in widget
         FileInfo info;
         info.Generate();
+        stream2 >> info.ftpTaskId;
+        stream2 >> info.id;
         stream2 >> info.send_id;
         stream2 >> info.recv_id;
         stream2 >> info.serviceType;
         stream2 >> info.serverPath;
         stream2 >> info.serverFileName;
         stream2 >> info.timestamp;
-        //info.print();
+        info.ClientPath = std::string("D:/BaiduNetdiskDownload/untitled2/userInfo/") + info.serverFileName;
+        info.print();
         FtpSender::GetInstance()->addFile(info);
         FtpSender::GetInstance()->GetFile(info);
         //当获取后还需要提醒窗口已下载完成
@@ -230,7 +233,6 @@ void FriendPage::getAllOfflineFileSuccess(Response response)
 }
 
 void FriendPage::friendPageUpdate(int uid) {
-    printf("mmmmmmmmmmmmmmmmmmmmmmmmmm\n");
     fflush(stdout);
     QString str = mFriendButton[uid]->text();
     int index = str.indexOf("[New");
@@ -395,15 +397,10 @@ void FriendPage::addFriendToPage(int i, UserInfo info) {
 void FriendPage::chatWithFriend(QListWidgetItem* item) {
     //需要根据是哪个item获取是哪个chatWindow
     int userId = item->whatsThis().toInt();
-    //ChatWindow* chatWindow = new ChatWindow;
-    printf("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
-    printf("userId = %d\n", userId);
     ChatWindow* chatWindow = mChatWindowMap[userId];
     chatWindow->returnWindow = this;
     chatWindow->show();
     chatWindow->showChatContent();
-    //this->hide();
-    qDebug() << " hello!" << item;
 }
 
 void FriendPage::on_toolButton_4_clicked()
@@ -498,10 +495,10 @@ void FriendPage::NofifyFileComing(Response response)
     MyProtocolStream stream(mData);
     FileInfo info;
     info.Generate();
-    int send_id = 0, recv_id = 0;
-    stream >> send_id >> recv_id >> info.serverPath >> info.serverFileName >> info.filesize >> info.fileType;
+    stream >> info.ftpTaskId >> info.id >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.filesize >> info.fileType;
+    info.print();
     //判断是否接收
-    info.ClientPath = std::string("D:/userInfo/") + info.serverFileName;
+    info.ClientPath = std::string("D:/BaiduNetdiskDownload/untitled2/userInfo/") + info.serverFileName;
     info.filesize = 10;
     int ret = false;
     if (info.filesize < 1000 * 1000 * 10) {
@@ -530,6 +527,7 @@ void FriendPage::NofifyFileComing(Response response)
         mFriendButton[info.send_id]->setText(str + "  [New Message]");
 
         mChatWindowMap[info.send_id]->addFileArrive(info);
+        //FtpSender::GetInstance()->GetFile(info);
     }
 }
 
@@ -555,10 +553,11 @@ void FriendPage::GetFileFirstSuccess(Response response)
     MyProtocolStream stream2(mdata);
     int ret = response.mCode;
     if (ret) {
-        int id = -1; stream2 >> id;
-        FileInfo info = FtpSender::GetInstance()->file(id);//这样缓存了clientPath和clientFileName
-        stream2 >> info.serverPath >> info.serverFileName >> info.filesize;
-        std::cout << "        t   " << info.id << info. serverPath << info.serverFileName << info.filesize << std::endl;
+        int ftptaskId = -1;
+        stream2 >> ftptaskId;
+        FileInfo info = FtpSender::GetInstance()->file(ftptaskId);//这样缓存了clientPath和clientFileName
+        stream2 >> info.id >> info.serverPath >> info.serverFileName >> info.filesize;
+        info.print();
         info.filesize = 10;
         if (info.filesize < 10 * 1024 * 1024) {
             qDebug() << "Will Ftp Get .............................";
@@ -600,12 +599,10 @@ void FriendPage::SendFileSuccess(Response response)
     }
 }
 
-//头像按钮
+//头像按钮,上传头像
 void FriendPage::on_toolButton_5_clicked()
 {
-    //上传头像
     // 弹出文件选择对话框
-
     /*
         tr("Open Image"),
             "",
@@ -643,9 +640,10 @@ void FriendPage::StartUpLoadFileSuccess(Response response)
     //Response: 告知允许上传，及部分参数
     int ret = response.mCode;
     if (ret) {
-        int id = -1; stream2 >> id;
-        FileInfo info = FtpSender::GetInstance()->file(id);
-        stream2 >> info.serverPath >> info.serverFileName;
+        int ftpTaskId = -1;
+        stream2 >> ftpTaskId;
+        FileInfo info = FtpSender::GetInstance()->file(ftpTaskId);
+        stream2 >> info.id >> info.serverPath >> info.serverFileName;
         FtpSender::GetInstance()->SendFile(info);//ftp发送队列异步发送
     }
     else {

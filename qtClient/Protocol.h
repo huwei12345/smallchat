@@ -114,11 +114,13 @@ namespace FunctionCode {
         "StartUpLoadFile     ",
         "UpLoadFileSuccess   ",
         "GetFile             ",
-        "GetFileSecond       ",
+        "GetFileSuccess      ",
         "GetFileThird        ",
         "NofifyFileComing    ",
         "AgreeRecvFile       ",
-        "TransFileOver       "
+        "TransFileOver       ",
+        "GetAllOfflineFile   ",
+        "GetOfflineFile      ",
     };
 };
 
@@ -195,8 +197,9 @@ enum FileServerType {
 
 class FileInfo {
 public:
-    FileInfo() : id(0) {}
+    FileInfo() : id(0), ftpTaskId(0) {}
     int id;
+    int ftpTaskId;
     int send_id;
     int recv_id;
     string serverPath;
@@ -213,10 +216,26 @@ public:
     static QMutex genMutex;
     void Generate() {
         QMutexLocker locker(&FileInfo::genMutex);
-        id = ++FileInfo::GenerateId;
-        std::cout << "Gen Id : " << id << std::endl;
+        ftpTaskId = ++FileInfo::GenerateId;
+        std::cout << "Gen FtpId : " << ftpTaskId << std::endl;
     }
 #endif
+    void print() const {
+        std::cout << "id: " << id
+                  << "ftpTaskid: " << ftpTaskId
+                  << "\tsend_id: " << send_id
+                  << "\trecv_id: " << recv_id
+                  << "\tserverPath: " << serverPath
+                  << "\tserverFileName: " << serverFileName
+                  << "\tClientPath: " << ClientPath
+                  << "\tfileType: " << fileType
+                  << "\tserviceType: " << serviceType
+                  << "\tfilesize: " << filesize
+                  << "\tfileMode: " << fileMode
+                  << "\tmd5sum: " << md5sum
+                  << "\ttimestamp: " << timestamp
+                  << std::endl;
+    }
 };
 
 

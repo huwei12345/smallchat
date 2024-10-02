@@ -322,7 +322,7 @@ bool Processor::SendFile(FileInfo info)
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     std::string data;
     MyProtocolStream stream(data);
-    stream << info.id << info.serviceType << info.send_id << info.recv_id <<  info.serverPath << info.serverFileName << info.fileType << info.filesize << info.fileMode << info.md5sum;
+    stream << info.ftpTaskId << info.id << info.serviceType << info.send_id << info.recv_id <<  info.serverPath << info.serverFileName << info.fileType << info.filesize << info.fileMode << info.md5sum;
     Request req(1, FunctionCode::StartUpLoadFile, 3, 4, 5, data, user_id);
 
     string str = req.serial();
@@ -342,7 +342,7 @@ bool Processor::SendFileSuccess(FileInfo info)
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     MyProtocolStream stream(data);
 
-    stream << info.id << info.serviceType << info.send_id << info.recv_id <<  info.serverPath << info.serverFileName << info.fileType << info.filesize << info.fileMode << info.md5sum;
+    stream << info.ftpTaskId << info.id << info.serviceType << info.send_id << info.recv_id <<  info.serverPath << info.serverFileName << info.fileType << info.filesize << info.fileMode << info.md5sum;
 
     Request req(1, FunctionCode::UpLoadFileSuccess, 3, 4, 5, data, user_id);
 
@@ -362,7 +362,7 @@ bool Processor::GetFile(FileInfo info)
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     std::string data;
     MyProtocolStream stream(data);
-    stream << info.id << info.serverPath << info.serverFileName << filesizeLimit;
+    stream << info.ftpTaskId << info.id << info.send_id << info.recv_id << info.serverPath << info.serverFileName << filesizeLimit;
     Request req(1, FunctionCode::GetFile, 3, 4, 5, data, user_id);
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());
@@ -374,14 +374,14 @@ bool Processor::GetFile(FileInfo info)
     return false;
 }
 
-//告诉服务器接收到了文件,服务器可不响应
+//告诉服务器接收到了文件,服务器可不响应,服务器进行数据库操作等
 bool Processor::GetFileSuccess(FileInfo info)
 {
     int md5sum = 0xfffe1111;
     std::string data;
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     MyProtocolStream stream(data);
-    stream << info.id << info.serverPath << info.serverFileName << md5sum;
+    stream << info.ftpTaskId << info.id << info.send_id << info.recv_id << info.serverPath << info.serverFileName << info.md5sum;
     Request req(1, FunctionCode::GetFileSuccess, 3, 4, 5, data, user_id);
 
     string str = req.serial();
@@ -394,14 +394,13 @@ bool Processor::GetFileSuccess(FileInfo info)
     return false;
 }
 
-
 bool Processor::AgreeRecvFile(bool agree, FileInfo info)
 {
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     std::string data;
     MyProtocolStream stream(data);
     //或许需要一个Id,便于服务器标识
-    stream << agree << info.id << info.serverPath << info.serverFileName;
+    stream << agree << info.ftpTaskId << info.id << info.serverPath << info.serverFileName;
     Request req(1, FunctionCode::AgreeRecvFile, 3, 4, 5, data, user_id);
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());

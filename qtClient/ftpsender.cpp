@@ -11,6 +11,7 @@ FtpSender::FtpSender()
                              this);
     ftpUtil->connectFtp();
 
+    //FTP文件上传下载的成功，不是服务器确认文件操作的成功，后续可能服务器还需要确认响应和数据库操作
     connect(ftpUtil, &FtpManager::ftpFileSendOver, ClientNetWork::GetInstance(), &ClientNetWork::ftpFileSendOver);
     connect(ftpUtil, &FtpManager::FileGetOver, ClientNetWork::GetInstance(), &ClientNetWork::ftpFileGetOver);
 }
@@ -74,21 +75,21 @@ void FtpSender::GetFile(FileInfo& info) {
 
 void FtpSender::addFile(FileInfo &info)
 {
-    if (mCurrentFileMap.count(info.id) == 0) {
-        mCurrentFileMap[info.id] = info;
+    if (mCurrentFileMap.count(info.ftpTaskId) == 0) {
+        mCurrentFileMap[info.ftpTaskId] = info;
     }
     else {
-        qDebug() << "Error Push Ftp File Id : " << info.id;
+        qDebug() << "Error Push Ftp File Id : " << info.ftpTaskId;
     }
 }
 
 void FtpSender::removeFile(FileInfo &info)
 {
-    if (mCurrentFileMap.count(info.id) == 0) {
-        mCurrentFileMap.erase(info.id);
+    if (mCurrentFileMap.count(info.ftpTaskId) == 0) {
+        mCurrentFileMap.erase(info.ftpTaskId);
     }
     else {
-        qDebug() << "Error Remove Ftp File Id : " << info.id;
+        qDebug() << "Error Remove Ftp File Id : " << info.ftpTaskId;
     }
 }
 

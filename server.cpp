@@ -280,6 +280,7 @@ Server::Server(const char *ip, unsigned int port)
     requestProcessor[FunctionCode::AgreeRecvFile] = new RequestProcessor;
 
     requestProcessor[FunctionCode::GetAllOfflineFile] = new ProcessGetAllOfflineFileProcessor;
+    
     requestProcessor[FunctionCode::GetOfflineFile] = new ProcessGetOfflineFileProcessor;
     
     for (int i = 30; i < 100; i++) {

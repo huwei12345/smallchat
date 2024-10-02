@@ -50,7 +50,7 @@ void FtpManager::uploadFile(FileInfo& info)
         return;
     }
     QString localPath = QString::fromStdString(info.ClientPath);
-    qDebug() << "localPath: " << localPath;
+    qDebug() << "localPath upload: " << localPath;
     sFtpData data;
     data.uploadFile = new QFile(localPath);
     data.mInfo = info;
@@ -60,6 +60,9 @@ void FtpManager::uploadFile(FileInfo& info)
         int cmdId = mFtp->put(data.uploadFile,QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName));
         mTaskMap[cmdId] = data;
     }
+    else {
+        printf("upload open %s error\n", data.downloadFile->fileName().toStdString().c_str());
+    }
 }
 
 
@@ -67,15 +70,19 @@ void FtpManager::downloadFile(FileInfo& info)
 {
 
     QString localPath = QString::fromStdString(info.ClientPath);
-    qDebug() << "localPath " << localPath;
+    qDebug() << "localPath download" << localPath;
     sFtpData data;
     data.downloadFile = new QFile(localPath);
     data.mInfo = info;
     bool ret = data.downloadFile->open(QIODevice::WriteOnly);
     if(ret)
     {
+
         int cmdId = mFtp->get(QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName), data.downloadFile);
         mTaskMap[cmdId] = data;
+    }
+    else {
+        printf("download open %s error\n", data.downloadFile->fileName().toStdString().c_str());
     }
 }
 
@@ -143,6 +150,15 @@ void FtpManager::ftpCommandFinished(int cmdId, bool error)
     {
         if(data.downloadFile && data.downloadFile->isOpen())
         {
+            if (error) {
+                qDebug() << "downLoad" << data.downloadFile->fileName() << "error: " << error;
+                emit FileGetOverFailure(mTaskMap[cmdId].mInfo);
+                data.downloadFile->close();
+                delete data.downloadFile;
+                data.downloadFile = nullptr;
+                mTaskMap.erase(cmdId);
+                return;
+            }
             emit FileGetOver(mTaskMap[cmdId].mInfo);
             data.downloadFile->close();
             delete data.downloadFile;
@@ -158,6 +174,14 @@ void FtpManager::ftpCommandFinished(int cmdId, bool error)
             emit sigUploaded(true);
         if(data.uploadFile && data.uploadFile->isOpen())
         {
+            if (error) {
+                qDebug() << "upload" << data.downloadFile->fileName() << "error: " << error;
+                emit ftpFileSendOverFailure(mTaskMap[cmdId].mInfo);
+                data.uploadFile->close();
+                delete data.uploadFile;
+                mTaskMap.erase(cmdId);
+                return;
+            }
             emit ftpFileSendOver(mTaskMap[cmdId].mInfo);
             data.uploadFile->close();
             delete data.uploadFile;
