@@ -1,7 +1,7 @@
 ﻿#ifndef GLOBALVARIA_H
 #define GLOBALVARIA_H
 #include <QString>
-
+#include "clientpersoninfo.h"
 class GlobalVaria
 {
 public:

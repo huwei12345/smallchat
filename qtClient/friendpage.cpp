@@ -21,6 +21,7 @@
 #include "network.h"
 #include "processor.h"
 #include "ftpsender.h"
+#include "globalvaria.h"
 bool FriendPage::initPage() {
     QIcon windowIcon(QPixmap(":/main/title.jpeg")); // 假设你的图标文件位于资源文件中或者项目目录下
     setWindowIcon(windowIcon);
@@ -87,22 +88,59 @@ FriendPage::FriendPage(UserInfo &info, QWidget *parent) :
 int FriendPage::init() {
     int ret = initFriendList();
     //QThread::msleep(20); // 睡眠1秒
-    ret = initMessageList();
+    ret &= initMessageList();
     //QThread::msleep(20); // 睡眠1秒
-    ret = initFriendRequest();
+    ret &= initFriendRequest();
 
-    ret = initMyPhoto();
-    ret = initAllOfflineFile();
+    ret &= initMyPhoto();
+
+    ret &= initAllOfflineFile();
+
+    ret &= initFriendPhoto();
     return ret;
 }
 
 
+bool FriendPage::initFriendPhoto() {
+    //发送一大堆图片获取命令，根据在获取朋友列表里得到的url
+    return true;
+}
+
 bool FriendPage::initMyPhoto() {
+    QRegularExpression pattern(R"(^mr(1[0-9]|20|[1-9])\.jpg$)");
+    // 检查是否匹配
+    QString serverPath = QString::fromStdString(ClientPersonInfo::GetInstance()->avatar_url);
+    QFileInfo fileInfo(serverPath);
+    // 获取文件名（包括扩展名）
+    QString fileName = fileInfo.fileName();
+    bool regularPic = pattern.match(fileName).hasMatch();
+    qDebug() << "tttttttttttttttttttttttt " << serverPath << regularPic;
+
+    if (regularPic) {
+        QString filePath = QCoreApplication::applicationDirPath() + "/userPhoto/regular/" + fileName;
+        qDebug() << "修改个人头像，当前工作目录:" << filePath;
+        if (QFile::exists(filePath)) {
+            // 如果文件存在，加载图像并设置为头像
+            QIcon icon(filePath);
+            ui->toolButton_5->setIcon(icon);
+            ui->toolButton_5->setIconSize(QSize(50, 50));
+        } else {
+            // 文件不存在，给用户提示
+            QMessageBox::warning(nullptr, "警告", "常规头像文件不存在[客户端错误1]");
+        }
+        return true;
+    }
     FileInfo info;
     info.Generate();
-    info.serverPath = "userPhoto/";
-    info.serverFileName = "tx" + mInfo.username + ".jpg";
-    info.ClientPath = QCoreApplication::applicationDirPath().toStdString() + "/userPhoto/" + info.serverFileName;
+
+    //截取服务器发来的图片路径和名字
+    QString touxiang = QString::fromStdString(ClientPersonInfo::GetInstance()->avatar_url);
+    QFileInfo finfo(touxiang);
+    info.serverPath = finfo.path().toStdString() + "/";
+    info.serverFileName = finfo.fileName().toStdString();
+    //客户端名字统一为userPhoto/tx...[.suffex]
+    info.ClientPath = QCoreApplication::applicationDirPath().toStdString() + "/userPhoto/tx" + ClientPersonInfo::GetInstance()->username + "." + finfo.suffix().toStdString();
+
     FtpSender::GetInstance()->addFile(info);
     bool ret = Processor::GetFile(info);
     if (!ret) {
@@ -532,15 +570,42 @@ void FriendPage::NofifyFileComing(Response response)
 }
 
 
-void FriendPage::ChangeOwnerPic()
+void FriendPage::ChangeOwnerPic(FileInfo info)
 {
-    QString filePath = QCoreApplication::applicationDirPath() + "/userPhoto/tx" + QString::fromStdString(mInfo.username) + ".jpg";
+    QFileInfo fileInfo(QString::fromStdString(info.ClientPath));
+   // 获取文件扩展名
+   QString extension = fileInfo.suffix();
+   qDebug() << "File extension:" << extension;
+
+    QString filePath;
+
+    size_t regular = info.ClientPath.find("regular/");
+    if (regular != std::string::npos) {
+        filePath = QCoreApplication::applicationDirPath() + "/userPhoto/regular/" + QString::fromStdString(info.serverFileName);
+    }
+    else {
+        filePath = QCoreApplication::applicationDirPath() + "/userPhoto/" + QString::fromStdString(info.serverFileName);
+        QString clientPath = QString::fromStdString(info.ClientPath);
+        if (clientPath != filePath) {
+            qDebug() << "clientPath " << clientPath;
+            qDebug() << "filePath " << filePath;
+            // 检查目标文件是否存在，并删除它
+            if (QFile::exists(filePath)) {
+                QFile::remove(filePath); // 删除已存在的目标文件
+            }
+            if (QFile::copy(QString::fromStdString(info.ClientPath), filePath)) {
+                qDebug() << "头像复制成功！";
+            } else {
+                qDebug() << "头像复制失败！";
+            }
+        }
+    }
     qDebug() << "修改个人头像，当前工作目录:" << filePath;
     if (QFile::exists(filePath)) {
         // 如果文件存在，加载图像并设置为头像
         QIcon icon(filePath);
         ui->toolButton_5->setIcon(icon);
-        ui->toolButton_5->setIconSize(QSize(50, 50));
+        ui->toolButton_5->setIconSize(QSize(60, 60));
     } else {
         // 文件不存在，给用户提示
         QMessageBox::warning(nullptr, "警告", "头像文件不存在。");
@@ -604,14 +669,14 @@ void FriendPage::on_toolButton_5_clicked()
 {
     // 弹出文件选择对话框
     /*
-        tr("Open Image"),
-            "",
-            tr("Images (*.png *.jpg *.jpeg *.bmp *.gif);;All Files (*)"));
-    */
-    QString fileName = QFileDialog::getOpenFileName(this,
         tr("Open File"),
         "",
         tr("All Files (*);;Text Files (*.txt)"));
+    */
+    QString fileName = QFileDialog::getOpenFileName(this,
+            tr("Open Image"),
+            "",
+            tr("Images (*.png *.jpg *.jpeg *.bmp *.gif);;All Files (*)"));
     //D:/easybcd.zip
     if (!fileName.isEmpty()) {
         qDebug() << "Selected file:" << fileName;
@@ -623,9 +688,21 @@ void FriendPage::on_toolButton_5_clicked()
     FileInfo info;
     info.Generate();
     info.ClientPath = fileName.toStdString();
-    info.serverPath = "userPhoto/";
-    info.serviceType = FileServerType::TOUXIANG;
-    info.serverFileName = "tx" + mInfo.username + ".jpg";
+
+    if (fileName.indexOf("regular/")) {
+        info.serverPath = "userPhoto/regular/";
+        info.serviceType = FileServerType::TOUXIANG;
+        QFileInfo qinfo(fileName);
+        info.serverFileName = qinfo.fileName().toStdString();
+    }
+    else {
+        info.serverPath = "userPhoto/";
+        info.serviceType = FileServerType::TOUXIANG;
+        QFileInfo qinfo(fileName);
+        info.serverFileName = "tx" + mInfo.username + "." + qinfo.suffix().toStdString();
+    }
+
+
     FtpSender::GetInstance()->addFile(info);
     bool ret = Processor::SendFile(info);
     if (!ret) {
@@ -639,14 +716,20 @@ void FriendPage::StartUpLoadFileSuccess(Response response)
     MyProtocolStream stream2(mdata);
     //Response: 告知允许上传，及部分参数
     int ret = response.mCode;
+    int ftpTaskId = -1;
+    stream2 >> ftpTaskId;
+    FileInfo info = FtpSender::GetInstance()->file(ftpTaskId);
+    stream2 >> info.id >> info.serverPath >> info.serverFileName;
     if (ret) {
-        int ftpTaskId = -1;
-        stream2 >> ftpTaskId;
-        FileInfo info = FtpSender::GetInstance()->file(ftpTaskId);
-        stream2 >> info.id >> info.serverPath >> info.serverFileName;
         FtpSender::GetInstance()->SendFile(info);//ftp发送队列异步发送
     }
     else {
-        QMessageBox::information(this, "提示", "Server is not allow SendFile");
+        if (FtpSender::GetInstance()->file(info.ftpTaskId).serviceType == FileServerType::TOUXIANG) {
+            qDebug() << "常规文件不需要传输";
+            ChangeOwnerPic(info);
+        }
+        else {
+            QMessageBox::information(this, "提示", "Server is not allow SendFile");
+        }
     }
 }

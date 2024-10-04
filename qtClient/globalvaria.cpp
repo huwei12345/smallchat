@@ -2,7 +2,6 @@
 #include "Protocol.h"
 #include <QSettings>
 #include <QDebug>
-
 #ifndef SERVER
 int FileInfo::GenerateId = 0;
 QMutex FileInfo::genMutex;

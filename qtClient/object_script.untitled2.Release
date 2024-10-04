@@ -1,5 +1,6 @@
 release/MyProtocolStream.o
 release/chatwindow.o
+release/clientpersoninfo.o
 release/creategrouppage.o
 release/findfriendpage.o
 release/framelessWidget.o

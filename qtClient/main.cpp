@@ -43,16 +43,6 @@ int main(int argc, char *argv[])
 //        taskQueue.threadPool.waitForDone(); // Wait for all tasks to finish
 //    });
 
-    // 连接信号槽
-    QObject::connect(&a, &QCoreApplication::aboutToQuit, [&]() {
-        if (!client->isClose()) {
-            printf("Connected Close!\n");
-            fflush(stdout);
-            client->close();
-        }
-    });
-
-
     // 创建系统托盘图标
     QSystemTrayIcon *trayIcon = new QSystemTrayIcon(QIcon(":/main/icon.jpeg"), &a);
     trayIcon->setToolTip("QFei");
@@ -116,6 +106,19 @@ int main(int argc, char *argv[])
             // 其他原因
             qDebug() << "Unknown reason for tray icon activation";
         }
+    });
+
+    // 连接信号槽
+    QObject::connect(&a, &QCoreApplication::aboutToQuit, [&]() {
+        if (!client->isClose()) {
+            printf("Connected Close!\n");
+            fflush(stdout);
+            client->close();
+        }
+        ftpSender->close();
+        trayIcon->hide();
+        trayIcon->deleteLater();
+        qDebug() << "删除托盘";
     });
 
     return a.exec();

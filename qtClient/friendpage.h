@@ -32,6 +32,7 @@ public:
     bool initMessageList();
     bool initFriendRequest();
     bool initMyPhoto();
+    bool initFriendPhoto();
     bool initAllOfflineFile();
 
     bool initPage();
@@ -70,7 +71,7 @@ private slots:
     void friendMessageArrive(FriendRequest info);
     void on_toolButton_2_clicked();
     void NofifyFileComing(Response response);
-    void ChangeOwnerPic();
+    void ChangeOwnerPic(FileInfo info);
     void GetFileFirstSuccess(Response response);
     void on_toolButton_5_clicked();
 
@@ -80,7 +81,6 @@ private:
     FindFriendPage* m_FindFriendPage;
     CreateGroupPage* m_CreateGroupPage;
     int mUserId;
-
 
     std::vector<UserInfo> mFriendList;
     std::map<int, ChatWindow*> mChatWindowMap;

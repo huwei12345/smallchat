@@ -1,5 +1,6 @@
 debug/MyProtocolStream.o
 debug/chatwindow.o
+debug/clientpersoninfo.o
 debug/creategrouppage.o
 debug/findfriendpage.o
 debug/framelessWidget.o

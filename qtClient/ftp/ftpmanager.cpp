@@ -61,7 +61,7 @@ void FtpManager::uploadFile(FileInfo& info)
         mTaskMap[cmdId] = data;
     }
     else {
-        printf("upload open %s error\n", data.downloadFile->fileName().toStdString().c_str());
+        printf("upload open %s error\n", data.uploadFile->fileName().toStdString().c_str());
     }
 }
 
@@ -159,8 +159,8 @@ void FtpManager::ftpCommandFinished(int cmdId, bool error)
                 mTaskMap.erase(cmdId);
                 return;
             }
-            emit FileGetOver(mTaskMap[cmdId].mInfo);
             data.downloadFile->close();
+            emit FileGetOver(mTaskMap[cmdId].mInfo);
             delete data.downloadFile;
             data.downloadFile = nullptr;
             mTaskMap.erase(cmdId);
@@ -175,15 +175,15 @@ void FtpManager::ftpCommandFinished(int cmdId, bool error)
         if(data.uploadFile && data.uploadFile->isOpen())
         {
             if (error) {
-                qDebug() << "upload" << data.downloadFile->fileName() << "error: " << error;
+                qDebug() << "upload" << data.uploadFile->fileName() << "error: " << error;
                 emit ftpFileSendOverFailure(mTaskMap[cmdId].mInfo);
                 data.uploadFile->close();
                 delete data.uploadFile;
                 mTaskMap.erase(cmdId);
                 return;
             }
-            emit ftpFileSendOver(mTaskMap[cmdId].mInfo);
             data.uploadFile->close();
+            emit ftpFileSendOver(mTaskMap[cmdId].mInfo);
             delete data.uploadFile;
             mTaskMap.erase(cmdId);
         }

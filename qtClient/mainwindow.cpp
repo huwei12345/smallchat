@@ -11,7 +11,7 @@
 #include "qtmaterialautocomplete.h"
 #include "processor.h"
 #include "network.h"
-
+#include "globalvaria.h"
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -181,6 +181,8 @@ void MainWindow::onLoginSuccessful(UserInfo info)
     if (friendPage == NULL) {
         ::user_id = info.user_id;
         friendPage = new FriendPage(info);
+        ClientPersonInfo* ci = ClientPersonInfo::GetInstance();
+        ci->init(info);
         friendPage->init();
         friendPage->setReturn(this);
     }

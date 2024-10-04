@@ -2301,7 +2301,7 @@ void QFtpPrivate::_q_startNextCommand()
 */
 void QFtpPrivate::_q_piFinished(const QString&s)
 {
-    //qDebug() << "_q_piFinished " << s;
+    qDebug() << "_q_piFinished " << s;
     if (pending.isEmpty())
         return;
     QFtpCommand *c = pending.first();
@@ -2333,7 +2333,7 @@ void QFtpPrivate::_q_piFinished(const QString&s)
 void QFtpPrivate::_q_piError(int errorCode, const QString &text)
 {
     Q_Q(QFtp);
-
+    qDebug() << errorCode << "_q_piError " << text;
     if (pending.isEmpty()) {
         qWarning("QFtpPrivate::_q_piError was called without pending command!");
         return;

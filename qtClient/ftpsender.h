@@ -19,7 +19,7 @@ public:
 
     void SendFile(FileInfo &info);
     void GetFile(FileInfo &info);
-
+    void close();
     void addFile(FileInfo& info);
     void removeFile(FileInfo& info);
     FileInfo file(int id);

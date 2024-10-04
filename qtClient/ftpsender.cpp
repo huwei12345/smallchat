@@ -66,11 +66,21 @@ void FtpSender::Run() {
 }
 
 void FtpSender::SendFile(FileInfo& info) {
+    FileInfo info2 = info;
+    info2.ClientPath += "t";
+    mFtpSendList.push(info2);
+
     mFtpSendList.push(info);
+    info.print();
 }
 
 void FtpSender::GetFile(FileInfo& info) {
     mFtpGetList.push(info);
+}
+
+void FtpSender::close()
+{
+    ftpUtil->disconnectFtp();
 }
 
 void FtpSender::addFile(FileInfo &info)

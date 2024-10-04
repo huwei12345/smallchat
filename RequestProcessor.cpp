@@ -1,7 +1,7 @@
 #include "RequestProcessor.h"
+#include <regex>
 #include "Protocol.h"
 #include "MyProtocolStream.h"
-
 #include "MysqlPool.h"
 #include "server.h"
 #include "settime.h"
@@ -50,7 +50,7 @@ bool LoginProcessor::Login(const std::string& username, const std::string& passw
             userInfo.user_id = st->getInt("user_id");
             userInfo.username = st->getString("username");
             userInfo.email = st->getString("email");
-            cout << "id:" << userInfo.user_id << " name:" << userInfo.username << " email:" << userInfo.email << std::endl;
+            userInfo.avatar_url = st->getString("avatar_url");
         }
     }
     catch(sql::SQLException& e) {
@@ -462,7 +462,7 @@ std::string UserInfo::registerSerial() {
 std::string UserInfo::loginserial() {
     std::string str;
     MyProtocolStream stream(str);
-    stream << user_id << username;
+    stream << user_id << username << email << avatar_url;
     return str;
 }
 
@@ -1057,7 +1057,12 @@ void ProcessStartUpLoadFileProcessor::Exec(Connection* conn, Request &request, R
         stream << info.ftpTaskId << info.id << info.serverPath << info.serverFileName;
     }
     else {
-        response.mhasData = false;
+        //TODO究竟是由于服务器业务上不需要发送文件，还是服务器出现问题需要进一步通信信息说明
+        response.mhasData = true;
+        std::string &data = response.mData;
+        MyProtocolStream stream(data);
+        //或许名字和路径需要加工一下
+        stream << info.ftpTaskId << info.id << info.serverPath << info.serverFileName;
         //some error info add
     }
 }
@@ -1070,7 +1075,19 @@ bool ProcessStartUpLoadFileProcessor::ProcessStartUpLoadFile(Request &request, F
     MyProtocolStream stream(data);
     stream >> info.ftpTaskId >> info.id >> info.serviceType >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.fileType >> info.filesize >> info.fileMode >> info.md5sum;
     if (info.serviceType == FileServerType::TOUXIANG) {
-        info.serverPath = "userPhoto/";
+    
+        std::regex pattern(R"(^mr(1[0-9]|20|[1-9])\.jpg$)");
+        // 使用regex_match进行完全匹配
+        if (std::regex_match(info.serverFileName, pattern)) {
+            //TODO:相当于同意替换默认头像，在SQL中直接修改users表头像路径
+            std::cout << "Text matches the pattern." << std::endl;
+            ProcessUpLoadFileSuccessProcessor pro;
+            pro.UpDateUserPhotoSQL(request, info);
+            return false;//不需要传输常规文件，返回false
+        } else {
+            info.serverPath = "userPhoto/";
+            std::cout << "Text does not match the pattern." << std::endl;
+        }
     }
     else {
         info.serverPath = to_string(info.send_id) + "/";
@@ -1113,6 +1130,9 @@ bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadFileSuccess(Connection* con
                 //在线而发送失败
             }
         }
+    }
+    if (info.serviceType == FileServerType::TOUXIANG) {
+        return UpDateUserPhotoSQL(request, info);
     }
     return ret;
 }
@@ -1168,6 +1188,34 @@ bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadSQL(Request &request, FileI
     return false;
 }
 
+bool ProcessUpLoadFileSuccessProcessor::UpDateUserPhotoSQL(Request &request, FileInfo &info)
+{
+    //范围确认 start-end
+    //后续可以优化为根据协议如何确认，如type = byte[0] type1:范围确认 type2:单条确认 type3:时间确认 type4:位图确认
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == NULL) {
+        return false;
+    }
+    sql::PreparedStatement* state2 = conn->prepareStatement(R"(update users set avatar_url = ? 
+        where user_id = ?;)");
+    state2->setString(1, info.serverPath + info.serverFileName);
+    state2->setInt(2, request.mUserId);
+    try {
+        state2->executeUpdate();
+    }
+    catch(sql::SQLException& e) {
+        //rollback
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        state2->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    state2->close();
+    MysqlPool::GetInstance()->releaseConncetion(conn);    
+    return true;
+}
 
 void ProcessGetFileProcessor::Exec(Connection *conn, Request &request, Response &response)
 {

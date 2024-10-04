@@ -23,9 +23,8 @@ void ClientNetWork::ftpFileSendOver(FileInfo info)
     std::cout << "ftpFileSendOver      : " << info.serverPath + info.serverFileName << std::endl;
 
     QString fileName = QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName);
-    if (fileName.indexOf("userPhoto/tx") != -1) {
-        //TODO:把该文件移动到头像目录，然后emit
-        emit ChangeOwnerPic();
+    if (fileName.indexOf("userPhoto/") != -1) {
+        emit ChangeOwnerPic(info);
     }
 
     bool ret = Processor::SendFileSuccess(info);
@@ -38,10 +37,11 @@ void ClientNetWork::ftpFileGetOver(FileInfo info)
 {
     //告知服务器接收文件顺利完成，服务器对可能的数据库项，或者文件项执行一些操作
     std::cout << "ftpFileGetOver      : " << info.serverPath + info.serverFileName << std::endl;
+    fflush(stdout);
     QString fileName = QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName);
     //具体业务，也许可以使用回调函数
-    if (fileName.indexOf("userPhoto/tx") != -1) {
-        emit ChangeOwnerPic();
+    if (fileName.indexOf("userPhoto/") != -1) {
+        emit ChangeOwnerPic(info);
     }
 
     bool ret = Processor::GetFileSuccess(info);
@@ -70,10 +70,11 @@ bool ClientNetWork::process(QByteArray& array) {
     case FunctionCode::Login: {
         MyProtocolStream stream2(mdata);
         UserInfo info;
-        stream2 >> info.user_id >> info.username;
+        stream2 >> info.user_id >> info.username >> info.email >> info.avatar_url;
         if (rsp.mCode == 1) {
             emit loginSuccessful(info);
-            cout << "Login Success id " << info.user_id << " username " << info.username << std::endl;
+            cout << "Login Success";
+            info.print();
             return true;
         }
         else if (rsp.mCode == 0) {

@@ -14,6 +14,7 @@ INCLUDEPATH += $$PWD/libs/include/
 SOURCES += \
     MyProtocolStream.cpp \
     chatwindow.cpp \
+    clientpersoninfo.cpp \
     creategrouppage.cpp \
     findfriendpage.cpp \
     framelessWidget.cpp \
@@ -41,6 +42,7 @@ HEADERS += \
     Protocol.h \
     Trans.h \
     chatwindow.h \
+    clientpersoninfo.h \
     creategrouppage.h \
     findfriendpage.h \
     framelessWidget.h \
