@@ -202,6 +202,7 @@ public:
     int ftpTaskId;
     int send_id;
     int recv_id;
+    int owner;
     string serverPath;
     string serverFileName;
     string ClientPath;
@@ -323,7 +324,7 @@ public:
         MyProtocolStream stream(str);
         stream << (int)size();
         for (auto it = begin(); it != end(); ++it) {
-            stream << it->user_id << it->friendStatus << it->username << it->email;
+            stream << it->user_id << it->friendStatus << it->username << it->email << it->avatar_url;
         }
         return str;
     }

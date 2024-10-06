@@ -21,11 +21,12 @@ signals:
     void loginSuccessful(UserInfo info);
     void loginFailure();
     void FindFriendSuccess(Response response);
-    void ChangeOwnerPic(FileInfo info);
-
+    void ChangeUserPic(FileInfo info);
+    void ChangeUserPicBySend(FileInfo info);
     void FindGroupSuccess(Response response);
     void findAllFriendSuccess(Response response);
     void AddFriendSuccess(int mCode);
+    void ProcessFriendRequestResult(Response response);
     void getAllMessageSuccess(Response response);
     void getAllOfflineFileSuccess(Response response);
     void getAllFriendRequestSuccess(Response response);

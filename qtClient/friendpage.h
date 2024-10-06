@@ -43,6 +43,8 @@ public:
 
     void StartUpLoadFileSuccess(Response response);
 
+    int getFriendPhoto(UserInfo &userinfo);
+    void ProcessFriendRequestResult(Response response);
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -54,7 +56,6 @@ signals:
     void userMessageUnRead();
 
 private slots:
-    void on_toolButton_4_clicked();
 
     void on_toolButton_clicked();
 
@@ -71,7 +72,8 @@ private slots:
     void friendMessageArrive(FriendRequest info);
     void on_toolButton_2_clicked();
     void NofifyFileComing(Response response);
-    void ChangeOwnerPic(FileInfo info);
+    void ChangeUserPic(FileInfo info);
+    void ChangeUserPicBySend(FileInfo info);
     void GetFileFirstSuccess(Response response);
     void on_toolButton_5_clicked();
 

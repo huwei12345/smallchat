@@ -313,7 +313,7 @@ bool SearchAllFriendProcessor::SearchAllFriend(const Request &request, FriendLis
     }
     //TODO: 联合查询，用户的名字、email等返回
 	sql::PreparedStatement* state2 = conn->prepareStatement(R"(
-        SELECT u.user_id AS friend_id, u.username AS friend_username, u.email
+        SELECT u.user_id AS friend_id, u.username AS friend_username, u.email, u.avatar_url
         FROM friendships f
         JOIN users u ON u.user_id = CASE
             WHEN f.user1_id = ? THEN f.user2_id
@@ -336,6 +336,7 @@ bool SearchAllFriendProcessor::SearchAllFriend(const Request &request, FriendLis
             info.username = st->getString("friend_username");
             info.email = st->getString("email");
             info.friendStatus = "accept";
+            info.avatar_url = st->getString("avatar_url");
             cout << "id:" << info.user_id << " name:" << info.username << " email:" << info.email << "status:" << info.friendStatus << std::endl;
             friendList.push_back(info);
         }
@@ -1238,11 +1239,11 @@ bool ProcessGetFileProcessor::ProcessGetFile(Request &request, FileInfo &info)
 {
     string& data = request.mData;
     MyProtocolStream stream(data);
-    stream >> info.ftpTaskId >> info.id >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.filesize;
+    stream >> info.ftpTaskId >> info.id >> info.send_id >> info.recv_id >> info.owner >> info.serverPath >> info.serverFileName >> info.filesize;
     if (info.send_id > 0) {
         //来自用户   
     }
-    /*
+        /*
         ret = stat(info.filename);
         if (ret == true) {
             if (size < info.size) {

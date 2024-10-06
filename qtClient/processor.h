@@ -31,6 +31,7 @@ static bool CreateGroup(GroupInfo& info);
     static bool AgreeRecvFile(bool agree, FileInfo info);
     bool processMessageRead(std::vector<int> messageList);
     static bool getAllOfflineFile(int userId);
+    static bool getFriendPhoto(UserInfo& info);
 };
 
 #endif // PROCESSOR_H

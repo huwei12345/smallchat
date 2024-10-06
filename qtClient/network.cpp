@@ -23,8 +23,9 @@ void ClientNetWork::ftpFileSendOver(FileInfo info)
     std::cout << "ftpFileSendOver      : " << info.serverPath + info.serverFileName << std::endl;
 
     QString fileName = QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName);
-    if (fileName.indexOf("userPhoto/") != -1) {
-        emit ChangeOwnerPic(info);
+    qDebug() << "zzzzzzzzzzzzzzzzzzzzzzzzzzzzz" << info.serviceType;
+    if (info.serviceType == FileServerType::TOUXIANG) {
+        emit ChangeUserPicBySend(info);
     }
 
     bool ret = Processor::SendFileSuccess(info);
@@ -33,15 +34,18 @@ void ClientNetWork::ftpFileSendOver(FileInfo info)
     }
 }
 
+//TODO:最好是在FileSuccess的响应返回后再进行业务，因为可能需要MD5校验和数据库操作等
 void ClientNetWork::ftpFileGetOver(FileInfo info)
 {
     //告知服务器接收文件顺利完成，服务器对可能的数据库项，或者文件项执行一些操作
     std::cout << "ftpFileGetOver      : " << info.serverPath + info.serverFileName << std::endl;
     fflush(stdout);
-    QString fileName = QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName);
+    //QString fileName = QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName);
+
     //具体业务，也许可以使用回调函数
-    if (fileName.indexOf("userPhoto/") != -1) {
-        emit ChangeOwnerPic(info);
+    qDebug() << "zzzzzzzzzzzzzzzzzzzzzzzzzzzzz" << info.serviceType;
+    if (info.serviceType == FileServerType::TOUXIANG) {
+        emit ChangeUserPic(info);
     }
 
     bool ret = Processor::GetFileSuccess(info);
@@ -120,6 +124,9 @@ break;
     case FunctionCode::AddFriend: {
         emit AddFriendSuccess(rsp.mCode);
 break;
+    }
+    case FunctionCode::ProcessFriendRequest: {
+        emit ProcessFriendRequestResult(rsp);
     }
     case FunctionCode::SearchAllFriend: {
                 emit findAllFriendSuccess(rsp);

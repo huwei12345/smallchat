@@ -1,5 +1,8 @@
 ﻿#include "processor.h"
+#include <QCoreApplication>
+#include <QFileInfo>
 #include <QMessageBox>
+#include <QRegularExpression>
 #include <string>
 #include "network.h"
 #include "MyProtocolStream.h"
@@ -362,7 +365,7 @@ bool Processor::GetFile(FileInfo info)
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     std::string data;
     MyProtocolStream stream(data);
-    stream << info.ftpTaskId << info.id << info.send_id << info.recv_id << info.serverPath << info.serverFileName << filesizeLimit;
+    stream << info.ftpTaskId << info.id << info.send_id << info.recv_id << info.owner << info.serverPath << info.serverFileName << filesizeLimit;
     Request req(1, FunctionCode::GetFile, 3, 4, 5, data, user_id);
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());

@@ -23,10 +23,7 @@
 #include "ftpsender.h"
 #include "globalvaria.h"
 bool FriendPage::initPage() {
-    QIcon windowIcon(QPixmap(":/main/title.jpeg")); // 假设你的图标文件位于资源文件中或者项目目录下
-    setWindowIcon(windowIcon);
     setWindowTitle(tr("Qfei"));
-
     // 设置图片，可以是本地文件路径或者网络图片URL
     QIcon icon(":/friend/touxiang.jpeg"); // 使用资源文件
     // 或者
@@ -37,14 +34,14 @@ bool FriendPage::initPage() {
     m_FindFriendPage = NULL;
     m_CreateGroupPage = NULL;
     //更新头像
-    connect(ClientNetWork::GetInstance(), &ClientNetWork::ChangeOwnerPic, this, &FriendPage::ChangeOwnerPic);
-
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::ChangeUserPic, this, &FriendPage::ChangeUserPic);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::ChangeUserPicBySend, this, &FriendPage::ChangeUserPicBySend);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::findAllFriendSuccess, this, &FriendPage::findAllFriendSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::getAllMessageSuccess, this, &FriendPage::getAllMessageSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::getAllOfflineFileSuccess, this, &FriendPage::getAllOfflineFileSuccess);
 
     connect(ClientNetWork::GetInstance(), &ClientNetWork::getAllFriendRequestSuccess, this, &FriendPage::getAllFriendRequestSuccess);
-
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::ProcessFriendRequestResult, this, &FriendPage::ProcessFriendRequestResult);
 
     connect(ClientNetWork::GetInstance(), &ClientNetWork::MessageArriveClient, this, &FriendPage::MessageArriveClient);
     //被动离线文件到来，转为主动获取
@@ -95,18 +92,64 @@ int FriendPage::init() {
     ret &= initMyPhoto();
 
     ret &= initAllOfflineFile();
-
-    ret &= initFriendPhoto();
     return ret;
 }
 
 
 bool FriendPage::initFriendPhoto() {
     //发送一大堆图片获取命令，根据在获取朋友列表里得到的url
+    for (size_t i = 0; i < mFriendList.size(); i++) {
+        getFriendPhoto(mFriendList[i]);
+    }
     return true;
 }
 
+//return 2 常规图片
+//return 1 等待服务器图片
+//return 0 <0 服务器获取图片失败
+int FriendPage::getFriendPhoto(UserInfo& userinfo) {
+    if (userinfo.avatar_url == "avatar_url") {
+        return 0;
+    }
+    FileInfo info;
+    QString serverPath = QString::fromStdString(userinfo.avatar_url);
+    QFileInfo fileInfo(serverPath);
+    // 获取文件名（包括扩展名）
+    QString fileName = fileInfo.fileName();
+
+    QRegularExpression pattern(R"(^mr(1[0-9]|20|[1-9])\.jpg$)");
+    bool regularPic = pattern.match(fileName).hasMatch();
+    if (regularPic) {
+        QString filePath = QCoreApplication::applicationDirPath() + "/userPhoto/regular/" + fileName;
+        qDebug() << "修改朋友头像，当前工作目录:" << filePath;
+        if (QFile::exists(filePath)) {
+            // 如果文件存在，加载图像并设置为头像
+            QIcon icon(filePath);
+            mFriendButton[userinfo.user_id]->setIcon(icon);
+            mFriendButton[userinfo.user_id]->setIconSize(QSize(50, 50));
+        } else {
+            // 文件不存在，给用户提示
+            QMessageBox::warning(nullptr, "警告", "常规头像文件不存在[客户端错误1]");
+        }
+        return 2;
+    }
+    info.Generate();
+    info.serviceType = FileServerType::TOUXIANG;
+    //截取服务器发来的图片路径和名字
+    info.serverPath = fileInfo.path().toStdString() + "/";
+    info.serverFileName = fileInfo.fileName().toStdString();
+    info.owner = userinfo.user_id;
+    qDebug() << QString::fromStdString(userinfo.username) << " 头像： " << QString::fromStdString(info.serverFileName);
+    //客户端名字统一为userPhoto/tx...[.suffex]
+    info.ClientPath = QCoreApplication::applicationDirPath().toStdString() + "/userPhoto/tx" + userinfo.username + "." + fileInfo.suffix().toStdString();
+    FtpSender::GetInstance()->addFile(info);
+    return Processor::GetFile(info);
+}
+
 bool FriendPage::initMyPhoto() {
+    if (mInfo.avatar_url == "avatar_url") {
+        return true;
+    }
     QRegularExpression pattern(R"(^mr(1[0-9]|20|[1-9])\.jpg$)");
     // 检查是否匹配
     QString serverPath = QString::fromStdString(ClientPersonInfo::GetInstance()->avatar_url);
@@ -114,11 +157,10 @@ bool FriendPage::initMyPhoto() {
     // 获取文件名（包括扩展名）
     QString fileName = fileInfo.fileName();
     bool regularPic = pattern.match(fileName).hasMatch();
-    qDebug() << "tttttttttttttttttttttttt " << serverPath << regularPic;
 
     if (regularPic) {
         QString filePath = QCoreApplication::applicationDirPath() + "/userPhoto/regular/" + fileName;
-        qDebug() << "修改个人头像，当前工作目录:" << filePath;
+        qDebug() << "初始化个人头像，当前工作目录:" << filePath;
         if (QFile::exists(filePath)) {
             // 如果文件存在，加载图像并设置为头像
             QIcon icon(filePath);
@@ -140,7 +182,8 @@ bool FriendPage::initMyPhoto() {
     info.serverFileName = finfo.fileName().toStdString();
     //客户端名字统一为userPhoto/tx...[.suffex]
     info.ClientPath = QCoreApplication::applicationDirPath().toStdString() + "/userPhoto/tx" + ClientPersonInfo::GetInstance()->username + "." + finfo.suffix().toStdString();
-
+    info.owner = mInfo.user_id;
+    info.serviceType = FileServerType::TOUXIANG;
     FtpSender::GetInstance()->addFile(info);
     bool ret = Processor::GetFile(info);
     if (!ret) {
@@ -190,7 +233,7 @@ void FriendPage::findAllFriendSuccess(Response response)
     for (int i = 0; i < size; i++) {
         //TODO:ToolButton put in widget
         UserInfo info;
-        stream2 >> info.user_id >> info.friendStatus >> info.username >> info.email;
+        stream2 >> info.user_id >> info.friendStatus >> info.username >> info.email >> info.avatar_url;
         addFriendToPage(i, info);//
         info.print();
         mFriendList.push_back(info);
@@ -199,6 +242,7 @@ void FriendPage::findAllFriendSuccess(Response response)
         connect(this, &FriendPage::userMessageUnRead, chatWindow, &ChatWindow::userMessageRead);
         connect(chatWindow, &ChatWindow::friendPageUpdate, this, &FriendPage::friendPageUpdate);
     }
+    initFriendPhoto();
 }
 
 
@@ -301,6 +345,16 @@ void FriendPage::getAllFriendRequestSuccess(Response response) {
     }
 }
 
+
+void FriendPage::ProcessFriendRequestResult(Response response) {
+    if (response.mCode) {
+        QMessageBox::information(this, "提示", "已添加朋友！");
+    }
+    else {
+        QMessageBox::information(this, "提示", "已拒绝添加朋友！");
+    }
+}
+
 void FriendPage::UpDateUserStateSuccess(Response response) {
     if (response.mCode) {
         QMessageBox::information(this,"提示","修改状态成功！");
@@ -384,7 +438,7 @@ bool FriendPage::eventFilter(QObject *obj, QEvent *event)
 void FriendPage::addFriendToPage(int i, UserInfo info) {
     QToolButton* button = new QToolButton();
     QString str = QString::fromStdString(info.username);
-    str += QString::number(i);
+    //str += QString::number(i);
     button->setText(str);
     button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     QIcon userIcon(QPixmap(":/friend/touxiang.jpeg"));
@@ -402,34 +456,12 @@ void FriendPage::addFriendToPage(int i, UserInfo info) {
     //installEventFilter + eventFilter overide可以实现防覆
     button->installEventFilter(this); // 在当前类中实现 eventFilter 方法
     mFriendButton[info.user_id] =button;
-    /*
-    QLabel* button = new QLabel();
-    QString str("朋友");
-    str += QString::number(i);
-    QString str2("item");
-    str2 += QString::number(i);
-    ui->listWidget->addItem(str2);
-    ui->listWidget->setItemWidget(ui->listWidget->item(i), button);
-
-    */
-
-
     // 连接信号和槽
     connect(ui->listWidget, &QListWidget::itemClicked, this, &FriendPage::chatWithFriend);
-
-    //    connect(button, &QToolButton::clicked, this, [this]() {
-    //        qDebug() << "index: " << i;
-    //        ChatWindow* chatWindow = new ChatWindow;
-    //        chatWindow->returnWindow = this;
-    //        chatWindow->show();
-    //        this->hide();
-    //    });
-
     QSize size;
     size.setHeight(60);
     size.setWidth(60);
     ui->listWidget->item(i)->setSizeHint(size);
-    //ui->listWidget->setMinimumHeight(60);
 }
 
 void FriendPage::chatWithFriend(QListWidgetItem* item) {
@@ -440,15 +472,6 @@ void FriendPage::chatWithFriend(QListWidgetItem* item) {
     chatWindow->show();
     chatWindow->showChatContent();
 }
-
-void FriendPage::on_toolButton_4_clicked()
-{
-    UserInfo info;
-    info.username = "朋友";
-    addFriendToPage(m_index, info);
-    m_index++;
-}
-
 
 void FriendPage::on_toolButton_clicked()
 {
@@ -570,45 +593,94 @@ void FriendPage::NofifyFileComing(Response response)
 }
 
 
-void FriendPage::ChangeOwnerPic(FileInfo info)
-{
+void FriendPage::ChangeUserPicBySend(FileInfo info) {
     QFileInfo fileInfo(QString::fromStdString(info.ClientPath));
    // 获取文件扩展名
-   QString extension = fileInfo.suffix();
-   qDebug() << "File extension:" << extension;
-
-    QString filePath;
-
+    QString filePath;//未改名名字
+    QString clientPath = QString::fromStdString(info.ClientPath);//需要改为的名字
     size_t regular = info.ClientPath.find("regular/");
-    if (regular != std::string::npos) {
-        filePath = QCoreApplication::applicationDirPath() + "/userPhoto/regular/" + QString::fromStdString(info.serverFileName);
-    }
-    else {
-        filePath = QCoreApplication::applicationDirPath() + "/userPhoto/" + QString::fromStdString(info.serverFileName);
-        QString clientPath = QString::fromStdString(info.ClientPath);
-        if (clientPath != filePath) {
+    qDebug() << "修改个人头像为：" << clientPath;
+    qDebug() << "owner" << info.owner << " user_id" << mInfo.user_id;
+    if (info.owner == mInfo.user_id) {
+        if (QFile::exists(clientPath)) {
+            // 如果文件存在，加载图像并设置为头像
+            QIcon icon(clientPath);
+            ui->toolButton_5->setIcon(icon);
+            ui->toolButton_5->setIconSize(QSize(60, 60));
+        } else {
+            // 文件不存在，给用户提示
+            QMessageBox::warning(nullptr, "警告", "头像文件不存在。");
+        }
+        QFileInfo infox(clientPath);
+        filePath = QCoreApplication::applicationDirPath() + "/userPhoto/tx" + QString::fromStdString(mInfo.username) + "." + infox.suffix();
+        qDebug() << "clientPath " << clientPath;
+        qDebug() << "filePath " << filePath;
+        if (regular == std::string::npos && filePath != clientPath) {
             qDebug() << "clientPath " << clientPath;
             qDebug() << "filePath " << filePath;
             // 检查目标文件是否存在，并删除它
             if (QFile::exists(filePath)) {
                 QFile::remove(filePath); // 删除已存在的目标文件
             }
-            if (QFile::copy(QString::fromStdString(info.ClientPath), filePath)) {
+
+            if (QFile::copy(clientPath, filePath)) {
                 qDebug() << "头像复制成功！";
             } else {
                 qDebug() << "头像复制失败！";
             }
         }
     }
-    qDebug() << "修改个人头像，当前工作目录:" << filePath;
-    if (QFile::exists(filePath)) {
-        // 如果文件存在，加载图像并设置为头像
-        QIcon icon(filePath);
-        ui->toolButton_5->setIcon(icon);
-        ui->toolButton_5->setIconSize(QSize(60, 60));
-    } else {
-        // 文件不存在，给用户提示
-        QMessageBox::warning(nullptr, "警告", "头像文件不存在。");
+    else {
+        if (regular != std::string::npos) {
+            return;
+        }
+        //修改其他用户头像
+        QToolButton* button = mFriendButton[info.owner];
+        qDebug() << "bbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        if (QFile::exists(clientPath)) {
+            qDebug() << "bbbbbbbbbbbbbbbbbbbbbbbbbbbbb222";
+            // 如果文件存在，加载图像并设置为头像
+            QIcon icon(clientPath);
+            button->setIcon(icon);
+            button->setIconSize(QSize(60, 60));
+        }
+    }
+}
+
+void FriendPage::ChangeUserPic(FileInfo info)
+{
+    QFileInfo fileInfo(QString::fromStdString(info.ClientPath));
+   // 获取文件扩展名
+    QString filePath;//未改名名字
+    QString clientPath = QString::fromStdString(info.ClientPath);//需要改为的名字
+    size_t regular = info.ClientPath.find("regular/");
+    qDebug() << "修改个人头像，当前工作目录:" << clientPath;
+    qDebug() << "owner" << info.owner << " user_id" << mInfo.user_id;
+    if (info.owner == mInfo.user_id) {
+        if (QFile::exists(clientPath)) {
+            // 如果文件存在，加载图像并设置为头像
+            QIcon icon(clientPath);
+            ui->toolButton_5->setIcon(icon);
+            ui->toolButton_5->setIconSize(QSize(60, 60));
+        } else {
+            // 文件不存在，给用户提示
+            QMessageBox::warning(nullptr, "警告", "头像文件不存在。");
+        }
+    }
+    else {
+        if (regular != std::string::npos) {
+            return;
+        }
+        //修改其他用户头像
+        QToolButton* button = mFriendButton[info.owner];
+        qDebug() << "bbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        if (QFile::exists(clientPath)) {
+            qDebug() << "bbbbbbbbbbbbbbbbbbbbbbbbbbbbb222";
+            // 如果文件存在，加载图像并设置为头像
+            QIcon icon(clientPath);
+            button->setIcon(icon);
+            button->setIconSize(QSize(60, 60));
+        }
     }
 }
 
@@ -649,6 +721,8 @@ void FriendPage::GetFileSuccess(Response response)
     else {
         qDebug() << "GetFile Failure";
     }
+    //TODO:
+    //FtpSender::GetInstance()->removeFile(info);
 }
 //服务器可返回，也可不返回
 void FriendPage::SendFileSuccess(Response response)
@@ -662,6 +736,8 @@ void FriendPage::SendFileSuccess(Response response)
     else {
         QMessageBox::information(this, "提示", "SendFile %s Send Failure");
     }
+    //TODO:
+    //FtpSender::GetInstance()->removeFile(info);
 }
 
 //头像按钮,上传头像
@@ -692,12 +768,14 @@ void FriendPage::on_toolButton_5_clicked()
     if (fileName.indexOf("regular/")) {
         info.serverPath = "userPhoto/regular/";
         info.serviceType = FileServerType::TOUXIANG;
+        info.owner = mInfo.user_id;
         QFileInfo qinfo(fileName);
         info.serverFileName = qinfo.fileName().toStdString();
     }
     else {
         info.serverPath = "userPhoto/";
         info.serviceType = FileServerType::TOUXIANG;
+        info.owner = mInfo.user_id;
         QFileInfo qinfo(fileName);
         info.serverFileName = "tx" + mInfo.username + "." + qinfo.suffix().toStdString();
     }
@@ -726,7 +804,7 @@ void FriendPage::StartUpLoadFileSuccess(Response response)
     else {
         if (FtpSender::GetInstance()->file(info.ftpTaskId).serviceType == FileServerType::TOUXIANG) {
             qDebug() << "常规文件不需要传输";
-            ChangeOwnerPic(info);
+            ChangeUserPic(info);
         }
         else {
             QMessageBox::information(this, "提示", "Server is not allow SendFile");
