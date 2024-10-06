@@ -26,6 +26,7 @@ class RegisterProcessor : public RequestProcessor  {
 class SearchAllFriendProcessor : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
     bool SearchAllFriend(const Request& request, FriendList& info);
+    bool bindAllFriendState(Connection* conn, Request& request, FriendList& friendList);
 };
 
 class FindFriendProcessor  : public RequestProcessor  {
@@ -154,6 +155,13 @@ class ProcessGetAllOfflineFileProcessor : public RequestProcessor {
 class ProcessGetOfflineFileProcessor : public RequestProcessor {
     void Exec(Connection* conn, Request& request, Response&);
     bool GetOfflineFile(Request &request, FileInfo& info);
+};
+
+class ProcessNotifyStateProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response& response);
+
+public:
+    bool Notify(Connection *conn, FriendList &friendList, int mUserId, int state);
 };
 
 #endif

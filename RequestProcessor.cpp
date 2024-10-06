@@ -177,7 +177,13 @@ void SearchAllFriendProcessor::Exec(Connection* conn, Request &request, Response
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
         response.mhasData = true;
+
+        //绑定Session中好友的在线状态
+        bindAllFriendState(conn, request, friendList);
         response.mData = friendList.friendListSerial();
+        //通知好友自己上线
+        ProcessNotifyStateProcessor processor;
+        processor.Notify(conn, friendList, request.mUserId, 1);
     }
     else {
         //some error info add
@@ -353,7 +359,19 @@ bool SearchAllFriendProcessor::SearchAllFriend(const Request &request, FriendLis
     return true;
 }
 
-
+bool SearchAllFriendProcessor::bindAllFriendState(Connection *conn, Request &request, FriendList &friendList)
+{
+    for (auto &u : friendList) {
+        //并发问题很大,SessionMap加锁不太可能
+        if (Server::GetInstance()->mUserSessionMap.count(u.user_id) && Server::GetInstance()->mUserSessionMap[u.user_id] != NULL) {
+            u.status = Server::GetInstance()->mUserSessionMap[u.user_id]->mLoginState;
+        }
+        else {
+            u.status = SessionState::OFFLINE;
+        }
+    }
+    return true;
+}
 
 bool FindFriendProcessor::FindFriend(const Request &request, FriendList &friendList)
 {
@@ -1467,4 +1485,30 @@ void ProcessGetOfflineFileProcessor::Exec(Connection *conn, Request &request, Re
 bool ProcessGetOfflineFileProcessor::GetOfflineFile(Request &request, FileInfo &info)
 {
     return false;
+}
+
+void ProcessNotifyStateProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+
+}
+
+bool ProcessNotifyStateProcessor::Notify(Connection * conn, FriendList & friendList, int mUserId, int state)
+{
+    bool success = true;
+    for (auto &u : friendList) {
+        if (Server::GetInstance()->mUserSessionMap.count(u.user_id)) {
+            Session* session = Server::GetInstance()->mUserSessionMap[u.user_id];
+            Connection* friendConn = session->mConn;
+            if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
+                int clientSocket = friendConn->clientSocket; 
+                std::string data;
+                MyProtocolStream stream(data);
+                stream << mUserId << state;
+                Response rsp(1, FunctionCode::UpdateUserState, 3, 4, 5, 1, mUserId, 1, true, data);
+                string str = rsp.serial();
+                success &= sendResponse(clientSocket, &rsp);
+            }
+        }
+    }
+    return success;
 }
