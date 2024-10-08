@@ -124,8 +124,9 @@ int FriendPage::getFriendPhoto(UserInfo& userinfo) {
         qDebug() << "修改朋友头像，当前工作目录:" << filePath;
         if (QFile::exists(filePath)) {
             // 如果文件存在，加载图像并设置为头像
-            QIcon icon(filePath);
-            mFriendButton[userinfo.user_id]->setIcon(icon);
+            QIcon *icon = new QIcon(filePath);
+            mFriendButton[userinfo.user_id]->setIcon(*icon);
+            mPhotoMap[userinfo.user_id] = icon;
             mFriendButton[userinfo.user_id]->setIconSize(QSize(50, 50));
         } else {
             // 文件不存在，给用户提示
@@ -168,7 +169,7 @@ bool FriendPage::initMyPhoto() {
             ui->toolButton_5->setIconSize(QSize(50, 50));
         } else {
             // 文件不存在，给用户提示
-            QMessageBox::warning(nullptr, "警告", "常规头像文件不存在[客户端错误1]");
+            QMessageBox::warning(nullptr, "警告", "常规头像文件不存在[客户端错误2]");
         }
         return true;
     }
@@ -233,7 +234,7 @@ void FriendPage::findAllFriendSuccess(Response response)
     for (int i = 0; i < size; i++) {
         //TODO:ToolButton put in widget
         UserInfo info;
-        stream2 >> info.user_id >> info.friendStatus >> info.username >> info.email >> info.avatar_url;
+        stream2 >> info.user_id >> info.friendStatus >> info.username >> info.email >> info.avatar_url >> info.status;
         addFriendToPage(i, info);//
         info.print();
         mFriendList.push_back(info);
@@ -243,6 +244,32 @@ void FriendPage::findAllFriendSuccess(Response response)
         connect(chatWindow, &ChatWindow::friendPageUpdate, this, &FriendPage::friendPageUpdate);
     }
     initFriendPhoto();
+    initFriendState();
+}
+
+
+void FriendPage::initFriendState() {
+    for (size_t i = 0; i < mFriendList.size(); i++) {
+        QToolButton* button = mFriendButton[mFriendList[i].user_id];
+        if (mFriendList[i].status == SessionState::ONLINE) {
+            QIcon *icon = mPhotoMap[mFriendList[i].user_id];
+            QPixmap pix = icon->pixmap(100, 100, QIcon::Normal);
+            button->setIcon(pix);
+            button->setIconSize(pix.size());
+        }
+        else if (mFriendList[i].status == SessionState::ONLINE) {
+            QIcon *icon = mPhotoMap[mFriendList[i].user_id];
+            QPixmap pix = icon->pixmap(100, 100, QIcon::Disabled);
+            button->setIcon(pix);
+            button->setIconSize(pix.size());
+        }
+        else {
+            QIcon *icon = mPhotoMap[mFriendList[i].user_id];
+            QPixmap pix = icon->pixmap(100, 100, QIcon::Disabled);
+            button->setIcon(pix);
+            button->setIconSize(pix.size());
+        }
+    }
 }
 
 
@@ -357,7 +384,28 @@ void FriendPage::ProcessFriendRequestResult(Response response) {
 
 void FriendPage::UpDateUserStateSuccess(Response response) {
     if (response.mCode) {
-        QMessageBox::information(this,"提示","修改状态成功！");
+        MyProtocolStream stream(response.mData);
+        int status;
+        stream >> response.mUserId >> status;
+        QToolButton* button = mFriendButton[response.mUserId];
+        if (status == SessionState::ONLINE) {
+            QIcon *icon = mPhotoMap[response.mUserId];
+            QPixmap pix = icon->pixmap(100, 100, QIcon::Normal);
+            button->setIcon(pix);
+            button->setIconSize(pix.size());
+        }
+        else if (status == SessionState::ONLINE) {
+            QIcon *icon = mPhotoMap[response.mUserId];
+            QPixmap pix = icon->pixmap(100, 100, QIcon::Disabled);
+            button->setIcon(pix);
+            button->setIconSize(pix.size());
+        }
+        else {
+            QIcon *icon = mPhotoMap[response.mUserId];
+            QPixmap pix = icon->pixmap(100, 100, QIcon::Disabled);
+            button->setIcon(pix);
+            button->setIconSize(pix.size());
+        }
     }
 }
 
@@ -441,8 +489,9 @@ void FriendPage::addFriendToPage(int i, UserInfo info) {
     //str += QString::number(i);
     button->setText(str);
     button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    QIcon userIcon(QPixmap(":/friend/touxiang.jpeg"));
-    button->setIcon(userIcon);
+    QIcon *userIcon = new QIcon(QPixmap(":/friend/touxiang.jpeg"));
+    button->setIcon(*userIcon);
+    mPhotoMap[info.user_id] = userIcon;
     //button->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
     button->setMinimumHeight(60);
     button->setMinimumWidth(60);
@@ -604,8 +653,8 @@ void FriendPage::ChangeUserPicBySend(FileInfo info) {
     if (info.owner == mInfo.user_id) {
         if (QFile::exists(clientPath)) {
             // 如果文件存在，加载图像并设置为头像
-            QIcon icon(clientPath);
-            ui->toolButton_5->setIcon(icon);
+            QIcon *icon = new QIcon(clientPath);
+            ui->toolButton_5->setIcon(*icon);
             ui->toolButton_5->setIconSize(QSize(60, 60));
         } else {
             // 文件不存在，给用户提示
@@ -640,8 +689,8 @@ void FriendPage::ChangeUserPicBySend(FileInfo info) {
         if (QFile::exists(clientPath)) {
             qDebug() << "bbbbbbbbbbbbbbbbbbbbbbbbbbbbb222";
             // 如果文件存在，加载图像并设置为头像
-            QIcon icon(clientPath);
-            button->setIcon(icon);
+            QIcon *icon = new QIcon(clientPath);
+            button->setIcon(*icon);
             button->setIconSize(QSize(60, 60));
         }
     }
@@ -659,8 +708,8 @@ void FriendPage::ChangeUserPic(FileInfo info)
     if (info.owner == mInfo.user_id) {
         if (QFile::exists(clientPath)) {
             // 如果文件存在，加载图像并设置为头像
-            QIcon icon(clientPath);
-            ui->toolButton_5->setIcon(icon);
+            QIcon *icon = new QIcon(clientPath);
+            ui->toolButton_5->setIcon(*icon);
             ui->toolButton_5->setIconSize(QSize(60, 60));
         } else {
             // 文件不存在，给用户提示
@@ -677,8 +726,8 @@ void FriendPage::ChangeUserPic(FileInfo info)
         if (QFile::exists(clientPath)) {
             qDebug() << "bbbbbbbbbbbbbbbbbbbbbbbbbbbbb222";
             // 如果文件存在，加载图像并设置为头像
-            QIcon icon(clientPath);
-            button->setIcon(icon);
+            QIcon *icon = new QIcon(clientPath);
+            button->setIcon(*icon);
             button->setIconSize(QSize(60, 60));
         }
     }

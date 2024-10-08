@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
 
 
     ftpSender->start();
+
     /*framelessWidget w;
     w.setWindowFlag(Qt::FramelessWindowHint);//设置无边框属性
     w.setAttribute(Qt::WA_TranslucentBackground);//设置背景透明
@@ -43,71 +44,7 @@ int main(int argc, char *argv[])
 //        taskQueue.threadPool.waitForDone(); // Wait for all tasks to finish
 //    });
 
-    // 创建系统托盘图标
-    QSystemTrayIcon *trayIcon = new QSystemTrayIcon(QIcon(":/main/icon.jpeg"), &a);
-    trayIcon->setToolTip("QFei");
-    // 创建菜单项
-    QAction *showAction = new QAction("Show", &a);
-    QAction *quitAction = new QAction("Quit", &a);
-
-    // 创建菜单并添加菜单项
-    QMenu *trayMenu = new QMenu(&w1);
-    trayMenu->addAction(showAction);
-    trayMenu->addSeparator();
-    trayMenu->addAction(quitAction);
-
-    // 将菜单设置给系统托盘图标
-    trayIcon->setContextMenu(trayMenu);
-
-    // 显示系统托盘图标
-    trayIcon->show();
-
-    // 响应菜单项的槽函数
-    QObject::connect(showAction, &QAction::triggered, [&](){
-        // 执行显示主窗口的操作
-        // 例如：mainwindow->show();
-        w1.showNormal(); // 显示正常窗口
-        w1.activateWindow(); // 激活窗口
-    });
-
-    QObject::connect(quitAction, &QAction::triggered, [&](){
-        // 执行退出应用程序的操作
-        QApplication::quit();
-    });
-
-    // 当用户双击系统托盘图标时，显示程序界面
-    QObject::connect(trayIcon, &QSystemTrayIcon::activated, [&](QSystemTrayIcon::ActivationReason reason) {
-        if (reason == QSystemTrayIcon::DoubleClick) {
-            w1.showNormal(); // 显示正常窗口
-            w1.activateWindow(); // 激活窗口
-        }
-    });
-
-    // 当窗口要被最小化时，隐藏窗口并显示托盘图标
-    QObject::connect(&w1, &QWidget::windowIconChanged, [&](const QIcon &icon){
-        if (icon.isNull()) {
-            trayIcon->show();
-            w1.hide();
-        }
-    });
-    // 当点击托盘图标时，恢复窗口
-    QObject::connect(trayIcon, &QSystemTrayIcon::activated, [&](QSystemTrayIcon::ActivationReason reason) {
-        if (reason == QSystemTrayIcon::Trigger) {
-            // 鼠标单击托盘图标
-            w1.showNormal(); // 或 window.show();
-            w1.activateWindow();
-        } else if (reason == QSystemTrayIcon::Context) {
-            // 鼠标右键点击托盘图标
-            qDebug() << "Tray icon context menu activated";
-        } else if (reason == QSystemTrayIcon::MiddleClick) {
-            // 鼠标中键点击托盘图标
-            qDebug() << "Tray icon middle clicked";
-        } else if (reason == QSystemTrayIcon::Unknown) {
-            // 其他原因
-            qDebug() << "Unknown reason for tray icon activation";
-        }
-    });
-
+    w1.initTrayIcon(&a);
     // 连接信号槽
     QObject::connect(&a, &QCoreApplication::aboutToQuit, [&]() {
         if (!client->isClose()) {
@@ -116,9 +53,11 @@ int main(int argc, char *argv[])
             client->close();
         }
         ftpSender->close();
-        trayIcon->hide();
-        trayIcon->deleteLater();
-        qDebug() << "删除托盘";
+        if (w1.mTrayIcon != nullptr) {
+            w1.mTrayIcon->hide();
+            w1.mTrayIcon->deleteLater();
+            qDebug() << "删除托盘";
+        }
     });
 
     return a.exec();

@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <iostream>
 #include "Trans.h"
+#include "./cache/friendCache.h"
 using namespace std;
 #define MAX_REQUEST_SIZE 4096
 
@@ -457,16 +458,23 @@ bool Connection::closeConnection(int flag)
         perror("epoll_ctl: EPOLL_CTL_DEL");
         return false;
     }
+    //先关掉接收，再删除session,再关掉发送
     close(clientSocket);
     Connection* conn = Server::GetInstance()->mConnectionMap[clientSocket];
     if (conn == NULL) {
         return true;
     }
     Session* session = conn->session;
+    int userId = -1;
     if (session != NULL) {
-        int userId = session->mUserId;
+        userId = session->mUserId;
         Server::GetInstance()->mUserSessionMap.erase(userId);
         delete session;
+    }
+    if (userId != -1) {
+        ProcessNotifyStateProcessor processor;
+        vector<int> friendList = FriendCache::GetInstance()->getFriendList(userId);
+        processor.Notify(conn, friendList, userId, OFFLINE);
     }
     Server::GetInstance()->mConnectionMap.erase(clientSocket);
     clientSocket = -1;

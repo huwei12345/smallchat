@@ -88,7 +88,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QPlainTextEdit" name="plainTextEdit">
+       <widget class="QTextEdit" name="plainTextEdit">
         <property name="minimumSize">
          <size>
           <width>0</width>
@@ -174,7 +174,7 @@
          <item>
           <widget class="QToolButton" name="toolButton_9">
            <property name="text">
-            <string>...</string>
+            <string>文件2</string>
            </property>
           </widget>
          </item>
@@ -195,7 +195,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QPlainTextEdit" name="plainTextEdit_2"/>
+       <widget class="QTextEdit" name="plainTextEdit_2"/>
       </item>
       <item>
        <widget class="QWidget" name="widget_4" native="true">

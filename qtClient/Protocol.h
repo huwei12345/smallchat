@@ -26,10 +26,16 @@ public:
     Session* session;
 };
 
+enum SessionState {
+    ONLINE,
+    Invisible,
+    OFFLINE
+};
+
 class Session {
 public:
-    Session() {}
-    Connection*mConn;
+    Session() : mLoginState(SessionState::ONLINE) {}
+    Connection* mConn;
     int mUserId;
     int mLoginState;
     //应该还需要保持心跳连接
@@ -144,7 +150,7 @@ public:
     std::string address;
     std::string friendStatus;
     // 可以添加其他需要返回的用户信息字段
-    // int status;//'online', 'offline', ''
+    int status;//'online', 'offline', ''
     // int last_login;
     // int created_at;
     // int flag;
@@ -324,7 +330,7 @@ public:
         MyProtocolStream stream(str);
         stream << (int)size();
         for (auto it = begin(); it != end(); ++it) {
-            stream << it->user_id << it->friendStatus << it->username << it->email << it->avatar_url;
+            stream << it->user_id << it->friendStatus << it->username << it->email << it->avatar_url << it->status;
         }
         return str;
     }

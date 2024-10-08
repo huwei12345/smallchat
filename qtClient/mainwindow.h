@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QSystemTrayIcon>
 #include "Protocol.h"
 class MainPage;
 class RegisterPage;
@@ -17,7 +18,8 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-
+    bool initTrayIcon(QApplication *app);
+    QSystemTrayIcon *mTrayIcon;
 
 protected:
     // 在你的QApplication或者QWidget子类中重载keyPressEvent
@@ -45,5 +47,6 @@ private:
     MainPage* mainPage;
     FriendPage* friendPage;
     RegisterPage* registerPage;
+    QWidget* mCurWidget;
 };
 #endif // MAINWINDOW_H

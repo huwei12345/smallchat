@@ -6,7 +6,9 @@
 #include "ftpsender.h"
 #include <QDateTime>
 #include <QFileDialog>
+#include <QKeyEvent>
 #include <QMessageBox>
+#include <QPlainTextEdit>
 ChatWindow::ChatWindow(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::ChatWindow)
@@ -14,6 +16,7 @@ ChatWindow::ChatWindow(QWidget *parent) :
     ui->setupUi(this);
     returnWindow = NULL;
     mUserId = 1;
+    ui->plainTextEdit->setReadOnly(true); // 设置为只读，防止用户编辑内容
     connect(this, &ChatWindow::confirmMessage, ClientNetWork::GetInstance(), &ClientNetWork::confirmMessage);
     connect(this, &ChatWindow::friendPageUpdate, (FriendPage*)this->parent(), &FriendPage::friendPageUpdate);
 
@@ -22,6 +25,8 @@ ChatWindow::ChatWindow(QWidget *parent) :
 
 
     connect(ClientNetWork::GetInstance(), &ClientNetWork::offlineTransFileSuccess, this, &ChatWindow::offlineTransFileSuccess);
+
+    QObject::connect(ui->plainTextEdit_2, &QTextEdit::cursorPositionChanged, this, &ChatWindow::handleCursorPositionChange);
 }
 
 ChatWindow::ChatWindow(UserInfo info, QWidget *parent) :
@@ -52,8 +57,8 @@ void ChatWindow::showChatContent()
 {
     printf("size = %d\n", (int)mUnReadMessageList.size());
     for (int i = 0; i < (int)mUnReadMessageList.size(); i++) {
-        ui->plainTextEdit->appendPlainText(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(mUnReadMessageList[i].timestamp));
-        ui->plainTextEdit->appendPlainText(QString::fromStdString(mUnReadMessageList[i].message_text));
+        ui->plainTextEdit->append(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(mUnReadMessageList[i].timestamp));
+        ui->plainTextEdit->append(QString::fromStdString(mUnReadMessageList[i].message_text));
         mCurrentMessageList.push_back(mUnReadMessageList[i]);
     }
     messageUpdate();
@@ -67,8 +72,8 @@ void ChatWindow::addMessage(MessageInfo info)
         printf("isVis");
         fflush(stdout);
         mCurrentMessageList.push_back(info);
-        ui->plainTextEdit->appendPlainText(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(info.timestamp));
-        ui->plainTextEdit->appendPlainText(QString::fromStdString(info.message_text));
+        ui->plainTextEdit->append(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(info.timestamp));
+        ui->plainTextEdit->append(QString::fromStdString(info.message_text));
         messageUpdate();
     }
     else {
@@ -95,8 +100,8 @@ void ChatWindow::addFileArrive(FileInfo info)
         printf("isVis");
         fflush(stdout);
         mCurrentMessageList.push_back(infom);
-        ui->plainTextEdit->appendPlainText(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(infom.timestamp));
-        ui->plainTextEdit->appendPlainText(QString::fromStdString(infom.message_text));
+        ui->plainTextEdit->append(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(infom.timestamp));
+        ui->plainTextEdit->append(QString::fromStdString(infom.message_text));
         messageUpdate();
     }
     else {
@@ -123,7 +128,7 @@ void ChatWindow::on_pushButton_clicked()
 {
     std::string content = ui->plainTextEdit_2->toPlainText().toStdString();
     if (content != "") {
-QDateTime currentDateTime = QDateTime::currentDateTime();
+        QDateTime currentDateTime = QDateTime::currentDateTime();
         std::string name = ((FriendPage*)returnWindow)->mInfo.username;
         // 将日期和时间转换为字符串
         QString currentDateTimeStr = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
@@ -136,14 +141,14 @@ QDateTime currentDateTime = QDateTime::currentDateTime();
         if (!ret) {
             QMessageBox::information(this,"提示","网络不可达！");
             QString s = QString::fromStdString(content);
-ui->plainTextEdit->appendPlainText(QString::fromStdString(name) + "           " + currentDateTimeStr);
-            ui->plainTextEdit->appendPlainText(s);
-            ui->plainTextEdit->appendPlainText("Trans failure......Try Again\n");
+            ui->plainTextEdit->append(QString::fromStdString(name) + "           " + currentDateTimeStr);
+            ui->plainTextEdit->append(s);
+            ui->plainTextEdit->append("Trans failure......Try Again\n");
             return;
         }
         QString s = QString::fromStdString(content);
-ui->plainTextEdit->appendPlainText(QString::fromStdString(name) + "           " + currentDateTimeStr);
-        ui->plainTextEdit->appendPlainText(s);
+        ui->plainTextEdit->append(QString::fromStdString(name) + "           " + currentDateTimeStr);
+        ui->plainTextEdit->append(s);
         mCurrentMessageList.push_back(info);
     }
 }
@@ -203,3 +208,54 @@ QFileInfo fileInfo(filePath);
     // 获取文件扩展名
     QString extension = fileInfo.suffix();
 */
+
+void ChatWindow::on_toolButton_8_clicked()
+{
+    QString imagePath = QFileDialog::getOpenFileName(this, "Select Image", "", "Images (*.png *.jpg *.jpeg *.bmp)");
+    if (!imagePath.isEmpty()) {
+        QTextCursor cursor = ui->plainTextEdit_2->textCursor();
+        cursor.insertImage(imagePath);
+    }
+}
+
+void ChatWindow::on_toolButton_9_clicked()
+{
+    QString filePath = QFileDialog::getOpenFileName(this, "Select File", "", "All Files (*)");
+    if (!filePath.isEmpty()) {
+        // 插入文件名作为超链接
+        QTextCursor cursor = ui->plainTextEdit_2->textCursor();
+        cursor.movePosition(QTextCursor::End); // 移动到末尾
+        cursor.insertText("File: "); // 插入文件前缀
+
+        // 设置超链接格式
+        QTextCharFormat linkFormat;
+        linkFormat.setForeground(Qt::blue); // 设置字体颜色为蓝色
+        linkFormat.setFontUnderline(true); // 设置字体为下划线
+
+        // 插入可点击的文件名
+        cursor.insertText(QFileInfo(filePath).fileName(), linkFormat);
+        cursor.insertText("\n"); // 插入换行
+        ui->plainTextEdit_2->setTextCursor(cursor); // 更新光标位置
+    }
+}
+
+
+void ChatWindow::handleCursorPositionChange() {
+//    // 处理文本框中的点击事件
+//    QTextCursor cursor = ui->plainTextEdit_2->textCursor();
+//    if (cursor.hasSelection()) {
+//        return; // 如果有选中内容，不处理
+//    }
+
+//    QTextCharFormat format = cursor.charFormat();
+//    if (format.foreground().color() == Qt::blue && format.fontUnderline()) {
+//        QString fileName = cursor.selectedText();
+//        QString filePath = QFileDialog::getOpenFileName(this, "Open File", fileName, "All Files (*)");
+//        if (!filePath.isEmpty()) {
+//            // 在这里可以处理打开文件的逻辑
+//            // 例如，打开文件或执行其他操作
+//            // QFile file(filePath);
+//            // 进行读取或其他操作
+//        }
+//    }
+}

@@ -45,6 +45,7 @@ public:
 
     int getFriendPhoto(UserInfo &userinfo);
     void ProcessFriendRequestResult(Response response);
+    void initFriendState();
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -87,6 +88,7 @@ private:
     std::vector<UserInfo> mFriendList;
     std::map<int, ChatWindow*> mChatWindowMap;
     std::map<int, QToolButton*> mFriendButton;
+    std::map<int, QIcon*> mPhotoMap;
     std::unordered_set<FriendRequest, friendHasher, friendEqual> mFriendRequestSet;
     QTimer *mFriendRequestTimer;
     std::map<int, QTimer*> mUnReadMessageTimerMap;

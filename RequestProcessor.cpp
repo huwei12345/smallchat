@@ -5,6 +5,8 @@
 #include "MysqlPool.h"
 #include "server.h"
 #include "settime.h"
+#include "./cache/friendCache.h"
+
 
 int stoiAll(const std::string &str) {
     int number = 0; 
@@ -177,13 +179,12 @@ void SearchAllFriendProcessor::Exec(Connection* conn, Request &request, Response
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
         response.mhasData = true;
-
-        //绑定Session中好友的在线状态
+        //绑定Cache中好友
         bindAllFriendState(conn, request, friendList);
         response.mData = friendList.friendListSerial();
         //通知好友自己上线
         ProcessNotifyStateProcessor processor;
-        processor.Notify(conn, friendList, request.mUserId, 1);
+        processor.Notify(conn, friendList, request.mUserId, ONLINE);
     }
     else {
         //some error info add
@@ -362,12 +363,19 @@ bool SearchAllFriendProcessor::SearchAllFriend(const Request &request, FriendLis
 bool SearchAllFriendProcessor::bindAllFriendState(Connection *conn, Request &request, FriendList &friendList)
 {
     for (auto &u : friendList) {
-        //并发问题很大,SessionMap加锁不太可能
-        if (Server::GetInstance()->mUserSessionMap.count(u.user_id) && Server::GetInstance()->mUserSessionMap[u.user_id] != NULL) {
-            u.status = Server::GetInstance()->mUserSessionMap[u.user_id]->mLoginState;
-        }
-        else {
-            u.status = SessionState::OFFLINE;
+        FriendCache::GetInstance()->addFriend(request.mUserId, u.user_id);
+        //大致获取其他好友状态，如果好友session在，就认为在线。在不在线其实不重要
+        //就是个显示，在好友临界状态。 
+        //刚上线，后续会收到好友的通知。 如果是通知已经发完了，那说明server端就已经有session了。不会错误 
+        //刚下线，也会收到通知，如果是通知没有收到，session还没有取消
+        //所以先删除session，再发通知下线
+        //先创建session，再发通知上线
+        
+        //那种一会上线一会下线，上了又下，下了又上这种。总之它在服务器的队列里是一致的。
+        //每隔2分钟，客户端发送一次同步请求好友列表。
+
+        if (Server::GetInstance()->mUserSessionMap.count(u.user_id)) {
+            u.status = ONLINE;
         }
     }
     return true;
@@ -1505,6 +1513,29 @@ bool ProcessNotifyStateProcessor::Notify(Connection * conn, FriendList & friendL
                 MyProtocolStream stream(data);
                 stream << mUserId << state;
                 Response rsp(1, FunctionCode::UpdateUserState, 3, 4, 5, 1, mUserId, 1, true, data);
+                rsp.mhasData = true;
+                string str = rsp.serial();
+                success &= sendResponse(clientSocket, &rsp);
+            }
+        }
+    }
+    return success;
+}
+
+bool ProcessNotifyStateProcessor::Notify(Connection *conn, vector<int> &friendList, int mUserId, int state)
+{
+    bool success = true;
+    for (auto &u : friendList) {
+        if (Server::GetInstance()->mUserSessionMap.count(u)) {
+            Session* session = Server::GetInstance()->mUserSessionMap[u];
+            Connection* friendConn = session->mConn;
+            if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
+                int clientSocket = friendConn->clientSocket; 
+                std::string data;
+                MyProtocolStream stream(data);
+                stream << mUserId << state;
+                Response rsp(1, FunctionCode::UpdateUserState, 3, 4, 5, 1, mUserId, 1, true, data);
+                rsp.mhasData = true;
                 string str = rsp.serial();
                 success &= sendResponse(clientSocket, &rsp);
             }

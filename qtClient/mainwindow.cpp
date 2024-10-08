@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QKeyEvent>
 #include <QPalette>
+#include <QSystemTrayIcon>
 #include "friendpage.h"
 #include "qtmaterialautocomplete.h"
 #include "processor.h"
@@ -17,11 +18,12 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    mTrayIcon = nullptr;
     // 设置窗口图标
     QIcon windowIcon(QPixmap(":/main/title.jpeg")); // 假设你的图标文件位于资源文件中或者项目目录下
     setWindowIcon(windowIcon);
     setWindowTitle(tr("Qfei"));
-
+    mCurWidget = this;
     mainPage = NULL;
     registerPage = NULL;
     friendPage = NULL;
@@ -186,6 +188,7 @@ void MainWindow::onLoginSuccessful(UserInfo info)
         friendPage->init();
         friendPage->setReturn(this);
     }
+    mCurWidget = friendPage;
     friendPage->show();
     this->hide();
 }
@@ -196,3 +199,72 @@ void MainWindow::onLoginFailure()
     ui->lineEdit->setFocus();
 }
 
+
+bool MainWindow::initTrayIcon(QApplication* app) {
+    // 创建系统托盘图标
+    QSystemTrayIcon *trayIcon = new QSystemTrayIcon(QIcon(":/main/icon.jpeg"), app);
+    mTrayIcon = trayIcon;
+    trayIcon->setToolTip("QFei");
+    // 创建菜单项
+    QAction *showAction = new QAction("Show", app);
+    QAction *quitAction = new QAction("Quit", app);
+
+    // 创建菜单并添加菜单项
+    QMenu *trayMenu = new QMenu(this);
+    trayMenu->addAction(showAction);
+    trayMenu->addSeparator();
+    trayMenu->addAction(quitAction);
+
+    // 将菜单设置给系统托盘图标
+    trayIcon->setContextMenu(trayMenu);
+
+    // 显示系统托盘图标
+    trayIcon->show();
+
+    // 响应菜单项的槽函数
+    QObject::connect(showAction, &QAction::triggered, [&](){
+        // 执行显示主窗口的操作
+        // 例如：mainwindow->show();
+        mCurWidget->showNormal(); // 显示正常窗口
+        mCurWidget->activateWindow(); // 激活窗口
+    });
+
+    QObject::connect(quitAction, &QAction::triggered, [&](){
+        // 执行退出应用程序的操作
+        QApplication::quit();
+    });
+
+    // 当用户双击系统托盘图标时，显示程序界面
+    QObject::connect(trayIcon, &QSystemTrayIcon::activated, [&](QSystemTrayIcon::ActivationReason reason) {
+        if (reason == QSystemTrayIcon::DoubleClick) {
+            mCurWidget->showNormal(); // 显示正常窗口
+            mCurWidget->activateWindow(); // 激活窗口
+        }
+    });
+
+    // 当窗口要被最小化时，隐藏窗口并显示托盘图标
+    QObject::connect(this, &QWidget::windowIconChanged, [&](const QIcon &icon){
+        if (icon.isNull()) {
+            trayIcon->show();
+            mCurWidget->hide();
+            this->hide();
+        }
+    });
+    // 当点击托盘图标时，恢复窗口
+    QObject::connect(trayIcon, &QSystemTrayIcon::activated, [&](QSystemTrayIcon::ActivationReason reason) {
+        if (reason == QSystemTrayIcon::Trigger) {
+            // 鼠标单击托盘图标
+            mCurWidget->showNormal(); // 或 window.show();
+            mCurWidget->activateWindow();
+        } else if (reason == QSystemTrayIcon::Context) {
+            // 鼠标右键点击托盘图标
+            qDebug() << "Tray icon context menu activated";
+        } else if (reason == QSystemTrayIcon::MiddleClick) {
+            // 鼠标中键点击托盘图标
+            qDebug() << "Tray icon middle clicked";
+        } else if (reason == QSystemTrayIcon::Unknown) {
+            // 其他原因
+            qDebug() << "Unknown reason for tray icon activation";
+        }
+    });
+}

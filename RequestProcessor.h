@@ -160,8 +160,10 @@ class ProcessGetOfflineFileProcessor : public RequestProcessor {
 class ProcessNotifyStateProcessor : public RequestProcessor {
     void Exec(Connection* conn, Request& request, Response& response);
 
+
 public:
     bool Notify(Connection *conn, FriendList &friendList, int mUserId, int state);
+    bool Notify(Connection *conn, vector<int> &friendList, int mUserId, int state);
 };
 
 #endif

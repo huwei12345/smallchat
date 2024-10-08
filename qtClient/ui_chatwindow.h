@@ -13,9 +13,9 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
-#include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpacerItem>
+#include <QtWidgets/QTextEdit>
 #include <QtWidgets/QToolButton>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
@@ -37,7 +37,7 @@ public:
     QToolButton *toolButton_10;
     QToolButton *toolButton_13;
     QToolButton *toolButton_11;
-    QPlainTextEdit *plainTextEdit;
+    QTextEdit *plainTextEdit;
     QWidget *widget_3;
     QHBoxLayout *horizontalLayout_2;
     QLabel *label_3;
@@ -50,7 +50,7 @@ public:
     QToolButton *toolButton_7;
     QToolButton *toolButton_9;
     QSpacerItem *horizontalSpacer;
-    QPlainTextEdit *plainTextEdit_2;
+    QTextEdit *plainTextEdit_2;
     QWidget *widget_4;
     QHBoxLayout *horizontalLayout_3;
     QSpacerItem *horizontalSpacer_2;
@@ -111,7 +111,7 @@ public:
 
         verticalLayout->addWidget(widget);
 
-        plainTextEdit = new QPlainTextEdit(widget_2);
+        plainTextEdit = new QTextEdit(widget_2);
         plainTextEdit->setObjectName(QString::fromUtf8("plainTextEdit"));
         plainTextEdit->setMinimumSize(QSize(0, 220));
 
@@ -175,7 +175,7 @@ public:
 
         verticalLayout->addWidget(widget_3);
 
-        plainTextEdit_2 = new QPlainTextEdit(widget_2);
+        plainTextEdit_2 = new QTextEdit(widget_2);
         plainTextEdit_2->setObjectName(QString::fromUtf8("plainTextEdit_2"));
 
         verticalLayout->addWidget(plainTextEdit_2);
@@ -225,7 +225,7 @@ public:
         toolButton_5->setText(QCoreApplication::translate("ChatWindow", "\346\226\207\344\273\266", nullptr));
         toolButton_6->setText(QCoreApplication::translate("ChatWindow", "GIF", nullptr));
         toolButton_7->setText(QCoreApplication::translate("ChatWindow", "\346\212\226\345\212\250", nullptr));
-        toolButton_9->setText(QCoreApplication::translate("ChatWindow", "...", nullptr));
+        toolButton_9->setText(QCoreApplication::translate("ChatWindow", "\346\226\207\344\273\2662", nullptr));
         pushButton->setText(QCoreApplication::translate("ChatWindow", "\345\217\221\351\200\201", nullptr));
     } // retranslateUi
 
