@@ -4,7 +4,7 @@
 #include <QMessageBox>
 #include "network.h"
 #include "processor.h"
-
+#include "friendpage.h"
 extern int user_id;
 CreateGroupPage::CreateGroupPage(QWidget *parent) :
     QWidget(parent),
@@ -34,9 +34,14 @@ void CreateGroupPage::keyPressEvent(QKeyEvent *event)
     }
 }
 
-void CreateGroupPage::createGroupSuccess(Response rsp)
+void CreateGroupPage::createGroupSuccess(Response response)
 {
-    if (rsp.mCode) {
+    if (response.mCode) {
+        std::string &data = response.mData;
+        MyProtocolStream stream(data);
+        GroupInfo info;
+        stream >> info.id >> info.group_name >> info.gtype >> info.admin_id >> info.description >> info.tips;
+        ((FriendPage*)returnWindow)->addGroupToPage(info);
         QMessageBox::information(this, "群组通知", "创建群成功！");
     }
     else {

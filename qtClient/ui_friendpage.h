@@ -15,6 +15,7 @@
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QSpacerItem>
+#include <QtWidgets/QTabWidget>
 #include <QtWidgets/QToolButton>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
@@ -24,7 +25,7 @@ QT_BEGIN_NAMESPACE
 class Ui_FriendPage
 {
 public:
-    QHBoxLayout *horizontalLayout;
+    QVBoxLayout *verticalLayout_3;
     QWidget *widget;
     QVBoxLayout *verticalLayout;
     QWidget *widget_2;
@@ -35,7 +36,19 @@ public:
     QSpacerItem *horizontalSpacer_2;
     QWidget *widget_4;
     QVBoxLayout *verticalLayout_2;
+    QTabWidget *tabWidget;
+    QWidget *tab;
+    QHBoxLayout *horizontalLayout;
     QListWidget *listWidget;
+    QWidget *tab_2;
+    QHBoxLayout *horizontalLayout_4;
+    QTabWidget *tabWidget_2;
+    QWidget *tab_3;
+    QHBoxLayout *horizontalLayout_5;
+    QListWidget *listWidget_3;
+    QWidget *tab_4;
+    QHBoxLayout *horizontalLayout_6;
+    QListWidget *listWidget_2;
     QWidget *widget_3;
     QHBoxLayout *horizontalLayout_3;
     QToolButton *toolButton_4;
@@ -48,9 +61,9 @@ public:
         if (FriendPage->objectName().isEmpty())
             FriendPage->setObjectName(QString::fromUtf8("FriendPage"));
         FriendPage->resize(271, 627);
-        horizontalLayout = new QHBoxLayout(FriendPage);
-        horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
-        horizontalLayout->setContentsMargins(0, 4, 0, 4);
+        verticalLayout_3 = new QVBoxLayout(FriendPage);
+        verticalLayout_3->setObjectName(QString::fromUtf8("verticalLayout_3"));
+        verticalLayout_3->setContentsMargins(0, 4, 0, 4);
         widget = new QWidget(FriendPage);
         widget->setObjectName(QString::fromUtf8("widget"));
         verticalLayout = new QVBoxLayout(widget);
@@ -95,11 +108,71 @@ public:
         widget_4 = new QWidget(widget);
         widget_4->setObjectName(QString::fromUtf8("widget_4"));
         verticalLayout_2 = new QVBoxLayout(widget_4);
+        verticalLayout_2->setSpacing(0);
         verticalLayout_2->setObjectName(QString::fromUtf8("verticalLayout_2"));
-        listWidget = new QListWidget(widget_4);
+        verticalLayout_2->setContentsMargins(0, 0, 0, 0);
+        tabWidget = new QTabWidget(widget_4);
+        tabWidget->setObjectName(QString::fromUtf8("tabWidget"));
+        tab = new QWidget();
+        tab->setObjectName(QString::fromUtf8("tab"));
+        horizontalLayout = new QHBoxLayout(tab);
+        horizontalLayout->setSpacing(0);
+        horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
+        horizontalLayout->setContentsMargins(0, 0, 0, 0);
+        listWidget = new QListWidget(tab);
         listWidget->setObjectName(QString::fromUtf8("listWidget"));
 
-        verticalLayout_2->addWidget(listWidget);
+        horizontalLayout->addWidget(listWidget);
+
+        tabWidget->addTab(tab, QString());
+        tab_2 = new QWidget();
+        tab_2->setObjectName(QString::fromUtf8("tab_2"));
+        horizontalLayout_4 = new QHBoxLayout(tab_2);
+        horizontalLayout_4->setSpacing(0);
+        horizontalLayout_4->setObjectName(QString::fromUtf8("horizontalLayout_4"));
+        horizontalLayout_4->setContentsMargins(3, 0, 3, 0);
+        tabWidget_2 = new QTabWidget(tab_2);
+        tabWidget_2->setObjectName(QString::fromUtf8("tabWidget_2"));
+        tabWidget_2->setLayoutDirection(Qt::LeftToRight);
+        tabWidget_2->setAutoFillBackground(false);
+        tabWidget_2->setTabPosition(QTabWidget::North);
+        tabWidget_2->setTabShape(QTabWidget::Triangular);
+        tabWidget_2->setElideMode(Qt::ElideRight);
+        tabWidget_2->setUsesScrollButtons(true);
+        tabWidget_2->setDocumentMode(false);
+        tabWidget_2->setTabsClosable(false);
+        tabWidget_2->setMovable(false);
+        tabWidget_2->setTabBarAutoHide(false);
+        tab_3 = new QWidget();
+        tab_3->setObjectName(QString::fromUtf8("tab_3"));
+        horizontalLayout_5 = new QHBoxLayout(tab_3);
+        horizontalLayout_5->setSpacing(0);
+        horizontalLayout_5->setObjectName(QString::fromUtf8("horizontalLayout_5"));
+        horizontalLayout_5->setContentsMargins(0, 0, 0, 0);
+        listWidget_3 = new QListWidget(tab_3);
+        listWidget_3->setObjectName(QString::fromUtf8("listWidget_3"));
+
+        horizontalLayout_5->addWidget(listWidget_3);
+
+        tabWidget_2->addTab(tab_3, QString());
+        tab_4 = new QWidget();
+        tab_4->setObjectName(QString::fromUtf8("tab_4"));
+        horizontalLayout_6 = new QHBoxLayout(tab_4);
+        horizontalLayout_6->setSpacing(0);
+        horizontalLayout_6->setObjectName(QString::fromUtf8("horizontalLayout_6"));
+        horizontalLayout_6->setContentsMargins(0, 0, 0, 0);
+        listWidget_2 = new QListWidget(tab_4);
+        listWidget_2->setObjectName(QString::fromUtf8("listWidget_2"));
+
+        horizontalLayout_6->addWidget(listWidget_2);
+
+        tabWidget_2->addTab(tab_4, QString());
+
+        horizontalLayout_4->addWidget(tabWidget_2);
+
+        tabWidget->addTab(tab_2, QString());
+
+        verticalLayout_2->addWidget(tabWidget);
 
 
         verticalLayout->addWidget(widget_4);
@@ -141,10 +214,14 @@ public:
         verticalLayout->addWidget(widget_3);
 
 
-        horizontalLayout->addWidget(widget);
+        verticalLayout_3->addWidget(widget);
 
 
         retranslateUi(FriendPage);
+
+        tabWidget->setCurrentIndex(1);
+        tabWidget_2->setCurrentIndex(1);
+
 
         QMetaObject::connectSlotsByName(FriendPage);
     } // setupUi
@@ -159,6 +236,10 @@ public:
         comboBox->setItemText(3, QCoreApplication::translate("FriendPage", "\345\277\231\347\242\214", nullptr));
 
         comboBox->setCurrentText(QCoreApplication::translate("FriendPage", "\345\234\250\347\272\277", nullptr));
+        tabWidget->setTabText(tabWidget->indexOf(tab), QCoreApplication::translate("FriendPage", "\346\266\210\346\201\257", nullptr));
+        tabWidget_2->setTabText(tabWidget_2->indexOf(tab_3), QCoreApplication::translate("FriendPage", "\345\245\275\345\217\213", nullptr));
+        tabWidget_2->setTabText(tabWidget_2->indexOf(tab_4), QCoreApplication::translate("FriendPage", "\347\276\244", nullptr));
+        tabWidget->setTabText(tabWidget->indexOf(tab_2), QCoreApplication::translate("FriendPage", "\345\205\263\347\263\273", nullptr));
         toolButton_4->setText(QCoreApplication::translate("FriendPage", "...", nullptr));
         toolButton->setText(QCoreApplication::translate("FriendPage", "\346\237\245\346\211\276", nullptr));
         toolButton_3->setText(QCoreApplication::translate("FriendPage", "\345\210\233\345\273\272\347\276\244", nullptr));

@@ -29,6 +29,12 @@ class SearchAllFriendProcessor : public RequestProcessor  {
     bool bindAllFriendState(Connection* conn, Request& request, FriendList& friendList);
 };
 
+class SearchAllGroupProcessor : public RequestProcessor  {
+    void Exec(Connection* conn, Request& request, Response&);
+    bool SearchAllGroup(const Request& request, std::vector<GroupInfo>& info);
+    //bool bindAllFriendState(Connection* conn, Request& request, FriendList& friendList);
+};
+
 class FindFriendProcessor  : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
     bool FindFriend(const Request& request, FriendList& info);

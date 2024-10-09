@@ -10,6 +10,7 @@ release/qftp.o
 release/qurlinfo.o
 release/ftpsender.o
 release/globalvaria.o
+release/groupchatwindow.o
 release/main.o
 release/mainpage.o
 release/mainwindow.o
@@ -30,6 +31,7 @@ release/moc_framelessWidget.o
 release/moc_friendpage.o
 release/moc_FtpManager.o
 release/moc_ftpsender.o
+release/moc_groupchatwindow.o
 release/moc_mainpage.o
 release/moc_mainwindow.o
 release/moc_netthread.o

@@ -25,6 +25,7 @@ signals:
     void ChangeUserPicBySend(FileInfo info);
     void FindGroupSuccess(Response response);
     void findAllFriendSuccess(Response response);
+    void findAllGroupSuccess(Response response);
     void AddFriendSuccess(int mCode);
     void ProcessFriendRequestResult(Response response);
     void getAllMessageSuccess(Response response);

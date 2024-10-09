@@ -381,6 +381,73 @@ bool SearchAllFriendProcessor::bindAllFriendState(Connection *conn, Request &req
     return true;
 }
 
+void SearchAllGroupProcessor::Exec(Connection* conn, Request &request, Response& response)
+{
+    vector<GroupInfo> groupList;
+    bool ret = SearchAllGroup(request, groupList);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        response.mhasData = true;
+        //绑定Cache中好友
+        MyProtocolStream stream(response.mData);
+        stream << (int)groupList.size();
+        for (auto &info : groupList) {
+            stream << info.id << info.group_name << info.role << info.gtype << info.admin_id << info.description << info.tips;
+        }
+    }
+    else {
+        //some error info add
+    }
+}
+
+
+bool SearchAllGroupProcessor::SearchAllGroup(const Request& request, std::vector<GroupInfo>& groupList) {
+    std::string mData = request.mData;
+    MyProtocolStream stream(mData);
+    GroupInfo info;
+    int user_id = 0;
+    stream >> user_id;
+    
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == NULL) {
+        return false;
+    }
+    //TODO: 联合查询，用户的名字、email等返回
+	sql::PreparedStatement* state2 = conn->prepareStatement(R"(
+        SELECT g.group_id, gm.role, g.group_name, g.admin_id, g.gtype, g.description, g.Tips
+        FROM group_members gm
+        JOIN group_t g ON gm.user_id = ?
+        WHERE gm.group_id = g.group_id and role <= 3;
+        )");
+    state2->setInt(1, user_id);
+    sql::ResultSet *st = state2->executeQuery();
+
+    int id = -1;
+    try {
+        while (st->next()) {
+            info.id = st->getInt("group_id");
+            info.role = st->getString("role");
+            info.group_name = st->getString("group_name");
+            info.admin_id = st->getInt("admin_id");
+            info.gtype = st->getString("gtype");
+            info.description = st->getString("description");
+            info.tips = st->getString("Tips");
+            //cout << "id:" << info.id << " name:" << info.role << " email:" << info.group_name << "status:" << info.admin_id << std::endl;
+            groupList.push_back(info);
+        }
+    }
+    catch(sql::SQLException& e) {
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    MysqlPool::GetInstance()->releaseConncetion(conn);
+
+    return true;
+}
+
 bool FindFriendProcessor::FindFriend(const Request &request, FriendList &friendList)
 {
     std::string mData = request.mData;

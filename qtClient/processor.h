@@ -15,11 +15,12 @@ public:
     static bool FindFriendByName(std::string &friendName);
     static bool AddFriend(int friendId);
     static bool findAllFriend(int userId);
+    static bool findAllGroup(int userId);
     static bool getAllMessage(int userId);
     static bool getAllFriendRequest(int userId);
     static bool ChangeUserState(int state);
     static bool processFriendRequest(FriendRequest friendRequest);
-static bool CreateGroup(GroupInfo& info);
+    static bool CreateGroup(GroupInfo& info);
     static bool JoinGroup(int groupId);
     static bool FindGroup(int groupId);
 

@@ -91,6 +91,7 @@ namespace FunctionCode {
 
         GetAllOfflineFile                         = 27,
         GetOfflineFile                            = 28,
+        SearchAllGroup                            = 29,
         //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
     };
 
@@ -127,6 +128,7 @@ namespace FunctionCode {
         "TransFileOver       ",
         "GetAllOfflineFile   ",
         "GetOfflineFile      ",
+        "SearchAllGroup      ",
     };
 };
 
@@ -265,6 +267,17 @@ public:
     std::string group_name;
     std::string description;
     std::string tips;
+    std::string role;
+    void print() const {
+        std::cout << "id: " << id
+                  << "\tadmin_id: " << admin_id
+                  << "\tgtype: " << gtype
+                  << "\tgroup_name: " << group_name
+                  << "\tdescription: " << description
+                  << "\ttips: " << tips
+                  << "\trole: " << role
+                  << std::endl;
+    }
 };
 
 

@@ -24,6 +24,7 @@ SOURCES += \
     ftp/qurlinfo.cpp \
     ftpsender.cpp \
     globalvaria.cpp \
+    groupchatwindow.cpp \
     main.cpp \
     mainpage.cpp \
     mainwindow.cpp \
@@ -52,6 +53,7 @@ HEADERS += \
     ftp/qurlinfo.h \
     ftpsender.h \
     globalvaria.h \
+    groupchatwindow.h \
     mainpage.h \
     mainwindow.h \
     netthread.h \
@@ -71,6 +73,7 @@ FORMS += \
     findfriendpage.ui \
     framelessWidget.ui \
     friendpage.ui \
+    groupchatwindow.ui \
     mainpage.ui \
     mainwindow.ui \
     registerpage.ui

@@ -195,6 +195,11 @@ break;
     }
     case FunctionCode::NofifyFileComing: {
         emit NofifyFileComing(rsp);
+        break;
+    }
+    case FunctionCode::SearchAllGroup: {
+        emit findAllGroupSuccess(rsp);
+        break;
     }
     default: {
         break;

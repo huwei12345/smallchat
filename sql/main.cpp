@@ -67,7 +67,7 @@ vector<std::string> tableCreateStringMap = {
 	R"(
 	CREATE TABLE group_t(
     group_id INT AUTO_INCREMENT PRIMARY KEY,
-    group_name VARCHAR(100) NOT NULL,
+    group_name VARCHAR(100) UNIQUE NOT NULL,
     description TEXT,
     admin_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -13,6 +13,8 @@
 #include "processor.h"
 #include "network.h"
 #include "globalvaria.h"
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)

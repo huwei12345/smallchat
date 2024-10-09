@@ -284,7 +284,8 @@ Server::Server(const char *ip, unsigned int port)
     
     requestProcessor[FunctionCode::GetOfflineFile] = new ProcessGetOfflineFileProcessor;
     
-    for (int i = 30; i < 100; i++) {
+    requestProcessor[FunctionCode::SearchAllGroup] = new SearchAllGroupProcessor;
+    for (int i = 40; i < 100; i++) {
         requestProcessor[i] = new RequestProcessor;
     }
 

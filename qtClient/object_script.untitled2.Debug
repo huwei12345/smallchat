@@ -10,6 +10,7 @@ debug/qftp.o
 debug/qurlinfo.o
 debug/ftpsender.o
 debug/globalvaria.o
+debug/groupchatwindow.o
 debug/main.o
 debug/mainpage.o
 debug/mainwindow.o
@@ -30,6 +31,7 @@ debug/moc_framelessWidget.o
 debug/moc_friendpage.o
 debug/moc_FtpManager.o
 debug/moc_ftpsender.o
+debug/moc_groupchatwindow.o
 debug/moc_mainpage.o
 debug/moc_mainwindow.o
 debug/moc_netthread.o

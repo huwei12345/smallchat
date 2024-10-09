@@ -8,6 +8,8 @@
 #include <map>
 #include <set>
 #include <unordered_set>
+#include "groupchatwindow.h"
+
 class FindFriendPage;
 class CreateGroupPage;
 class ChatWindow;
@@ -23,18 +25,17 @@ public:
     explicit FriendPage(QWidget *parent = nullptr);
     explicit FriendPage(UserInfo& info, QWidget *parent = nullptr);
     void setReturn(QWidget* widget);
-    void addFriendToPage(int index, UserInfo info);
     int m_index;
     ~FriendPage();
 
     int init();
     bool initFriendList();
+    bool initGroupList();
     bool initMessageList();
     bool initFriendRequest();
     bool initMyPhoto();
     bool initFriendPhoto();
     bool initAllOfflineFile();
-
     bool initPage();
     void friendPageUpdate(int uid);
     UserInfo mInfo;
@@ -46,6 +47,10 @@ public:
     int getFriendPhoto(UserInfo &userinfo);
     void ProcessFriendRequestResult(Response response);
     void initFriendState();
+
+    void addFriendToPage(int index, UserInfo info);
+    bool addGroupToPage(GroupInfo info);
+
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -63,7 +68,9 @@ private slots:
     void on_toolButton_3_clicked();
 
     void chatWithFriend(QListWidgetItem* item);
+    void chatWithGroup(QListWidgetItem *item);
     void findAllFriendSuccess(Response response);
+    void findAllGroupSuccess(Response response);
     void getAllMessageSuccess(Response);
     void getAllOfflineFileSuccess(Response);
     void getAllFriendRequestSuccess(Response);
@@ -85,12 +92,22 @@ private:
     CreateGroupPage* m_CreateGroupPage;
     int mUserId;
 
+
     std::vector<UserInfo> mFriendList;
+    std::vector<GroupInfo> mGroupList;
+
     std::map<int, ChatWindow*> mChatWindowMap;
+    std::map<int, GroupChatWindow*> mGroupWindowMap;
+
     std::map<int, QToolButton*> mFriendButton;
+    std::map<int, QToolButton*> mGroupButton;
+
     std::map<int, QIcon*> mPhotoMap;
+    std::map<int, QIcon*> mGroupPhotoMap;
+
     std::unordered_set<FriendRequest, friendHasher, friendEqual> mFriendRequestSet;
     QTimer *mFriendRequestTimer;
+
     std::map<int, QTimer*> mUnReadMessageTimerMap;
 };
 

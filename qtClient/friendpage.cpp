@@ -22,6 +22,7 @@
 #include "processor.h"
 #include "ftpsender.h"
 #include "globalvaria.h"
+
 bool FriendPage::initPage() {
     setWindowTitle(tr("Qfei"));
     // 设置图片，可以是本地文件路径或者网络图片URL
@@ -37,6 +38,7 @@ bool FriendPage::initPage() {
     connect(ClientNetWork::GetInstance(), &ClientNetWork::ChangeUserPic, this, &FriendPage::ChangeUserPic);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::ChangeUserPicBySend, this, &FriendPage::ChangeUserPicBySend);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::findAllFriendSuccess, this, &FriendPage::findAllFriendSuccess);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::findAllGroupSuccess, this, &FriendPage::findAllGroupSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::getAllMessageSuccess, this, &FriendPage::getAllMessageSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::getAllOfflineFileSuccess, this, &FriendPage::getAllOfflineFileSuccess);
 
@@ -92,6 +94,8 @@ int FriendPage::init() {
     ret &= initMyPhoto();
 
     ret &= initAllOfflineFile();
+
+    ret &= initGroupList();
     return ret;
 }
 
@@ -201,6 +205,14 @@ bool FriendPage::initFriendList() {
     return ret;
 }
 
+bool FriendPage::initGroupList() {
+    bool ret = Processor::findAllGroup(mUserId);
+    if (!ret) {
+        QMessageBox::information(this,"提示","网络不可达！");
+    }
+    return ret;
+}
+
 bool FriendPage::initMessageList() {
     bool ret = Processor::getAllMessage(mUserId);
     if (!ret) {
@@ -247,6 +259,30 @@ void FriendPage::findAllFriendSuccess(Response response)
     initFriendState();
 }
 
+void FriendPage::findAllGroupSuccess(Response response)
+{
+    std::string mdata = response.mData;
+    MyProtocolStream stream2(mdata);
+    int size = 0;
+    stream2 >> size;
+    for (int i = 0; i < size; i++) {
+        //TODO:ToolButton put in widget
+        GroupInfo info;
+        stream2 >> info.id >> info.group_name >> info.role >> info.admin_id >> info.gtype >> info.description >> info.tips;
+        //addGroupToPage(info);//
+        info.print();
+        mGroupList.push_back(info);
+        //GroupChatWindow* chatWindow = new GroupChatWindow(info);
+        //mGroupWindowMap[info.id] = chatWindow;
+
+        //connect(this, &FriendPage::userMessageUnRead, chatWindow, &ChatWindow::userMessageRead);
+        //connect(chatWindow, &ChatWindow::friendPageUpdate, this, &FriendPage::friendPageUpdate);
+    }
+
+    //initGroupPhoto();
+    //initFriendState();
+}
+
 
 void FriendPage::initFriendState() {
     for (size_t i = 0; i < mFriendList.size(); i++) {
@@ -270,6 +306,41 @@ void FriendPage::initFriendState() {
             button->setIconSize(pix.size());
         }
     }
+}
+
+bool FriendPage::addGroupToPage(GroupInfo info)
+{
+    QListWidget* groupWidget = ui->listWidget_2;
+    QToolButton* button = new QToolButton();
+    QString str = QString::fromStdString(info.group_name);
+
+    button->setText(str);
+    button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    QIcon *userIcon = new QIcon(QPixmap(":/friend/touxiang.jpeg"));
+    button->setIcon(*userIcon);
+
+    mGroupPhotoMap[info.id] = userIcon;
+
+    button->setMinimumHeight(60);
+    button->setMinimumWidth(60);
+    button->setIconSize(QSize(60, 60));
+
+    QString str2("item");
+    ui->listWidget->addItem(str2);
+    int i = ui->listWidget->count();
+    ui->listWidget->setItemWidget(ui->listWidget->item(i), button);
+    ui->listWidget->item(i)->setWhatsThis(QString::number(info.id));
+    qDebug() << "Hello XXXXX!" << button;
+
+    button->installEventFilter(this); // 在当前类中实现 eventFilter 方法
+    mGroupButton[info.id] =button;
+    // 连接信号和槽
+    connect(ui->listWidget, &QListWidget::itemClicked, this, &FriendPage::chatWithGroup);
+
+    QSize size;
+    size.setHeight(60);
+    size.setWidth(60);
+    ui->listWidget->item(i)->setSizeHint(size);
 }
 
 
@@ -470,6 +541,7 @@ bool FriendPage::eventFilter(QObject *obj, QEvent *event)
                 // 判断鼠标点击位置是否在按钮的矩形区域内
                 if (buttonRect.contains(mousePos))
                 {
+                    //TODO:进一步判断button是friendButton还是groupButton
                     // 处理点击事件
                     emit chatWithFriend(ui->listWidget->itemAt(button->pos()));
                     // 标记事件已处理
@@ -520,6 +592,15 @@ void FriendPage::chatWithFriend(QListWidgetItem* item) {
     chatWindow->returnWindow = this;
     chatWindow->show();
     chatWindow->showChatContent();
+}
+
+void FriendPage::chatWithGroup(QListWidgetItem* item) {
+    //需要根据是哪个item获取是哪个chatWindow
+    int groupId = item->whatsThis().toInt();
+    GroupChatWindow* chatWindow = mGroupWindowMap[groupId];
+    chatWindow->returnWindow = this;
+    chatWindow->show();
+    //chatWindow->showChatContent();
 }
 
 void FriendPage::on_toolButton_clicked()
