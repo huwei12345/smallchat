@@ -1729,28 +1729,38 @@ bool GetAllGroupReqProcessor::GetAllGroupReq(const Request &request, vector<Grou
         return false;
     }
     //TODO:
-	sql::PreparedStatement* state2 = conn->prepareStatement(R"(select f.user1_id, u.username, f.status, f.since
+	sql::PreparedStatement* state2 = conn->prepareStatement(R"(select u.user_id, u.username, u.email, g.group_id 
         from users u join group_members g 
-        on g.joined_at = ?
-        and u.user_id = g.user_id;)");
-    state2->setInt(1, 1);//pending
-    state2->setInt(2, request.mUserId);
+        on u.user_id = g.user_id 
+        where g.role = 4  
+        and g.group_id in (select group_id from group_members where user_id = ? 
+                           and (role = 2 or role = 3));
+    )");
+    state2->setInt(1, request.mUserId);
     sql::ResultSet *st = state2->executeQuery();
+    //获得用户的个人信息，找到管理的群，找到这些群的申请者。
 
+    // select u.user_id, u.username, u.email, g.group_id from users u join group_members g 
+    // on u.user_id = group_members.user_id
+    // where g.role = 4
+    // g.group_id in
+    // (select group_id from group_members where user_id = ? and (role = 2 or role = 3));
+    
+    
     try {
         while (st->next()) {
             GroupJoinRequest info;
             info.user_id = st->getInt("user_id");
             info.username = st->getString("username");
             info.email = st->getString("email");
-            info.avatar_url = st->getString("avatar_url");
-            info.bio = st->getString("bio");
-            info.sex = st->getInt("sex");
-            info.age = st->getInt("age");
-            info.address = st->getString("address");
+            // info.avatar_url = st->getString("avatar_url");
+            // info.bio = st->getString("bio");
+            // info.sex = st->getInt("sex");
+            // info.age = st->getInt("age");
+            // info.address = st->getString("address");
             info.groupId = st->getInt("group_id");
-            info.group_name = st->getString("group_name");
-            info.applyTimeStamp = st->getString("joined_at");
+            // info.group_name = st->getString("group_name");
+            // info.applyTimeStamp = st->getString("joined_at");
             info.mAccept = false;
             infoList.push_back(info);
         }
@@ -1796,9 +1806,10 @@ bool ProcessGroupJoinReqProcessor::ProcessGroupJoinRequest(Request &request, Gro
         return false;
     }
     //trans
+    //TODO:这里时间应该重新设置
     sql::PreparedStatement* state2 = conn->prepareStatement(R"(update group_members set role = ?
         where user_id = ? and group_id = ?;)");
-    state2->setInt(1, groupJoinRequest.mAccept ? 1 : 5);//5为拒绝
+    state2->setInt(1, groupJoinRequest.mAccept ? 1 : 6);//6为拒绝
     state2->setInt(2, groupJoinRequest.user_id);
     state2->setInt(3, groupJoinRequest.groupId);
     //如果已经被其他管理员处理了要提示
@@ -1818,3 +1829,16 @@ bool ProcessGroupJoinReqProcessor::ProcessGroupJoinRequest(Request &request, Gro
     MysqlPool::GetInstance()->releaseConncetion(conn);
     return true;
 }
+
+
+/*
+2024年10月10日21:23:22
+
+线上加群
+
+加群成功提示他人和返回。（不返回也行，微信就是）
+
+修改时间
+
+群名字通过Qt对象关联
+*/

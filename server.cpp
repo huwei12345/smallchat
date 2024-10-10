@@ -257,6 +257,7 @@ Server::Server(const char *ip, unsigned int port)
     requestProcessor[FunctionCode::SendMessage] = new SendMessageProcessor;
     
     requestProcessor[FunctionCode::GetAllFriendRequest] = new GetAllFriendReqProcessor;
+    requestProcessor[FunctionCode::GetAllMessage] = new GetAllMessageProcessor;
     requestProcessor[FunctionCode::ProcessFriendRequest] = new ProcessFriendRequestProcessor;
     requestProcessor[FunctionCode::GetAllGroupRequest] = new GetAllGroupReqProcessor;
     requestProcessor[FunctionCode::ProcessGroupJoinReq] = new ProcessGroupJoinReqProcessor;

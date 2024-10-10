@@ -4,7 +4,7 @@
 
 ## 使用说明
 ### 环境
-> `ubuntu22.04`  `Qt5.14.2` `MySQL`  
+> `ubuntu22.04`  `Qt5.14.2` `MySQL8.0`  
 > [Qt5.9 ~ 5.14.2]  
 > (MYSQL安装在ubuntu)  
 > `sudo apt install mysql`  
@@ -53,4 +53,11 @@ isql -v myodbc root 123456
 
 ---
 
-## 
+## 项目架构与原理  
+...
+## 开发记录 
+...
+## 待改进与开发 
+...
+## 一些想法 
+...

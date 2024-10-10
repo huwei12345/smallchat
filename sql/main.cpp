@@ -82,7 +82,7 @@ vector<std::string> tableCreateStringMap = {
     group_member_id INT AUTO_INCREMENT PRIMARY KEY,
     group_id INT NOT NULL,
     user_id INT NOT NULL,
-    role ENUM('member', 'admin', 'owner', 'applyer') DEFAULT 'member',
+    role ENUM('member', 'admin', 'owner', 'applyer', 'tourist', 'reject') DEFAULT 'member',
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (group_id) REFERENCES group_t(group_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id),
