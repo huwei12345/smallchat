@@ -206,6 +206,145 @@ void FindFriendProcessor::Exec(Connection* conn, Request &request, Response& res
     }
 }
 
+bool FindFriendProcessor::FindFriend(const Request &request, FriendList &friendList)
+{
+    std::string mData = request.mData;
+    MyProtocolStream stream(mData);
+    UserInfo info;
+    int type = 0;//0 按名字，1 按id
+    stream >> info.username;
+    if (info.username[0] >= '0' && info.username[0] <= '9') {
+        type = 1;
+        info.user_id = stoiAll(info.username);
+        if (info.user_id <= 0) {
+            return false;
+        }
+    }
+    else {
+        type = 0;
+        stream >> info.username;
+    }
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == NULL) {
+        return false;
+    }
+    sql::PreparedStatement* state2 = NULL;
+    //查询
+    if (type == 1) {
+        state2 = conn->prepareStatement("select * from users where user_id = ?;");
+        state2->setInt(1, info.user_id);
+    }
+    else {
+	    state2 = conn->prepareStatement("select * from users where username = ?;");
+	    state2->setString(1, info.username);
+    }
+    sql::ResultSet *st = state2->executeQuery();
+    int id = -1;
+    try {
+        while (st->next()) {
+            info.user_id = st->getInt("user_id");
+            info.username = st->getString("username");
+            info.email = st->getString("email");
+            cout << "id:" << info.user_id << " name:" << info.username << " email:" << info.email << std::endl;
+            friendList.push_back(info);
+        }
+    }
+    catch(sql::SQLException& e) {
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    MysqlPool::GetInstance()->releaseConncetion(conn);
+    if (friendList.size() > 0)
+        return true;
+    return false;
+}
+
+void FindGroupProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    vector<GroupInfo> groupList;
+    bool ret = FindGroup(request, groupList);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        response.mhasData = true;
+        MyProtocolStream stream(response.mData);
+        stream << (int)groupList.size();
+        for (auto &info : groupList) {
+            stream << info.id << info.group_name << info.role << info.admin_id << info.gtype << info.description << info.tips << info.timestamp;
+            info.print();
+        }
+    }
+    else {
+        //some error info add
+    }
+}
+
+bool FindGroupProcessor::FindGroup(const Request &request, vector<GroupInfo> &groupList)
+{
+    std::string mData = request.mData;
+    MyProtocolStream stream(mData);
+    GroupInfo info;
+    int type = 0;//0 按名字，1 按id
+    stream >> info.group_name;
+    printf("group.name = %s\n", info.group_name.c_str());
+    if (info.group_name[0] >= '0' && info.group_name[0] <= '9') {
+        type = 1;
+        info.id = stoiAll(info.group_name);
+        printf("info.id = %d\n", info.id);
+        if (info.id <= 0) {
+            return false;
+        }
+    }
+    else {
+        type = 0;
+        printf("group.name = %s\n", info.group_name.c_str());
+        stream >> info.group_name;
+    }
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == NULL) {
+        return false;
+    }
+    sql::PreparedStatement* state2 = NULL;
+    //查询
+    if (type == 1) {
+        state2 = conn->prepareStatement("select * from group_t where group_id = ?;");
+        state2->setInt(1, info.id);
+    }
+    else {
+	    state2 = conn->prepareStatement("select * from group_t where group_name = ?;");
+	    state2->setString(1, info.group_name);
+    }
+    sql::ResultSet *st = state2->executeQuery();
+    int id = -1;
+    try {
+        while (st->next()) {
+            info.id = st->getInt("group_id");
+            info.role = "other";
+            info.group_name = st->getString("group_name");
+            info.admin_id = st->getInt("admin_id");
+            info.gtype = st->getString("gtype");
+            info.description = st->getString("description");
+            info.tips = st->getString("Tips");
+            info.timestamp = st->getString("created_at");
+            //cout << "id:" << info.id << " name:" << info.role << " email:" << info.group_name << "status:" << info.admin_id << std::endl;
+            groupList.push_back(info);
+        }
+    }
+    catch(sql::SQLException& e) {
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    MysqlPool::GetInstance()->releaseConncetion(conn);
+    if (groupList.size() > 0)
+        return true;
+    return false;
+}
+
 void AddFriendProcessor::Exec(Connection* conn, Request &request, Response& response)
 {
     UserInfo info;
@@ -392,7 +531,8 @@ void SearchAllGroupProcessor::Exec(Connection* conn, Request &request, Response&
         MyProtocolStream stream(response.mData);
         stream << (int)groupList.size();
         for (auto &info : groupList) {
-            stream << info.id << info.group_name << info.role << info.gtype << info.admin_id << info.description << info.tips;
+            stream << info.id << info.group_name << info.role << info.admin_id << info.gtype << info.description << info.tips;
+            info.print();
         }
     }
     else {
@@ -448,61 +588,6 @@ bool SearchAllGroupProcessor::SearchAllGroup(const Request& request, std::vector
     return true;
 }
 
-bool FindFriendProcessor::FindFriend(const Request &request, FriendList &friendList)
-{
-    std::string mData = request.mData;
-    MyProtocolStream stream(mData);
-    UserInfo info;
-    int type = 0;//0 按名字，1 按id
-    stream >> info.username;
-    if (info.username[0] >= '0' && info.username[0] <= '9') {
-        type = 1;
-        info.user_id = stoiAll(info.username);
-        if (info.user_id <= 0) {
-            return false;
-        }
-    }
-    else {
-        type = 0;
-        stream >> info.username;
-    }
-    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
-    if (conn == NULL) {
-        return false;
-    }
-    sql::PreparedStatement* state2 = NULL;
-    //查询
-    if (type == 1) {
-        state2 = conn->prepareStatement("select * from users where user_id = ?;");
-        state2->setInt(1, info.user_id);
-    }
-    else {
-	    state2 = conn->prepareStatement("select * from users where username = ?;");
-	    state2->setString(1, info.username);
-    }
-    sql::ResultSet *st = state2->executeQuery();
-    int id = -1;
-    try {
-        while (st->next()) {
-            info.user_id = st->getInt("user_id");
-            info.username = st->getString("username");
-            info.email = st->getString("email");
-            cout << "id:" << info.user_id << " name:" << info.username << " email:" << info.email << std::endl;
-            friendList.push_back(info);
-        }
-    }
-    catch(sql::SQLException& e) {
-        cout << "# ERR " << e.what();
-        cout << " Err Code: " << e.getErrorCode();
-        cout << " SQLState: " << e.getSQLState() << std::endl;
-        MysqlPool::GetInstance()->releaseConncetion(conn);
-        return false;
-    }
-    MysqlPool::GetInstance()->releaseConncetion(conn);
-    if (friendList.size() > 0)
-        return true;
-    return false;
-}
 
 
 
@@ -871,7 +956,8 @@ void CreateGroupProcessor::Exec(Connection *conn, Request &request, Response &re
         response.mhasData = true;
         std::string &data = response.mData;
         MyProtocolStream stream(data);
-        stream << info.id << info.group_name << info.gtype << info.admin_id << info.description << info.tips;
+        info.role = "owner";
+        stream << info.id << info.group_name << info.role << info.admin_id << info.gtype << info.description << info.tips;
     }
     else {
         response.mhasData = false;
@@ -949,8 +1035,7 @@ void JoinGroupProcessor::Exec(Connection *conn, Request &request, Response &resp
     MyProtocolStream stream(request.mData);
     int groupId = 1;
     stream >> groupId;
-
-    bool ret = JoinGroup(request.mUserId, groupId, 1);
+    bool ret = JoinGroup(request.mUserId, groupId, 4);
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
         //修改状态成功
@@ -962,6 +1047,7 @@ void JoinGroupProcessor::Exec(Connection *conn, Request &request, Response &resp
 
 bool JoinGroupProcessor::JoinGroup(int userId, int groupId, int role)
 {
+    printf("Join Group %d\n", groupId);
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == nullptr) {
         std::cerr << "Failed to get database connection." << std::endl;
@@ -1609,4 +1695,126 @@ bool ProcessNotifyStateProcessor::Notify(Connection *conn, vector<int> &friendLi
         }
     }
     return success;
+}
+
+void GetAllGroupReqProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    std::vector<GroupJoinRequest> infoList;
+    bool ret = GetAllGroupReq(request, infoList);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        response.mhasData = true;
+        std::string &data = response.mData;
+        MyProtocolStream stream(data);
+        stream << (int)infoList.size();
+        for (auto &info : infoList) {
+            stream << info.user_id << info.username
+                   << info.email << info.avatar_url << info.bio << info.sex
+                   << info.age << info.address
+                   << info.groupId << info.group_name << info.applyTimeStamp;
+        }
+    }
+    else {
+        response.mhasData = false;
+        //some error info add
+    }
+}
+
+bool GetAllGroupReqProcessor::GetAllGroupReq(const Request &request, vector<GroupJoinRequest> &infoList)
+{
+    std::string mData = request.mData;
+    MyProtocolStream stream(mData);
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == NULL) {
+        return false;
+    }
+    //TODO:
+	sql::PreparedStatement* state2 = conn->prepareStatement(R"(select f.user1_id, u.username, f.status, f.since
+        from users u join group_members g 
+        on g.joined_at = ?
+        and u.user_id = g.user_id;)");
+    state2->setInt(1, 1);//pending
+    state2->setInt(2, request.mUserId);
+    sql::ResultSet *st = state2->executeQuery();
+
+    try {
+        while (st->next()) {
+            GroupJoinRequest info;
+            info.user_id = st->getInt("user_id");
+            info.username = st->getString("username");
+            info.email = st->getString("email");
+            info.avatar_url = st->getString("avatar_url");
+            info.bio = st->getString("bio");
+            info.sex = st->getInt("sex");
+            info.age = st->getInt("age");
+            info.address = st->getString("address");
+            info.groupId = st->getInt("group_id");
+            info.group_name = st->getString("group_name");
+            info.applyTimeStamp = st->getString("joined_at");
+            info.mAccept = false;
+            infoList.push_back(info);
+        }
+    }
+    catch(sql::SQLException& e) {
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    st->close();
+    state2->close();
+    MysqlPool::GetInstance()->releaseConncetion(conn);
+    return true;
+}
+
+void ProcessGroupJoinReqProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    GroupJoinRequest groupJoinRequest;
+    bool ret = ProcessGroupJoinRequest(request, groupJoinRequest);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        response.mhasData = true;
+        std::string &data = response.mData;
+        MyProtocolStream stream(data);
+        stream << groupJoinRequest.user_id << groupJoinRequest.groupId << ret;
+    }
+    else {
+        response.mhasData = false;
+        //some error info add
+    }
+}
+
+bool ProcessGroupJoinReqProcessor::ProcessGroupJoinRequest(Request &request, GroupJoinRequest groupJoinRequest)
+{
+    string mData = request.mData;
+    MyProtocolStream stream(mData);
+    stream >> groupJoinRequest.user_id >> groupJoinRequest.groupId >> groupJoinRequest.mAccept;
+    //std::cout << fr.sender_id << "  " << fr.reciver_id << " " << fr.mAccept << std::endl;
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == NULL) {
+        return false;
+    }
+    //trans
+    sql::PreparedStatement* state2 = conn->prepareStatement(R"(update group_members set role = ?
+        where user_id = ? and group_id = ?;)");
+    state2->setInt(1, groupJoinRequest.mAccept ? 1 : 5);//5为拒绝
+    state2->setInt(2, groupJoinRequest.user_id);
+    state2->setInt(3, groupJoinRequest.groupId);
+    //如果已经被其他管理员处理了要提示
+    try {
+        state2->executeUpdate();
+    }
+    catch(sql::SQLException& e) {
+        //rollback
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        state2->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    state2->close();
+    MysqlPool::GetInstance()->releaseConncetion(conn);
+    return true;
 }

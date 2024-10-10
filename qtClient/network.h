@@ -31,6 +31,7 @@ signals:
     void getAllMessageSuccess(Response response);
     void getAllOfflineFileSuccess(Response response);
     void getAllFriendRequestSuccess(Response response);
+    void getAllGroupRequestSuccess(Response response);
     void UpDateUserStateSuccess(Response response);
 void ReciveMessageSuccess(Response response);
     void MessageArriveClient(Response response);

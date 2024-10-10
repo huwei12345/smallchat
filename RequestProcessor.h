@@ -40,6 +40,11 @@ class FindFriendProcessor  : public RequestProcessor  {
     bool FindFriend(const Request& request, FriendList& info);
 };
 
+class FindGroupProcessor  : public RequestProcessor  {
+    void Exec(Connection* conn, Request& request, Response&);
+    bool FindGroup(const Request& request, vector<GroupInfo>& infoList);
+};
+
 class AddFriendProcessor  : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
     bool AddFriend(const Request& request);
@@ -61,16 +66,27 @@ class GetAllFriendReqProcessor : public RequestProcessor  {
     bool GetAllFriendReq(const Request &request, vector<FriendRequest> &infoList);
 };
 
+class ProcessFriendRequestProcessor  : public RequestProcessor  {
+    void Exec(Connection* conn, Request& request, Response&);
+    bool ProcessFriendRequest(Request &request, FriendRequest infoList);
+};
+
+class GetAllGroupReqProcessor : public RequestProcessor  {
+    void Exec(Connection* conn, Request& request, Response&);
+    bool GetAllGroupReq(const Request &request, vector<GroupJoinRequest> &infoList);
+};
+
+class ProcessGroupJoinReqProcessor  : public RequestProcessor  {
+    void Exec(Connection* conn, Request& request, Response&);
+    bool ProcessGroupJoinRequest(Request &request, GroupJoinRequest info);
+};
+
 class UpdateUserStateProcessor  : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
     bool notifyStateToFriend(int userId, int state);
     bool UpdateUserState(const Request &request);
 };
 
-class ProcessFriendRequestProcessor  : public RequestProcessor  {
-    void Exec(Connection* conn, Request& request, Response&);
-    bool ProcessFriendRequest(Request &request, FriendRequest infoList);
-};
 
 class ProcessMessageReadProcessor  : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);

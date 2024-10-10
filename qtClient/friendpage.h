@@ -33,6 +33,7 @@ public:
     bool initGroupList();
     bool initMessageList();
     bool initFriendRequest();
+    bool initGroupRequest();
     bool initMyPhoto();
     bool initFriendPhoto();
     bool initAllOfflineFile();
@@ -74,10 +75,11 @@ private slots:
     void getAllMessageSuccess(Response);
     void getAllOfflineFileSuccess(Response);
     void getAllFriendRequestSuccess(Response);
+    void getAllGroupRequestSuccess(Response);
     void UpDateUserStateSuccess(Response response);
     void MessageArriveClient(Response response);
     void on_comboBox_currentIndexChanged(int index);
-    void friendMessageArrive(FriendRequest info);
+    void friendRequestArrive(FriendRequest info);
     void on_toolButton_2_clicked();
     void NofifyFileComing(Response response);
     void ChangeUserPic(FileInfo info);
@@ -106,6 +108,7 @@ private:
     std::map<int, QIcon*> mGroupPhotoMap;
 
     std::unordered_set<FriendRequest, friendHasher, friendEqual> mFriendRequestSet;
+    std::unordered_set<GroupJoinRequest, groupHasher, groupEqual> mGroupRequestSet;
     QTimer *mFriendRequestTimer;
 
     std::map<int, QTimer*> mUnReadMessageTimerMap;

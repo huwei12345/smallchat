@@ -102,13 +102,13 @@ void FindFriendPage::FindGroupSuccess(Response response)
         stream2 >> size;
         if (size > 0) {
             for (int i = 0; i < size; i++) {
-                UserInfo info;
-                stream2 >> info.user_id >> info.username >> info.email;
+                GroupInfo info;
+                stream2 >> info.id >> info.group_name >> info.role >> info.admin_id >> info.gtype >> info.description >> info.tips >> info.timestamp;
                 char text[100] = {0};
-                sprintf(text, "%10d    %15s     %15s ", info.user_id, info.username.c_str(), info.email.c_str());
+                sprintf(text, "%10d    %15s     %15s ", info.id, info.group_name.c_str(), info.gtype.c_str());
                 info.print();
-//                QLabel *label = new QLabel(this);
-//                label->setText(text);
+//              QLabel *label = new QLabel(this);
+//              label->setText(text);
                 QListWidgetItem *item = new QListWidgetItem();
                 item->setText(text);
                 ui->listWidget->addItem(item);
@@ -120,27 +120,26 @@ void FindFriendPage::FindGroupSuccess(Response response)
     }
 }
 
+
 //添加
 void FindFriendPage::on_pushButton_2_clicked()
 {
     if (mSelectItem == NULL) {
         return;
     }
+    QListWidgetItem* item = mSelectItem;
+    int id = atoi(item->text().toStdString().c_str());
+    bool ret = false;
     if (ui->friendButton->isChecked()) {
-        QListWidgetItem* item = mSelectItem;
-        int friendId = atoi(item->text().toStdString().c_str());
-        bool ret = Processor::AddFriend(friendId);
-        if (!ret) {
-            QMessageBox::information(this,"提示","网络不可达！");
-        }
+        //添加好友
+        ret = Processor::AddFriend(id);
     }
     else {
-        QListWidgetItem* item = mSelectItem;
-        int groupId = atoi(item->text().toStdString().c_str());
-        bool ret = Processor::JoinGroup(groupId);
-        if (!ret) {
-            QMessageBox::information(this,"提示","网络不可达！");
-        }
+        //添加群组
+        ret = Processor::JoinGroup(id);
+    }
+    if (!ret) {
+        QMessageBox::information(this,"提示","网络不可达！");
     }
 }
 
@@ -216,17 +215,15 @@ void FindFriendPage::FindGroup()
     }
     int groupId = stoiAll(str);
     if (str[0] >= '0' && str[0] <= '9' && groupId > 0) {
-        printf("friendId = %d\n", groupId);
+        printf("groupId = %d\n", groupId);
         bool ret = Processor::FindGroup(groupId);
         if (!ret) {
             QMessageBox::information(this,"提示","网络不可达！");
         }
     }
     else if (isalpha(str[0])) {
-        printf("friendName = %s\n", str.c_str());
-        bool ret = true;
-        //bool ret = Processor::FindGroupByName(str);
-        QMessageBox::information(this,"提示","未实现按名查找！");
+        printf("groupName = %s\n", str.c_str());
+        bool ret = Processor::FindGroupByName(str);
         if (!ret) {
             QMessageBox::information(this,"提示","网络不可达！");
         }

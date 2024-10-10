@@ -143,6 +143,10 @@ break;
         emit getAllFriendRequestSuccess(rsp);
 break;
     }
+    case FunctionCode::GetAllGroupRequest: {
+        emit getAllGroupRequestSuccess(rsp);
+break;
+    }
     case FunctionCode::UpdateUserState: {
         emit UpDateUserStateSuccess(rsp);
 break;

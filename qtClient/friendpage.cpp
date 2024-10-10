@@ -43,6 +43,7 @@ bool FriendPage::initPage() {
     connect(ClientNetWork::GetInstance(), &ClientNetWork::getAllOfflineFileSuccess, this, &FriendPage::getAllOfflineFileSuccess);
 
     connect(ClientNetWork::GetInstance(), &ClientNetWork::getAllFriendRequestSuccess, this, &FriendPage::getAllFriendRequestSuccess);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::getAllGroupRequestSuccess, this, &FriendPage::getAllGroupRequestSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::ProcessFriendRequestResult, this, &FriendPage::ProcessFriendRequestResult);
 
     connect(ClientNetWork::GetInstance(), &ClientNetWork::MessageArriveClient, this, &FriendPage::MessageArriveClient);
@@ -83,6 +84,68 @@ FriendPage::FriendPage(UserInfo &info, QWidget *parent) :
     ui->setupUi(this);
     initPage();
 }
+
+FriendPage::~FriendPage()
+{
+    delete ui;
+}
+
+void FriendPage::setReturn(QWidget *widget)
+{
+    this->returnWindow = widget;
+}
+
+void FriendPage::keyPressEvent(QKeyEvent *event)
+{
+    if(event->key() == Qt::Key_Escape) // 当按下Return/Enter键时
+    {
+        hide();
+        returnWindow->show();
+    }
+    else
+    {
+        // 继续处理其他按键事件
+        QWidget::keyPressEvent(event);
+    }
+}
+
+bool FriendPage::eventFilter(QObject *obj, QEvent *event)
+{
+    if (event->type() == QEvent::MouseButtonRelease)
+    {
+        QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
+        if (mouseEvent->button() == Qt::LeftButton)
+        {
+            QToolButton *button = qobject_cast<QToolButton *>(obj);
+            if (button)
+            {
+                // 获取按钮在父控件坐标系中的矩形区域
+                QRect buttonRect = button->rect();
+
+                // 获取鼠标事件的位置
+                QPoint mousePos = mouseEvent->pos();
+                // 判断鼠标点击位置是否在按钮的矩形区域内
+                if (buttonRect.contains(mousePos))
+                {
+                    QString type = button->property("type").toString();
+
+                    // 处理点击事件
+                    if (type == "Friend") {
+                        emit chatWithFriend(ui->listWidget->itemAt(button->pos()));
+                    }
+                    else if (type == "Group") {
+                        emit chatWithGroup(ui->listWidget_2->itemAt(button->pos()));
+                    }
+                    // 标记事件已处理
+                    event->accept();
+                    return true; // 表示事件已处理
+                }
+            }
+        }
+    }
+    return false; // 没有处理该事件，继续传递
+}
+
 
 int FriendPage::init() {
     int ret = initFriendList();
@@ -229,6 +292,14 @@ bool FriendPage::initFriendRequest() {
     return ret;
 }
 
+bool FriendPage::initGroupRequest() {
+    bool ret = Processor::getAllGroupRequest(mUserId);
+    if (!ret) {
+        QMessageBox::information(this,"提示","网络不可达！");
+    }
+    return ret;
+}
+
 bool FriendPage::initAllOfflineFile() {
     bool ret = Processor::getAllOfflineFile(mUserId);
     if (!ret) {
@@ -269,20 +340,14 @@ void FriendPage::findAllGroupSuccess(Response response)
         //TODO:ToolButton put in widget
         GroupInfo info;
         stream2 >> info.id >> info.group_name >> info.role >> info.admin_id >> info.gtype >> info.description >> info.tips;
-        //addGroupToPage(info);//
         info.print();
-        mGroupList.push_back(info);
-        //GroupChatWindow* chatWindow = new GroupChatWindow(info);
-        //mGroupWindowMap[info.id] = chatWindow;
-
-        //connect(this, &FriendPage::userMessageUnRead, chatWindow, &ChatWindow::userMessageRead);
-        //connect(chatWindow, &ChatWindow::friendPageUpdate, this, &FriendPage::friendPageUpdate);
+        addGroupToPage(info);
     }
 
     //initGroupPhoto();
     //initFriendState();
+    initGroupRequest();
 }
-
 
 void FriendPage::initFriendState() {
     for (size_t i = 0; i < mFriendList.size(); i++) {
@@ -308,42 +373,6 @@ void FriendPage::initFriendState() {
     }
 }
 
-bool FriendPage::addGroupToPage(GroupInfo info)
-{
-    QListWidget* groupWidget = ui->listWidget_2;
-    QToolButton* button = new QToolButton();
-    QString str = QString::fromStdString(info.group_name);
-
-    button->setText(str);
-    button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    QIcon *userIcon = new QIcon(QPixmap(":/friend/touxiang.jpeg"));
-    button->setIcon(*userIcon);
-
-    mGroupPhotoMap[info.id] = userIcon;
-
-    button->setMinimumHeight(60);
-    button->setMinimumWidth(60);
-    button->setIconSize(QSize(60, 60));
-
-    QString str2("item");
-    ui->listWidget->addItem(str2);
-    int i = ui->listWidget->count();
-    ui->listWidget->setItemWidget(ui->listWidget->item(i), button);
-    ui->listWidget->item(i)->setWhatsThis(QString::number(info.id));
-    qDebug() << "Hello XXXXX!" << button;
-
-    button->installEventFilter(this); // 在当前类中实现 eventFilter 方法
-    mGroupButton[info.id] =button;
-    // 连接信号和槽
-    connect(ui->listWidget, &QListWidget::itemClicked, this, &FriendPage::chatWithGroup);
-
-    QSize size;
-    size.setHeight(60);
-    size.setWidth(60);
-    ui->listWidget->item(i)->setSizeHint(size);
-}
-
-
 void FriendPage::getAllMessageSuccess(Response response) {
     //TODO:闪烁几个窗口，右下角图标添加几个提示
     std::string mdata = response.mData;
@@ -354,10 +383,7 @@ void FriendPage::getAllMessageSuccess(Response response) {
     for (int i = 0; i < size; i++) {
         //TODO:ToolButton put in widget
         MessageInfo info;
-        stream2 >> info.id;
-        stream2 >> info.sender_id;
-        stream2 >> info.message_text;
-        stream2 >> info.timestamp;
+        stream2 >> info.id >> info.sender_id >> info.message_text >> info.timestamp;
         qDebug() << info.sender_id;
         qDebug() << QString::fromStdString(info.message_text);
         info.receiver_id = user_id;
@@ -386,14 +412,8 @@ void FriendPage::getAllOfflineFileSuccess(Response response)
         //TODO:ToolButton put in widget
         FileInfo info;
         info.Generate();
-        stream2 >> info.ftpTaskId;
-        stream2 >> info.id;
-        stream2 >> info.send_id;
-        stream2 >> info.recv_id;
-        stream2 >> info.serviceType;
-        stream2 >> info.serverPath;
-        stream2 >> info.serverFileName;
-        stream2 >> info.timestamp;
+        stream2 >> info.ftpTaskId >> info.id >> info.send_id >> info.recv_id >>
+                info.serviceType >> info.serverPath >> info.serverFileName >> info.timestamp;
         info.ClientPath = std::string("D:/BaiduNetdiskDownload/untitled2/userInfo/") + info.serverFileName;
         info.print();
         FtpSender::GetInstance()->addFile(info);
@@ -434,9 +454,33 @@ void FriendPage::getAllFriendRequestSuccess(Response response) {
         FriendRequest info;
         stream2 >> info.sender_id >> info.username >> info.state;
         info.reciver_id = mUserId;
-        friendMessageArrive(info);
+        friendRequestArrive(info);
         //addFriendToPage(i, info.username);//
         printf("user_id: %d username: %s state %d\n", info.sender_id, info.username.c_str(), info.state);
+        fflush(stdout);
+    }
+    if (size != 0) {
+    }
+}
+
+void FriendPage::getAllGroupRequestSuccess(Response response)
+{
+    //TODO:右下角图标添加几个提示
+    std::string mdata = response.mData;
+    MyProtocolStream stream2(mdata);
+    int size = 0;
+    stream2 >> size;
+    for (int i = 0; i < size; i++) {
+        //TODO:ToolButton put in widget
+        GroupJoinRequest info;
+        stream2 >> info.user_id >> info.username
+                >> info.email >> info.avatar_url >> info.bio >> info.sex
+                >> info.age >> info.address
+                >> info.groupId >> info.group_name >> info.applyTimeStamp;
+        mGroupRequestSet.insert(info);
+        //friendRequestArrive(info);
+        //addFriendToPage(i, info.username);//
+        printf("user[%d]%s apply join [%d]%s group\n", info.user_id, info.username.c_str(), info.groupId, info.group_name.c_str());
         fflush(stdout);
     }
     if (size != 0) {
@@ -497,62 +541,6 @@ void FriendPage::MessageArriveClient(Response response)
     mChatWindowMap[info.sender_id]->addMessage(info);
 }
 
-FriendPage::~FriendPage()
-{
-    delete ui;
-}
-
-void FriendPage::setReturn(QWidget *widget)
-{
-    this->returnWindow = widget;
-}
-
-void FriendPage::keyPressEvent(QKeyEvent *event)
-{
-    if(event->key() == Qt::Key_Escape) // 当按下Return/Enter键时
-    {
-        hide();
-        returnWindow->show();
-    }
-    else
-    {
-        // 继续处理其他按键事件
-        QWidget::keyPressEvent(event);
-    }
-}
-
-bool FriendPage::eventFilter(QObject *obj, QEvent *event)
-{
-    if (event->type() == QEvent::MouseButtonRelease)
-    {
-        QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
-        if (mouseEvent->button() == Qt::LeftButton)
-        {
-            QToolButton *button = qobject_cast<QToolButton *>(obj);
-            if (button)
-            {
-                // 获取按钮在父控件坐标系中的矩形区域
-                QRect buttonRect = button->rect();
-
-                // 获取鼠标事件的位置
-                QPoint mousePos = mouseEvent->pos();
-                qDebug() << buttonRect.x() << " " << buttonRect.y() << " " << buttonRect.width() << " " << buttonRect.height();
-                qDebug() << mousePos.x() << " " << mousePos.y();
-                // 判断鼠标点击位置是否在按钮的矩形区域内
-                if (buttonRect.contains(mousePos))
-                {
-                    //TODO:进一步判断button是friendButton还是groupButton
-                    // 处理点击事件
-                    emit chatWithFriend(ui->listWidget->itemAt(button->pos()));
-                    // 标记事件已处理
-                    event->accept();
-                    return true; // 表示事件已处理
-                }
-            }
-        }
-    }
-    return false; // 没有处理该事件，继续传递
-}
 
 
 void FriendPage::addFriendToPage(int i, UserInfo info) {
@@ -577,12 +565,53 @@ void FriendPage::addFriendToPage(int i, UserInfo info) {
     //installEventFilter + eventFilter overide可以实现防覆
     button->installEventFilter(this); // 在当前类中实现 eventFilter 方法
     mFriendButton[info.user_id] =button;
+    button->setProperty("type", "Friend");
     // 连接信号和槽
     connect(ui->listWidget, &QListWidget::itemClicked, this, &FriendPage::chatWithFriend);
     QSize size;
     size.setHeight(60);
     size.setWidth(60);
     ui->listWidget->item(i)->setSizeHint(size);
+}
+
+bool FriendPage::addGroupToPage(GroupInfo info)
+{
+    info.print();
+    QListWidget* groupWidget = ui->listWidget_2;
+    QToolButton* button = new QToolButton();
+    QString str = QString::fromStdString(info.group_name);
+
+    button->setText(str);
+    button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    QIcon *userIcon = new QIcon(QPixmap(":/friend/touxiang.jpeg"));
+    button->setIcon(*userIcon);
+    mGroupPhotoMap[info.id] = userIcon;
+
+    button->setMinimumHeight(60);
+    button->setMinimumWidth(60);
+    button->setIconSize(QSize(60, 60));
+    QString str2("item");
+    groupWidget->addItem(str2);
+    int i = groupWidget->count() - 1;
+    qDebug() << "Hello LLLLL!" << i << " id "<< info.id ;
+    groupWidget->setItemWidget(groupWidget->item(i), button);
+    groupWidget->item(i)->setWhatsThis(QString::number(info.id));
+    qDebug() << "Hello TTTTT!" << button;
+    button->setProperty("type", "Group");
+    button->installEventFilter(this); // 在当前类中实现 eventFilter 方法
+    mGroupButton[info.id] =button;
+    // 连接信号和槽
+    connect(groupWidget, &QListWidget::itemClicked, this, &FriendPage::chatWithGroup);
+
+    QSize size;
+    size.setHeight(60);
+    size.setWidth(60);
+    groupWidget->item(i)->setSizeHint(size);
+    mGroupList.push_back(info);
+    GroupChatWindow* chatWindow = new GroupChatWindow(info);
+    mGroupWindowMap[info.id] = chatWindow;
+    //        connect(this, &FriendPage::userMessageUnRead, chatWindow, &GroupChatWindow::userMessageRead);
+    //        connect(chatWindow, &ChatWindow::friendPageUpdate, this, &GroupChatWindow::friendPageUpdate);
 }
 
 void FriendPage::chatWithFriend(QListWidgetItem* item) {
@@ -597,6 +626,7 @@ void FriendPage::chatWithFriend(QListWidgetItem* item) {
 void FriendPage::chatWithGroup(QListWidgetItem* item) {
     //需要根据是哪个item获取是哪个chatWindow
     int groupId = item->whatsThis().toInt();
+    qDebug() << "groupId" << groupId;
     GroupChatWindow* chatWindow = mGroupWindowMap[groupId];
     chatWindow->returnWindow = this;
     chatWindow->show();
@@ -630,7 +660,7 @@ void FriendPage::on_comboBox_currentIndexChanged(int index)
     Processor::ChangeUserState(index + 1);
 }
 
-void FriendPage::friendMessageArrive(FriendRequest info)
+void FriendPage::friendRequestArrive(FriendRequest info)
 {
     mFriendRequestSet.insert(info);
     //按钮抖动
@@ -653,29 +683,49 @@ void FriendPage::friendMessageArrive(FriendRequest info)
 
 void FriendPage::on_toolButton_2_clicked()
 {
-    if (mFriendRequestSet.size() == 0) {
+    if (mFriendRequestSet.size() != 0) {
+        FriendRequest request =  *mFriendRequestSet.begin();
+        QString str;
+        QMessageBox::StandardButton reply;
+        str = "是否通过来自朋友" + QString::fromStdString(request.username) + "的好友请求";
+        reply = QMessageBox::question(nullptr, "Confirmation", str, QMessageBox::Yes|QMessageBox::No);
+        if (reply == QMessageBox::Yes) {
+            // 用户点击了 "Yes" 按钮
+            // 执行相应的操作
+            request.mAccept = true;
+            Processor::processFriendRequest(request);
+        } else {
+            // 用户点击了 "No" 按钮，或者关闭了对话框
+            // 执行相应的操作，或者什么都不做
+            request.mAccept = false;
+            Processor::processFriendRequest(request);
+        }
+        mFriendRequestSet.erase(request);
         return;
     }
-    FriendRequest request =  *mFriendRequestSet.begin();
-    QString str;
-    QMessageBox::StandardButton reply;
-    str = "是否通过来自朋友" + QString::fromStdString(request.username) + "的好友请求";
-    reply = QMessageBox::question(nullptr, "Confirmation", str, QMessageBox::Yes|QMessageBox::No);
-    if (reply == QMessageBox::Yes) {
-        // 用户点击了 "Yes" 按钮
-        // 执行相应的操作
-        request.mAccept = true;
-        Processor::processFriendRequest(request);
-    } else {
-        // 用户点击了 "No" 按钮，或者关闭了对话框
-        // 执行相应的操作，或者什么都不做
-        request.mAccept = false;
-        Processor::processFriendRequest(request);
-    }
-    mFriendRequestSet.erase(request);
 //    if (mFriendRequestSet.size() == 0) {
 //        mFriendRequestTimer->stop();
     //    }
+    if (mGroupRequestSet.size() != 0) {
+        GroupJoinRequest request =  *mGroupRequestSet.begin();
+        QString str;
+        QMessageBox::StandardButton reply;
+        str = QString("群") + QString::fromStdString(request.group_name) + "：是否通过来自" + QString::fromStdString(request.username) + "的入群请求？";
+        reply = QMessageBox::question(nullptr, "Confirmation", str, QMessageBox::Yes|QMessageBox::No);
+        if (reply == QMessageBox::Yes) {
+            // 用户点击了 "Yes" 按钮
+            // 执行相应的操作
+            request.mAccept = true;
+            Processor::processGroupJoinRequest(request);
+        } else {
+            // 用户点击了 "No" 按钮，或者关闭了对话框
+            // 执行相应的操作，或者什么都不做
+            request.mAccept = false;
+            Processor::processGroupJoinRequest(request);
+        }
+        mGroupRequestSet.erase(request);
+        return;
+    }
 }
 
 //服务器告知客户端有文件传输而来，客户端大概准备接收文件

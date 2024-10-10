@@ -86,23 +86,6 @@ bool Processor::FindFriend(int friendId) {
         return true;
     }
     return false;
-
-
-
-
-//    Response rsp;
-//    int x = Trans::receive(clientSocket, rsp);
-//    rsp.print();
-//    std::string mdata = rsp.mData;
-
-//    MyProtocolStream stream2(mdata);
-//    int size = 0;
-//    stream2 >> size;
-//    for (int i = 0; i < size; i++) {
-//        UserInfo info;
-//        stream2 >> info.user_id >> info.username >> info.email;
-//        info.print();
-//    }
 }
 
 bool Processor::FindFriendByName(string& friendName) {
@@ -122,12 +105,14 @@ bool Processor::FindFriendByName(string& friendName) {
     return false;
 }
 
-bool Processor::AddFriend(int friendId) {
+bool Processor::FindGroup(int groupId)
+{
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     std::string data;
     MyProtocolStream stream(data);
-    stream << friendId;
-    Request req(1, FunctionCode::AddFriend, 3, 4, 5, data, user_id);
+    stream << QString::number(groupId).toStdString();
+
+    Request req(1, FunctionCode::FindGroup, 3, 4, 5, data, user_id);
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());
     int r = clientSocket->SendPacket(array);
@@ -138,6 +123,56 @@ bool Processor::AddFriend(int friendId) {
     return false;
 }
 
+bool Processor::FindGroupByName(string& groupName) {
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << groupName;
+    Request req(1, FunctionCode::FindGroup, 3, 4, 5, data, user_id);
+
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
+bool Processor::AddFriend(int friendId) {
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << friendId;
+    Request req(1, FunctionCode::FindGroup, 3, 4, 5, data, user_id);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
+//还要先有FindGroup
+bool Processor::JoinGroup(int groupId)
+{
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << groupId;
+    Request req(1, FunctionCode::JoinGroup, 3, 4, 5, data, user_id);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
 
 bool Processor::findAllFriend(int userId)
 {
@@ -224,6 +259,23 @@ bool Processor::getAllFriendRequest(int userId)
     return false;
 }
 
+bool Processor::getAllGroupRequest(int userId)
+{
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << userId;
+    Request req(1, FunctionCode::GetAllGroupRequest, 3, 4, 5, data, user_id);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
 bool Processor::ChangeUserState(int state)
 {
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
@@ -248,6 +300,25 @@ bool Processor::processFriendRequest(FriendRequest friendRequest)
     MyProtocolStream stream(data);
     stream << friendRequest.sender_id << friendRequest.reciver_id << friendRequest.mAccept;
     Request req(1, FunctionCode::ProcessFriendRequest, 3, 4, 5, data, user_id);
+
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
+bool Processor::processGroupJoinRequest(GroupJoinRequest groupJoinRequest)
+{
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    //accept  : 作为member
+    stream << groupJoinRequest.user_id << groupJoinRequest.groupId << groupJoinRequest.mAccept;
+    Request req(1, FunctionCode::ProcessGroupJoinReq, 3, 4, 5, data, user_id);
 
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());
@@ -288,41 +359,6 @@ bool Processor::CreateGroup(GroupInfo &info)
     MyProtocolStream stream(data);
     stream << info.group_name << info.gtype << info.admin_id << info.description << info.tips;
     Request req(1, FunctionCode::CreateGroup, 3, 4, 5, data, user_id);
-    string str = req.serial();
-    QByteArray array(str.c_str(),str.size());
-    int r = clientSocket->SendPacket(array);
-    if (r > 0) {
-        req.print();
-        return true;
-    }
-    return false;
-}
-
-//还要先有FindGroup
-bool Processor::JoinGroup(int groupId)
-{
-    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
-    std::string data;
-    MyProtocolStream stream(data);
-    stream << groupId;
-    Request req(1, FunctionCode::JoinGroup, 3, 4, 5, data, user_id);
-    string str = req.serial();
-    QByteArray array(str.c_str(),str.size());
-    int r = clientSocket->SendPacket(array);
-    if (r > 0) {
-        req.print();
-        return true;
-    }
-    return false;
-}
-
-bool Processor::FindGroup(int groupId)
-{
-    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
-    std::string data;
-    MyProtocolStream stream(data);
-    stream << groupId;
-    Request req(1, FunctionCode::FindGroup, 3, 4, 5, data, user_id);
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());
     int r = clientSocket->SendPacket(array);

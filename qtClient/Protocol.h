@@ -92,6 +92,8 @@ namespace FunctionCode {
         GetAllOfflineFile                         = 27,
         GetOfflineFile                            = 28,
         SearchAllGroup                            = 29,
+        GetAllGroupRequest                        = 30,
+        ProcessGroupJoinReq                       = 31,
         //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
     };
 
@@ -129,6 +131,8 @@ namespace FunctionCode {
         "GetAllOfflineFile   ",
         "GetOfflineFile      ",
         "SearchAllGroup      ",
+        "GetAllGroupRequest  ",
+        "ProcessGroupJoinReq "
     };
 };
 
@@ -259,6 +263,26 @@ public:
     //int time;什么时候添加的
 };
 
+class GroupJoinRequest {
+public:
+    int user_id;
+    std::string username;
+    std::string email;
+    std::string full_name;
+    std::string avatar_url;
+    std::string bio;
+    bool sex;
+    int age;
+    std::string address;
+
+    std::string applyTimeStamp;
+    int groupId;
+    std::string group_name;
+    bool mAccept;
+    //std::string message;添加群时写的信息
+    //std::string otherData;其他认证信息
+};
+
 class GroupInfo {
 public:
     int id;
@@ -268,6 +292,7 @@ public:
     std::string description;
     std::string tips;
     std::string role;
+    std::string timestamp;
     void print() const {
         std::cout << "id: " << id
                   << "\tadmin_id: " << admin_id
@@ -276,6 +301,7 @@ public:
                   << "\tdescription: " << description
                   << "\ttips: " << tips
                   << "\trole: " << role
+                  << "\ttimeStamp: " << timestamp
                   << std::endl;
     }
 };
@@ -313,7 +339,20 @@ struct friendEqual {
     }
 };
 
+struct groupHasher {
+    std::size_t operator()(const GroupJoinRequest& request) const {
+        // 实现自定义的哈希算法，例如可以基于对象的某些成员变量计算哈希值
+        // 返回计算得到的哈希值
+        return std::hash<int>()(request.user_id) + std::hash<int>()(request.groupId);
+    }
+};
 
+struct groupEqual {
+    bool operator()(const GroupJoinRequest& lhs, const GroupJoinRequest& rhs) const {
+        // 实现自定义的相等比较逻辑，例如可以比较对象的所有成员变量
+        return lhs.user_id == rhs.user_id && lhs.groupId == rhs.groupId;
+    }
+};
 
 
 //size_t friendHasher(const FriendRequest& p) {//hash函数，得到hash码

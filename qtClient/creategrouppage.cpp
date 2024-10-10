@@ -40,9 +40,11 @@ void CreateGroupPage::createGroupSuccess(Response response)
         std::string &data = response.mData;
         MyProtocolStream stream(data);
         GroupInfo info;
-        stream >> info.id >> info.group_name >> info.gtype >> info.admin_id >> info.description >> info.tips;
+        stream >> info.id >> info.group_name >> info.role >> info.admin_id >> info.gtype >> info.description >> info.tips;
         ((FriendPage*)returnWindow)->addGroupToPage(info);
+        info.print();
         QMessageBox::information(this, "群组通知", "创建群成功！");
+
     }
     else {
         QMessageBox::information(this, "群组通知", "创建群失败！");

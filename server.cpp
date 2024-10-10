@@ -257,10 +257,11 @@ Server::Server(const char *ip, unsigned int port)
     requestProcessor[FunctionCode::SendMessage] = new SendMessageProcessor;
     
     requestProcessor[FunctionCode::GetAllFriendRequest] = new GetAllFriendReqProcessor;
-    requestProcessor[FunctionCode::GetAllMessage] = new GetAllMessageProcessor;
+    requestProcessor[FunctionCode::ProcessFriendRequest] = new ProcessFriendRequestProcessor;
+    requestProcessor[FunctionCode::GetAllGroupRequest] = new GetAllGroupReqProcessor;
+    requestProcessor[FunctionCode::ProcessGroupJoinReq] = new ProcessGroupJoinReqProcessor;
 
     requestProcessor[FunctionCode::UpdateUserState] = new UpdateUserStateProcessor;
-    requestProcessor[FunctionCode::ProcessFriendRequest] = new ProcessFriendRequestProcessor;
     requestProcessor[FunctionCode::ProcessMessageRead] = new ProcessMessageReadProcessor;
 
     requestProcessor[FunctionCode::CreateGroup] = new CreateGroupProcessor;
@@ -285,6 +286,7 @@ Server::Server(const char *ip, unsigned int port)
     requestProcessor[FunctionCode::GetOfflineFile] = new ProcessGetOfflineFileProcessor;
     
     requestProcessor[FunctionCode::SearchAllGroup] = new SearchAllGroupProcessor;
+    requestProcessor[FunctionCode::FindGroup] = new FindGroupProcessor;
     for (int i = 40; i < 100; i++) {
         requestProcessor[i] = new RequestProcessor;
     }

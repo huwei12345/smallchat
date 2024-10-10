@@ -18,11 +18,16 @@ public:
     static bool findAllGroup(int userId);
     static bool getAllMessage(int userId);
     static bool getAllFriendRequest(int userId);
+    static bool getAllGroupRequest(int userId);
     static bool ChangeUserState(int state);
     static bool processFriendRequest(FriendRequest friendRequest);
+    static bool processGroupJoinRequest(GroupJoinRequest friendRequest);
+
+
     static bool CreateGroup(GroupInfo& info);
     static bool JoinGroup(int groupId);
     static bool FindGroup(int groupId);
+    static bool FindGroupByName(std::string &groupName);
 
     static bool SendFile(FileInfo info);
     static bool GetFile(FileInfo info);
