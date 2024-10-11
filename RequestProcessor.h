@@ -71,6 +71,7 @@ class ProcessFriendRequestProcessor  : public RequestProcessor  {
     bool ProcessFriendRequest(Request &request, FriendRequest infoList);
 };
 
+
 class GetAllGroupReqProcessor : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
     bool GetAllGroupReq(const Request &request, vector<GroupJoinRequest> &infoList);
@@ -116,7 +117,10 @@ class ResponseJoinGroupProcessor : public RequestProcessor
 class StoreFileProcessor : public RequestProcessor
 {
     void Exec(Connection* conn, Request& request, Response&);
-    bool StoreFile(Request &request, FileObject &fileObject);
+    bool StoreFile(Request &request, FileInfo &fileObject);
+public:
+    bool InitUserSpaceRoot(int user_id);
+    int GetUserSpaceId(int user_id);
 };
 
 class TransFileProcessor : public RequestProcessor

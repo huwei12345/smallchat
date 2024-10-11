@@ -139,11 +139,11 @@ namespace FunctionCode {
 class UserInfo {
 public:
     UserInfo() : user_id(0), username(""), email(""), full_name(""), avatar_url(""),
-      bio(""), sex(false), age(0), address("") , friendStatus("") { }
+      bio(""), sex(false), age(0), address("") , friendStatus(""), storage_id(0) { }
     UserInfo(int id, std::string uname, std::string em, std::string fn,
       std::string au, std::string b, bool s, int a, std::string add, std::string friendSta)
       : user_id(id), username(uname), email(em), full_name(fn),
-        avatar_url(au), bio(b), sex(s), age(a), address(add) , friendStatus(friendSta){ }
+        avatar_url(au), bio(b), sex(s), age(a), address(add) , friendStatus(friendSta), storage_id(0) { }
 
     int user_id;
     std::string username;
@@ -157,6 +157,7 @@ public:
     std::string friendStatus;
     // 可以添加其他需要返回的用户信息字段
     int status;//'online', 'offline', ''
+    int storage_id;
     // int last_login;
     // int created_at;
     // int flag;
@@ -224,6 +225,8 @@ public:
     int fileMode;
     long long md5sum;
     std::string timestamp;
+    int expiredTime;
+    int parentId;
 #ifndef SERVER
     static int GenerateId;
     static QMutex genMutex;

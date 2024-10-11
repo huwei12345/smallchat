@@ -77,6 +77,12 @@ void LoginProcessor::Exec(Connection* conn, Request &request, Response& response
     stream >> account >> password;
     UserInfo info;
     bool ret = Login(account, password, info);
+    StoreFileProcessor pro;
+    //注册时创建，登陆时获取
+    info.storage_id = pro.GetUserSpaceId(info.user_id);
+    if (info.storage_id == 0) {
+        ret = false;
+    }
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
         response.mhasData = true;
@@ -161,6 +167,10 @@ void RegisterProcessor::Exec(Connection* conn, Request &request, Response& respo
 {
     UserInfo info;
     int ret = Register(request, info);
+    if (ret == true) {
+        StoreFileProcessor pro;
+        ret &= pro.InitUserSpaceRoot(info.user_id);
+    }
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode == 1) {
         response.mhasData = true;
@@ -641,7 +651,7 @@ std::string UserInfo::registerSerial() {
 std::string UserInfo::loginserial() {
     std::string str;
     MyProtocolStream stream(str);
-    stream << user_id << username << email << avatar_url;
+    stream << user_id << username << email << avatar_url << storage_id;
     return str;
 }
 
@@ -1093,8 +1103,13 @@ bool ResponseJoinGroupProcessor::ResponseJoinGroup(Request &request)
 
 void StoreFileProcessor::Exec(Connection *conn, Request &request, Response &response)
 {
-    FileObject fileObject;
-    bool ret = StoreFile(request, fileObject);
+    FileInfo info;
+    MyProtocolStream stream(request.mData);
+    stream >> info.id >> info.ftpTaskId >> info.send_id  >> info.recv_id
+           >> info.ClientPath >> info.serviceType  >> info.serverPath  >> info.serverFileName
+           >> info.timestamp >> info.expiredTime >> info.parentId >> info.fileType
+           >> info.filesize >> info.fileMode >> info.md5sum;
+    bool ret = StoreFile(request, info);
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
 
@@ -1108,24 +1123,25 @@ void StoreFileProcessor::Exec(Connection *conn, Request &request, Response &resp
 
 //bool AddUserStorageItem(int user_id, const std::string& item_name, const std::string& item_type, const std::string& file_path, int parent_id = 0) {
 //可以在注册用户后，为其添加一个根项，用于管理
-bool StoreFileProcessor::StoreFile(Request &request, FileObject& fileObject)
+bool StoreFileProcessor::StoreFile(Request &request, FileInfo& fileObject)
 {
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == nullptr) {
         std::cerr << "Failed to get database connection." << std::endl;
         return false;
     }
-
+    
     // Prepare SQL statement to insert into user_storage table
     sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
-        INSERT INTO user_storage (user_id, parent_id, item_name, item_type, file_path)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO user_storage(user_id, parent_id, item_name, item_type, file_path, expired_time) 
+        VALUES(?, ?, ?, ?, ?, ?);
     )");
-    pstmt->setInt(1, fileObject.user_id);
-    pstmt->setInt(2, fileObject.parent_id);
-    pstmt->setString(3, fileObject.item_name);
-    pstmt->setInt(4, fileObject.item_type);
-    pstmt->setString(5, fileObject.file_path);
+    pstmt->setInt(1, fileObject.send_id);
+    pstmt->setInt(2, fileObject.parentId);
+    pstmt->setString(3, fileObject.serverFileName);
+    pstmt->setString(4, fileObject.fileType);
+    pstmt->setString(5, fileObject.serverPath);
+    pstmt->setInt(6, fileObject.expiredTime);
     try {
         pstmt->execute();
         pstmt->close();
@@ -1141,6 +1157,72 @@ bool StoreFileProcessor::StoreFile(Request &request, FileObject& fileObject)
     }
     return false;
 }
+
+bool StoreFileProcessor::InitUserSpaceRoot(int user_id)
+{
+    FileInfo fileObject;
+    fileObject.send_id = user_id;
+    fileObject.serverFileName = "UserRootDir";
+    fileObject.fileType = "rootdir";
+    fileObject.serverPath = "userInfo/" + std::to_string(user_id) + "/";
+    fileObject.expiredTime = 0;
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == nullptr) {
+        std::cerr << "Failed to get database connection." << std::endl;
+        return false;
+    }
+    // Prepare SQL statement to insert into user_storage table
+    sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
+        INSERT INTO user_storage(user_id, parent_id, item_name, item_type, file_path, expired_time) 
+        VALUES(?, NULL, ?, ?, ?, ?);
+    )");
+    pstmt->setInt(1, fileObject.send_id);
+    pstmt->setString(2, fileObject.serverFileName);
+    pstmt->setString(3, fileObject.fileType);
+    pstmt->setString(4, fileObject.serverPath);
+    pstmt->setInt(5, fileObject.expiredTime);
+    try {
+        pstmt->execute();
+        pstmt->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return true;
+    } catch (sql::SQLException& e) {
+        std::cerr << "SQL error: " << e.what() << std::endl;
+        std::cerr << "Error code: " << e.getErrorCode() << std::endl;
+        std::cerr << "SQLState: " << e.getSQLState() << std::endl;
+        pstmt->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    return false;
+}
+
+int StoreFileProcessor::GetUserSpaceId(int user_id)
+{
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == NULL) {
+        return false;
+    }
+    //查询
+	sql::PreparedStatement* state2 = conn->prepareStatement("select storage_id from user_storage where user_id = ? and item_type = 'rootdir';");
+	state2->setInt(1, user_id);
+    sql::ResultSet *st = state2->executeQuery();
+    int storage_id = 0;
+    try {	
+        while (st->next()) {
+            storage_id = st->getInt("storage_id");
+        }
+    }
+    catch(sql::SQLException& e) {
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+    }
+    int row = st->rowsCount();
+    st->close();
+    MysqlPool::GetInstance()->releaseConncetion(conn);
+    return storage_id;
+}
 /*
     int user_id = 1;  // Replace with actual user ID
     std::string item_name = "example_file.txt"; // Replace with actual item name
@@ -1154,7 +1236,6 @@ bool StoreFileProcessor::StoreFile(Request &request, FileObject& fileObject)
         std::cerr << "Failed to add user storage item." << std::endl;
     }
 */
-
 
 void TransFileProcessor::Exec(Connection *conn, Request &request, Response &response)
 {
@@ -1278,6 +1359,7 @@ bool ProcessStartUpLoadFileProcessor::ProcessStartUpLoadFile(Request &request, F
 
     return ret && ret2;
 }
+
 void ProcessUpLoadFileSuccessProcessor::Exec(Connection* conn, Request &request, Response &response)
 {
     FileInfo info;
@@ -1834,7 +1916,7 @@ bool ProcessGroupJoinReqProcessor::ProcessGroupJoinRequest(Request &request, Gro
 /*
 2024年10月10日21:23:22
 
-线上加群
+线上 加好友 和 加群，应该将通知发送给对应的用户和管理员
 
 加群成功提示他人和返回。（不返回也行，微信就是）
 

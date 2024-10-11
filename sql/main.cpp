@@ -96,11 +96,12 @@ vector<std::string> tableCreateStringMap = {
     user_id INT NOT NULL,
     parent_id INT,
     item_name VARCHAR(255) NOT NULL,
-    item_type ENUM('file', 'folder', 'image', 'video') NOT NULL,
+    item_type VARCHAR(255) NOT NULL,
     file_path VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    expired_time INT DEFAULT 0,
+	FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (parent_id) REFERENCES user_storage(storage_id),
     CONSTRAINT unique_item_name_per_user UNIQUE (user_id, parent_id, item_name)
     );
