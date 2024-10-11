@@ -242,6 +242,30 @@ bool Processor::getAllOfflineFile(int userId) {
     return false;
 }
 
+bool Processor::StoreFile(FileInfo info)
+{
+    info.filesize = 100;
+    info.fileMode = 777;
+    info.fileType = 1;
+    info.md5sum = 10;
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << info.id << info.ftpTaskId << info.send_id  << info.recv_id
+           << info.ClientPath << info.serviceType  << info.serverPath  << info.serverFileName
+           << info.timestamp << info.expiredTime << info.parentId << info.fileType
+           << info.filesize << info.fileMode << info.md5sum;
+    Request req(1, FunctionCode::StoreFile, 3, 4, 5, data, user_id);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
 bool Processor::getAllFriendRequest(int userId)
 {
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
@@ -399,7 +423,12 @@ bool Processor::SendFileSuccess(FileInfo info)
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     MyProtocolStream stream(data);
 
-    stream << info.ftpTaskId << info.id << info.serviceType << info.send_id << info.recv_id <<  info.serverPath << info.serverFileName << info.fileType << info.filesize << info.fileMode << info.md5sum;
+
+    stream << info.id << info.ftpTaskId << info.send_id  << info.recv_id
+           << info.ClientPath << info.serviceType  << info.serverPath  << info.serverFileName
+           << info.timestamp << info.expiredTime << info.parentId << info.fileType
+           << info.filesize << info.fileMode << info.md5sum;
+    info.print();
 
     Request req(1, FunctionCode::UpLoadFileSuccess, 3, 4, 5, data, user_id);
 

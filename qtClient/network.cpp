@@ -27,7 +27,6 @@ void ClientNetWork::ftpFileSendOver(FileInfo info)
     if (info.serviceType == FileServerType::TOUXIANG) {
         emit ChangeUserPicBySend(info);
     }
-
     bool ret = Processor::SendFileSuccess(info);
     if (!ret) {
         QMessageBox::information(NULL,"提示","网络不可达！");
@@ -74,7 +73,7 @@ bool ClientNetWork::process(QByteArray& array) {
     case FunctionCode::Login: {
         MyProtocolStream stream2(mdata);
         UserInfo info;
-        stream2 >> info.user_id >> info.username >> info.email >> info.avatar_url;
+        stream2 >> info.user_id >> info.username >> info.email >> info.avatar_url >> info.storage_id;
         if (rsp.mCode == 1) {
             emit loginSuccessful(info);
             cout << "Login Success";
@@ -169,7 +168,7 @@ break;
         break;
     }
     case FunctionCode::StoreFile: {
-        emit storeFileSuccess(rsp);
+        emit storeFileResponse(rsp);
         break;
     }
     case FunctionCode::TransFile: {

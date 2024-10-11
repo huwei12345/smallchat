@@ -39,7 +39,7 @@ void ReciveMessageSuccess(Response response);
     void createGroupSuccess(Response response);
     void applyJoinGroupSuccess(Response response);
     void processGroupApplySuccess(Response response);
-    void storeFileSuccess(Response response);
+    void storeFileResponse(Response response);
     void offlineTransFileSuccess(Response response);
     void StartUpLoadFileSuccess(Response response);
     void UpLoadFileSuccess(Response response);

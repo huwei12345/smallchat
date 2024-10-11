@@ -22,7 +22,7 @@
 #include "processor.h"
 #include "ftpsender.h"
 #include "globalvaria.h"
-
+#include "mainpage.h"
 bool FriendPage::initPage() {
     setWindowTitle(tr("Qfei"));
     // 设置图片，可以是本地文件路径或者网络图片URL
@@ -34,6 +34,7 @@ bool FriendPage::initPage() {
     m_index = 0;
     m_FindFriendPage = NULL;
     m_CreateGroupPage = NULL;
+    mSpacePage = NULL;
     //更新头像
     connect(ClientNetWork::GetInstance(), &ClientNetWork::ChangeUserPic, this, &FriendPage::ChangeUserPic);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::ChangeUserPicBySend, this, &FriendPage::ChangeUserPicBySend);
@@ -607,7 +608,7 @@ bool FriendPage::addGroupToPage(GroupInfo info)
     size.setHeight(60);
     size.setWidth(60);
     groupWidget->item(i)->setSizeHint(size);
-    mGroupList.push_back(info);
+    mGroupList[info.id] = info;
     GroupChatWindow* chatWindow = new GroupChatWindow(info);
     mGroupWindowMap[info.id] = chatWindow;
     //        connect(this, &FriendPage::userMessageUnRead, chatWindow, &GroupChatWindow::userMessageRead);
@@ -710,6 +711,13 @@ void FriendPage::on_toolButton_2_clicked()
         GroupJoinRequest request =  *mGroupRequestSet.begin();
         QString str;
         QMessageBox::StandardButton reply;
+        if (!mGroupList.count(request.groupId)) {
+            //无法关联本人所有群信息，不处理返回
+            mGroupRequestSet.erase(request);
+            QMessageBox::information(nullptr, "提示", "无法关联群信息，不处理");
+            return;
+        }
+        request.group_name = mGroupList[request.groupId].group_name;
         str = QString("群") + QString::fromStdString(request.group_name) + "：是否通过来自" + QString::fromStdString(request.username) + "的入群请求？";
         reply = QMessageBox::question(nullptr, "Confirmation", str, QMessageBox::Yes|QMessageBox::No);
         if (reply == QMessageBox::Yes) {
@@ -908,10 +916,16 @@ void FriendPage::GetFileSuccess(Response response)
 void FriendPage::SendFileSuccess(Response response)
 {
     std::string mdata = response.mData;
-    MyProtocolStream stream2(mdata);
+    MyProtocolStream stream(mdata);
     bool ret = response.mCode;
     if (ret) {
         QMessageBox::information(this, "提示", "SendFile %s Over");
+        int ftptaskId = 0;
+        stream >> ftptaskId;
+        FileInfo info = FtpSender::GetInstance()->file(ftptaskId);
+        if (info.serviceType == STOREFILE) {
+            emit StoreFileSuccess(info);
+        }
     }
     else {
         QMessageBox::information(this, "提示", "SendFile %s Send Failure");
@@ -968,11 +982,11 @@ void FriendPage::on_toolButton_5_clicked()
     }
 }
 
+//Response: 告知允许上传，及部分参数
 void FriendPage::StartUpLoadFileSuccess(Response response)
 {
     std::string mdata = response.mData;
     MyProtocolStream stream2(mdata);
-    //Response: 告知允许上传，及部分参数
     int ret = response.mCode;
     int ftpTaskId = -1;
     stream2 >> ftpTaskId;
@@ -991,3 +1005,16 @@ void FriendPage::StartUpLoadFileSuccess(Response response)
         }
     }
 }
+
+void FriendPage::on_toolButton_4_clicked()
+{
+    this->hide();
+    if (mSpacePage == NULL) {
+        mSpacePage = new MainPage(mInfo);
+        mSpacePage->setReturn(this);
+    }
+    connect(this, &FriendPage::StoreFileSuccess, mSpacePage, &MainPage::StoreFileSuccess);
+    mSpacePage->show();
+    this->hide();
+}
+

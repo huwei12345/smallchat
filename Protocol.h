@@ -250,6 +250,9 @@ public:
                   << "\tfileMode: " << fileMode
                   << "\tmd5sum: " << md5sum
                   << "\ttimestamp: " << timestamp
+                  << "\towner" << owner
+                  << "\texpiredTime" << expiredTime
+                  << "\tparentId" << parentId
                   << std::endl;
     }
 };

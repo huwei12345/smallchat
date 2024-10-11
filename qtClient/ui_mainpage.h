@@ -17,6 +17,7 @@
 #include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpacerItem>
+#include <QtWidgets/QToolButton>
 #include <QtWidgets/QTreeWidget>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
@@ -32,6 +33,10 @@ public:
     QLabel *label;
     QSpacerItem *horizontalSpacer_2;
     QPushButton *pushButton;
+    QWidget *widget_4;
+    QHBoxLayout *horizontalLayout_3;
+    QToolButton *toolButton;
+    QToolButton *toolButton_2;
     QWidget *widget_2;
     QHBoxLayout *horizontalLayout;
     QTreeWidget *treeWidget;
@@ -51,6 +56,7 @@ public:
         widget_3->setObjectName(QString::fromUtf8("widget_3"));
         horizontalLayout_2 = new QHBoxLayout(widget_3);
         horizontalLayout_2->setObjectName(QString::fromUtf8("horizontalLayout_2"));
+        horizontalLayout_2->setContentsMargins(11, 11, 11, 0);
         label = new QLabel(widget_3);
         label->setObjectName(QString::fromUtf8("label"));
         QFont font;
@@ -77,15 +83,31 @@ public:
 
         verticalLayout_2->addWidget(widget_3);
 
+        widget_4 = new QWidget(MainPage);
+        widget_4->setObjectName(QString::fromUtf8("widget_4"));
+        horizontalLayout_3 = new QHBoxLayout(widget_4);
+        horizontalLayout_3->setSpacing(0);
+        horizontalLayout_3->setObjectName(QString::fromUtf8("horizontalLayout_3"));
+        horizontalLayout_3->setContentsMargins(0, 0, 0, 0);
+        toolButton = new QToolButton(widget_4);
+        toolButton->setObjectName(QString::fromUtf8("toolButton"));
+
+        horizontalLayout_3->addWidget(toolButton);
+
+        toolButton_2 = new QToolButton(widget_4);
+        toolButton_2->setObjectName(QString::fromUtf8("toolButton_2"));
+
+        horizontalLayout_3->addWidget(toolButton_2);
+
+
+        verticalLayout_2->addWidget(widget_4);
+
         widget_2 = new QWidget(MainPage);
         widget_2->setObjectName(QString::fromUtf8("widget_2"));
         horizontalLayout = new QHBoxLayout(widget_2);
         horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
         horizontalLayout->setContentsMargins(0, 0, 0, 0);
         treeWidget = new QTreeWidget(widget_2);
-        QTreeWidgetItem *__qtreewidgetitem = new QTreeWidgetItem();
-        __qtreewidgetitem->setText(0, QString::fromUtf8("1"));
-        treeWidget->setHeaderItem(__qtreewidgetitem);
         treeWidget->setObjectName(QString::fromUtf8("treeWidget"));
         QSizePolicy sizePolicy1(QSizePolicy::Preferred, QSizePolicy::Expanding);
         sizePolicy1.setHorizontalStretch(0);
@@ -135,8 +157,10 @@ public:
     void retranslateUi(QWidget *MainPage)
     {
         MainPage->setWindowTitle(QCoreApplication::translate("MainPage", "Form", nullptr));
-        label->setText(QCoreApplication::translate("MainPage", "\344\270\273\351\241\265\351\235\242", nullptr));
+        label->setText(QCoreApplication::translate("MainPage", "\344\270\252\344\272\272\347\251\272\351\227\264", nullptr));
         pushButton->setText(QCoreApplication::translate("MainPage", "\350\277\224\345\233\236", nullptr));
+        toolButton->setText(QCoreApplication::translate("MainPage", "\344\270\212\344\274\240", nullptr));
+        toolButton_2->setText(QCoreApplication::translate("MainPage", "\346\233\264\346\226\260", nullptr));
     } // retranslateUi
 
 };

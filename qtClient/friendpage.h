@@ -13,6 +13,7 @@
 class FindFriendPage;
 class CreateGroupPage;
 class ChatWindow;
+class MainPage;
 namespace Ui {
 class FriendPage;
 }
@@ -44,6 +45,7 @@ public:
     void SendFileSuccess(Response response);
 
     void StartUpLoadFileSuccess(Response response);
+    void StoreFileAllow(Response response);
 
     int getFriendPhoto(UserInfo &userinfo);
     void ProcessFriendRequestResult(Response response);
@@ -61,7 +63,7 @@ protected:
 
 signals:
     void userMessageUnRead();
-
+    void StoreFileSuccess(FileInfo info);
 private slots:
 
     void on_toolButton_clicked();
@@ -87,6 +89,8 @@ private slots:
     void GetFileFirstSuccess(Response response);
     void on_toolButton_5_clicked();
 
+    void on_toolButton_4_clicked();
+
 private:
     Ui::FriendPage *ui;
     QWidget* returnWindow;
@@ -96,7 +100,7 @@ private:
 
 
     std::vector<UserInfo> mFriendList;
-    std::vector<GroupInfo> mGroupList;
+    std::map<int, GroupInfo> mGroupList;
 
     std::map<int, ChatWindow*> mChatWindowMap;
     std::map<int, GroupChatWindow*> mGroupWindowMap;
@@ -112,6 +116,7 @@ private:
     QTimer *mFriendRequestTimer;
 
     std::map<int, QTimer*> mUnReadMessageTimerMap;
+    MainPage* mSpacePage;
 };
 
 #endif // FRIENDPAGE_H

@@ -7,6 +7,13 @@
 #include "settime.h"
 #include "./cache/friendCache.h"
 
+bool checkDisk(FileInfo& info) {
+    return true;
+}
+
+bool checkUserLimit(FileInfo& info ) {
+    return true;
+}
 
 int stoiAll(const std::string &str) {
     int number = 0; 
@@ -1112,7 +1119,10 @@ void StoreFileProcessor::Exec(Connection *conn, Request &request, Response &resp
     bool ret = StoreFile(request, info);
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
-
+        response.mhasData = true;
+        std::string &data = response.mData;
+        MyProtocolStream stream(data);
+        stream << info.ftpTaskId << info.id << info.serverPath << info.serverFileName;
     }
     else {
         response.mhasData = false;
@@ -1121,16 +1131,25 @@ void StoreFileProcessor::Exec(Connection *conn, Request &request, Response &resp
 }
 
 
-//bool AddUserStorageItem(int user_id, const std::string& item_name, const std::string& item_type, const std::string& file_path, int parent_id = 0) {
-//可以在注册用户后，为其添加一个根项，用于管理
 bool StoreFileProcessor::StoreFile(Request &request, FileInfo& fileObject)
+{
+    bool ret = checkDisk(fileObject);
+    bool ret2 = checkUserLimit(fileObject);
+    return ret && ret2;
+
+
+
+
+    
+}
+
+bool StoreFileProcessor::StoreFileSQL(Request &request, FileInfo &fileObject)
 {
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == nullptr) {
         std::cerr << "Failed to get database connection." << std::endl;
         return false;
     }
-    
     // Prepare SQL statement to insert into user_storage table
     sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
         INSERT INTO user_storage(user_id, parent_id, item_name, item_type, file_path, expired_time) 
@@ -1297,13 +1316,7 @@ bool TransFileProcessor::TransFile(Request &request, TransObject& object)
     }
 */
 
-bool checkDisk(FileInfo& info) {
-    return true;
-}
 
-bool checkUserLimit(FileInfo& info ) {
-    return true;
-}
 
 void ProcessStartUpLoadFileProcessor::Exec(Connection* conn, Request &request, Response &response)
 {
@@ -1366,6 +1379,9 @@ void ProcessUpLoadFileSuccessProcessor::Exec(Connection* conn, Request &request,
     bool ret = ProcessUpLoadFileSuccess(conn, request, info);
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
+        response.mhasData = true;
+        MyProtocolStream stream(response.mData);
+        stream << info.ftpTaskId;
     }
     else {
         //some error info add
@@ -1380,7 +1396,13 @@ bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadFileSuccess(Connection* con
 {
     string& data = request.mData;
     MyProtocolStream stream(data);
-    stream >> info.ftpTaskId >> info.id >> info.serviceType >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.fileType >> info.filesize >> info.fileMode >> info.md5sum;
+    
+    stream >> info.id >> info.ftpTaskId >> info.send_id  >> info.recv_id
+           >> info.ClientPath >> info.serviceType  >> info.serverPath  >> info.serverFileName
+           >> info.timestamp >> info.expiredTime >> info.parentId >> info.fileType
+           >> info.filesize >> info.fileMode >> info.md5sum;
+
+    info.print();
     bool ret = checkmd5(info);
 
     if (info.recv_id != 0) {
@@ -1391,6 +1413,12 @@ bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadFileSuccess(Connection* con
             if (processor.NofifyFileComing(conn, request, info)) {
                 //在线而发送失败
             }
+        }
+    }
+    else {
+        if (info.serviceType == FileServerType::STOREFILE) {
+            StoreFileProcessor pro;
+            return pro.StoreFileSQL(request, info);
         }
     }
     if (info.serviceType == FileServerType::TOUXIANG) {

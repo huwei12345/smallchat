@@ -117,8 +117,9 @@ class ResponseJoinGroupProcessor : public RequestProcessor
 class StoreFileProcessor : public RequestProcessor
 {
     void Exec(Connection* conn, Request& request, Response&);
-    bool StoreFile(Request &request, FileInfo &fileObject);
 public:
+    bool StoreFile(Request &request, FileInfo &fileObject);
+    bool StoreFileSQL(Request &request, FileInfo &info);
     bool InitUserSpaceRoot(int user_id);
     int GetUserSpaceId(int user_id);
 };

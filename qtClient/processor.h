@@ -35,8 +35,11 @@ public:
     static bool SendFileSuccess(FileInfo info);
 
     static bool AgreeRecvFile(bool agree, FileInfo info);
-    bool processMessageRead(std::vector<int> messageList);
     static bool getAllOfflineFile(int userId);
+
+    static bool StoreFile(FileInfo info);
+
+    bool processMessageRead(std::vector<int> messageList);
     static bool getFriendPhoto(UserInfo& info);
 };
 
