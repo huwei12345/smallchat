@@ -1551,6 +1551,7 @@ bool ProcessGetFileProcessor::ProcessGetFile(Request &request, FileInfo &info)
     //避免客户端FTP可能发生的路径错误
     int ret = FileTools::checkFile((info.serverPath + info.serverFileName).c_str());
     if (ret < 0) {
+        printf("checkFilePath error %s  %d\n", (info.serverPath + info.serverFileName).c_str(), ret);
         return false;
     }
     return true;
