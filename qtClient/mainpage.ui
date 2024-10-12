@@ -108,6 +108,13 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QToolButton" name="toolButton_3">
+        <property name="text">
+         <string>Test</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
@@ -146,6 +153,32 @@
           <height>16777215</height>
          </size>
         </property>
+        <column>
+         <property name="text">
+          <string>name</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>path</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>size</string>
+         </property>
+        </column>
+        <item>
+         <property name="text">
+          <string>root</string>
+         </property>
+         <property name="text">
+          <string>/</string>
+         </property>
+         <property name="text">
+          <string>0</string>
+         </property>
+        </item>
        </widget>
       </item>
       <item>

@@ -37,6 +37,7 @@ public:
     QHBoxLayout *horizontalLayout_3;
     QToolButton *toolButton;
     QToolButton *toolButton_2;
+    QToolButton *toolButton_3;
     QWidget *widget_2;
     QHBoxLayout *horizontalLayout;
     QTreeWidget *treeWidget;
@@ -99,6 +100,11 @@ public:
 
         horizontalLayout_3->addWidget(toolButton_2);
 
+        toolButton_3 = new QToolButton(widget_4);
+        toolButton_3->setObjectName(QString::fromUtf8("toolButton_3"));
+
+        horizontalLayout_3->addWidget(toolButton_3);
+
 
         verticalLayout_2->addWidget(widget_4);
 
@@ -108,6 +114,7 @@ public:
         horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
         horizontalLayout->setContentsMargins(0, 0, 0, 0);
         treeWidget = new QTreeWidget(widget_2);
+        new QTreeWidgetItem(treeWidget);
         treeWidget->setObjectName(QString::fromUtf8("treeWidget"));
         QSizePolicy sizePolicy1(QSizePolicy::Preferred, QSizePolicy::Expanding);
         sizePolicy1.setHorizontalStretch(0);
@@ -161,6 +168,20 @@ public:
         pushButton->setText(QCoreApplication::translate("MainPage", "\350\277\224\345\233\236", nullptr));
         toolButton->setText(QCoreApplication::translate("MainPage", "\344\270\212\344\274\240", nullptr));
         toolButton_2->setText(QCoreApplication::translate("MainPage", "\346\233\264\346\226\260", nullptr));
+        toolButton_3->setText(QCoreApplication::translate("MainPage", "Test", nullptr));
+        QTreeWidgetItem *___qtreewidgetitem = treeWidget->headerItem();
+        ___qtreewidgetitem->setText(2, QCoreApplication::translate("MainPage", "size", nullptr));
+        ___qtreewidgetitem->setText(1, QCoreApplication::translate("MainPage", "path", nullptr));
+        ___qtreewidgetitem->setText(0, QCoreApplication::translate("MainPage", "name", nullptr));
+
+        const bool __sortingEnabled = treeWidget->isSortingEnabled();
+        treeWidget->setSortingEnabled(false);
+        QTreeWidgetItem *___qtreewidgetitem1 = treeWidget->topLevelItem(0);
+        ___qtreewidgetitem1->setText(2, QCoreApplication::translate("MainPage", "0", nullptr));
+        ___qtreewidgetitem1->setText(1, QCoreApplication::translate("MainPage", "/", nullptr));
+        ___qtreewidgetitem1->setText(0, QCoreApplication::translate("MainPage", "root", nullptr));
+        treeWidget->setSortingEnabled(__sortingEnabled);
+
     } // retranslateUi
 
 };

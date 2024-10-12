@@ -1,17 +1,38 @@
 #include "RequestProcessor.h"
 #include <regex>
+#include <sys/stat.h>
 #include "Protocol.h"
 #include "MyProtocolStream.h"
 #include "MysqlPool.h"
 #include "server.h"
 #include "settime.h"
 #include "./cache/friendCache.h"
-
+#include "FileTools.h"
 bool checkDisk(FileInfo& info) {
+    //检查磁盘用量和用户限制磁盘使用量
+    //TODO:
+
+    //检查了磁盘路径的合法性
+    string path = info.serverPath;
+    if (path.size() == 0 || path[0] == '/' || path.size() >= 150) {
+        printf("server path error %s\n", path.c_str());
+        return false;
+    }
+    // 使用 std::count 统计字符出现次数
+    int count = std::count(path.begin(), path.end(), '/');
+    if (count <= 0 || count >= 10) {
+        //要求不能在根目录，并且目录层级不能大于10层
+        printf("server path level error %s\n", path.c_str());
+        return false;
+    }
+    struct stat st;
+    if (stat(path.c_str(), &st) == -1) {
+        FileTools::createDirectory(path.c_str());
+    }
     return true;
 }
 
-bool checkUserLimit(FileInfo& info ) {
+bool checkUserLimit(FileInfo& info) {
     return true;
 }
 
@@ -1135,12 +1156,7 @@ bool StoreFileProcessor::StoreFile(Request &request, FileInfo& fileObject)
 {
     bool ret = checkDisk(fileObject);
     bool ret2 = checkUserLimit(fileObject);
-    return ret && ret2;
-
-
-
-
-    
+    return ret && ret2; 
 }
 
 bool StoreFileProcessor::StoreFileSQL(Request &request, FileInfo &fileObject)
@@ -1532,20 +1548,11 @@ bool ProcessGetFileProcessor::ProcessGetFile(Request &request, FileInfo &info)
     if (info.send_id > 0) {
         //来自用户   
     }
-        /*
-        ret = stat(info.filename);
-        if (ret == true) {
-            if (size < info.size) {
-                return true;
-            }
-            else {
-                return false;
-            }
-        }
-        else {
-            return false;
-        }
-    */
+    //避免客户端FTP可能发生的路径错误
+    int ret = FileTools::checkFile((info.serverPath + info.serverFileName).c_str());
+    if (ret < 0) {
+        return false;
+    }
     return true;
 }
 
