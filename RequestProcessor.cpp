@@ -450,7 +450,7 @@ bool SendMessageProcessor::sendMessageByNet(Connection* conn, MessageInfo messag
     stream << message.id << message.sender_id << message.receiver_id << message.timestamp << message.message_text;
     Response rsp(1, FunctionCode::SendMessage, 3, 4, 5, 1, message.sender_id, 1, true, data);
     string str = rsp.serial();
-    bool success = sendResponse(clientSocket, &rsp);
+    bool success = conn->sendResponse(clientSocket, &rsp);
     if (success > 0) {
         return true;
     }
@@ -552,7 +552,11 @@ bool SearchAllFriendProcessor::bindAllFriendState(Connection *conn, Request &req
         //每隔2分钟，客户端发送一次同步请求好友列表。
 
         if (Server::GetInstance()->mUserSessionMap.count(u.user_id)) {
+            printf("mUserSessionMap %d online\n", u.user_id);
             u.status = ONLINE;
+        }
+        else {
+            u.status = OFFLINE;
         }
     }
     return true;
@@ -830,17 +834,18 @@ bool UpdateUserStateProcessor::notifyStateToFriend(int userId, int state) {
     stream << state;
     Response rsp(1, FunctionCode::SendMessage, 3, 4, 5, 1, userId, 1, true, data);
     string str = rsp.serial();
-    for (int i = 0; i < friendList.size(); i++) {
-        bool success = sendResponse(friendList[i], &rsp);
-        if (success > 0) {
+    // for (int i = 0; i < friendList.size(); i++) {
+    //     bool success = sendResponse(friendList[i], &rsp);
+    //     if (success > 0) {
             
-        }
-    }
+    //     }
+    // }
     //可能在用户初始获取朋友列表时，还要参考缓存中的朋友状态，或者从数据库读取
     //用户状态可能不需要，微信也没有，因为消息是不是实时不重要
     return true;
 }
 
+//未完成，此功能为用户主动设置为隐身。并非断开连接或者上线，这两个在session层做了
 bool UpdateUserStateProcessor::UpdateUserState(const Request &request)
 {
     std::string mData = request.mData;
@@ -1669,7 +1674,7 @@ bool ProcessNofifyFileComingProcessor::sendNotifyFileByNet(Connection* conn, Fil
     stream << info.ftpTaskId << info.id << info.send_id << info.recv_id << info.serverPath << info.serverFileName << info.filesize << info.fileType;
     Response rsp(1, FunctionCode::NofifyFileComing, 3, 4, 5, 1, info.send_id, 1, true, data);
     string str = rsp.serial();
-    bool success = sendResponse(clientSocket, &rsp);
+    bool success = conn->sendResponse(clientSocket, &rsp);
     if (success > 0) {
         return true;
     }
@@ -1786,7 +1791,7 @@ bool ProcessNotifyStateProcessor::Notify(Connection * conn, FriendList & friendL
                 Response rsp(1, FunctionCode::UpdateUserState, 3, 4, 5, 1, mUserId, 1, true, data);
                 rsp.mhasData = true;
                 string str = rsp.serial();
-                success &= sendResponse(clientSocket, &rsp);
+                success &= friendConn->sendResponse(clientSocket, &rsp);
             }
         }
     }
@@ -1808,7 +1813,8 @@ bool ProcessNotifyStateProcessor::Notify(Connection *conn, vector<int> &friendLi
                 Response rsp(1, FunctionCode::UpdateUserState, 3, 4, 5, 1, mUserId, 1, true, data);
                 rsp.mhasData = true;
                 string str = rsp.serial();
-                success &= sendResponse(clientSocket, &rsp);
+                //TODO:是用friendConn还是用conn?应该是friendConn
+                success &= friendConn->sendResponse(clientSocket, &rsp);
             }
         }
     }

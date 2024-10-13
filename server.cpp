@@ -8,74 +8,78 @@
 #include <memory.h>
 #include <fcntl.h>
 #include <iostream>
+#include <thread>
+#include <functional>
 #include "Trans.h"
 #include "./cache/friendCache.h"
+#include "EventLoop.h"
 using namespace std;
 #define MAX_REQUEST_SIZE 4096
+#define IO_THREAD_NUM 2
 
 RequestProcessor* requestProcessor[100];
 
-int readline(int sockfd, char* buffer, int MaxSize) {
-    int n;
-    char c;
-    int i = 0;
-    while (i < MaxSize - 1) {
-        n = recv(sockfd, &c, 1, 0);
-        if (n > 0) {
-            buffer[i++] = c;
-            if (c == '\n')
-                break;
-        } else if (n == 0) {
-            break;
-        } else {
-            if (errno == EAGAIN || EWOULDBLOCK) {
-                continue;
-            }
-            perror("recv");
-            break;
-        }
-    }
-    buffer[i] = '\0';
-    return i;
-}
+// int readline(int sockfd, char* buffer, int MaxSize) {
+//     int n;
+//     char c;
+//     int i = 0;
+//     while (i < MaxSize - 1) {
+//         n = recv(sockfd, &c, 1, 0);
+//         if (n > 0) {
+//             buffer[i++] = c;
+//             if (c == '\n')
+//                 break;
+//         } else if (n == 0) {
+//             break;
+//         } else {
+//             if (errno == EAGAIN || EWOULDBLOCK) {
+//                 continue;
+//             }
+//             perror("recv");
+//             break;
+//         }
+//     }
+//     buffer[i] = '\0';
+//     return i;
+// }
 
-bool readRequest(int fd, char* buf, std::string& requestData) {
-    int ret = recv(fd, buf, 4, MSG_PEEK);
-    if (ret <= 0) {
-        if (ret == 0) {
-            printf("connect %d close\n", fd);
-            close(fd);
-        }
-        // Handle recv error
-        return false;
-    } else if (ret < 4) {
-        // Handle incomplete length field
-        return false;
-    }
-    uint32_t len = 0;
-    memcpy(&len, buf, 4);
-    len = htonl(len);
+// bool readRequest(int fd, char* buf, std::string& requestData) {
+//     int ret = recv(fd, buf, 4, MSG_PEEK);
+//     if (ret <= 0) {
+//         if (ret == 0) {
+//             printf("connect %d close\n", fd);
+//             close(fd);
+//         }
+//         // Handle recv error
+//         return false;
+//     } else if (ret < 4) {
+//         // Handle incomplete length field
+//         return false;
+//     }
+//     uint32_t len = 0;
+//     memcpy(&len, buf, 4);
+//     len = htonl(len);
     
-    if (len < 4 || len > MAX_REQUEST_SIZE) {
-        // Handle invalid length
-        return false;
-    }
+//     if (len < 4 || len > MAX_REQUEST_SIZE) {
+//         // Handle invalid length
+//         return false;
+//     }
     
-    ret = recv(fd, buf, len, MSG_WAITALL);
-    if (ret <= 0) {
-        if (ret == 0) {
-            printf("connect %d close\n", fd);
-            close(fd);
-        }
-        // Handle recv error
-        return false;
-    } else if (ret != len) {
-        // Handle incomplete request data
-        return false;
-    }
-    requestData.assign(buf, buf + len);
-    return true;
-}
+//     ret = recv(fd, buf, len, MSG_WAITALL);
+//     if (ret <= 0) {
+//         if (ret == 0) {
+//             printf("connect %d close\n", fd);
+//             close(fd);
+//         }
+//         // Handle recv error
+//         return false;
+//     } else if (ret != len) {
+//         // Handle incomplete request data
+//         return false;
+//     }
+//     requestData.assign(buf, buf + len);
+//     return true;
+// }
 
 
 
@@ -86,44 +90,44 @@ Request* parseRequest(std::string& RequestData) {
     return request;
 }
 
-Response* processRequest(Request* request) {
-    Response* response = new Response;
-    requestProcessor[request->mFunctionCode]->Exec(NULL, *request, *response);
-    response->print();
-    return response;
-}
+// Response* processRequest(Request* request) {
+//     Response* response = new Response;
+//     requestProcessor[request->mFunctionCode]->Exec(NULL, *request, *response);
+//     response->print();
+//     return response;
+// }
 
-bool sendDataAll(int fd, const char* data, int len) {
-    int pos = 0;
-    while (pos != len) {
-        int ret = ::send(fd, data + pos, len - pos, 0);
-        if (ret != -1) { 
-            pos += ret;
-        }
-        else if (ret == 0) {
-            return ret;
-        }
-        else {
-            if (errno = EAGAIN || errno == EWOULDBLOCK) {
-                continue;
-            }
-            return ret;
-        }
-    }
-    return len;
-}
+// bool sendDataAll(int fd, const char* data, int len) {
+//     int pos = 0;
+//     while (pos != len) {
+//         int ret = ::send(fd, data + pos, len - pos, 0);
+//         if (ret != -1) { 
+//             pos += ret;
+//         }
+//         else if (ret == 0) {
+//             return ret;
+//         }
+//         else {
+//             if (errno = EAGAIN || errno == EWOULDBLOCK) {
+//                 continue;
+//             }
+//             return ret;
+//         }
+//     }
+//     return len;
+// }
 
-bool sendDataAll(int fd, std::string data) {
-    return sendDataAll(fd, data.c_str(), data.size());
-}
+// bool sendDataAll(int fd, std::string data) {
+//     return sendDataAll(fd, data.c_str(), data.size());
+// }
 
-bool sendResponse(int fd, Response* response) {
-    std::string responseData = serialResponse(response);
-    if (responseData == "") {
-        return false;
-    }
-    return sendDataAll(fd, responseData);
-}
+// bool sendResponse(int fd, Response* response) {
+//     std::string responseData = serialResponse(response);
+//     if (responseData == "") {
+//         return false;
+//     }
+//     return sendDataAll(fd, responseData);
+// }
 
 std::string serialResponse(Response* response) {
     return response->serial();
@@ -150,33 +154,33 @@ std::string serialResponse(Response* response) {
 如果可能，评估每个步骤的性能并进行优化，特别是在处理大量请求时，如使用更高效的数据结构或算法。
 */
 
-bool process(int fd, char* buf) {
-    std::string requestData;
-    Request* request = nullptr;
-    Response* response = nullptr;
+// bool process(int fd, char* buf) {
+//     std::string requestData;
+//     Request* request = nullptr;
+//     Response* response = nullptr;
 
-    if (!readRequest(fd, buf, requestData)) {
-        return false;
-    }
+//     if (!readRequest(fd, buf, requestData)) {
+//         return false;
+//     }
 
-    request = parseRequest(requestData);
-    if (!request) {
-        // Clean up requestData if necessary
-        return false;
-    }
+//     request = parseRequest(requestData);
+//     if (!request) {
+//         // Clean up requestData if necessary
+//         return false;
+//     }
 
-    response = processRequest(request);
-    delete request; // Clean up request after use
-    if (!response) {
-        // Clean up response if necessary
-        return false;
-    }
-    bool success = true;
-    if (response->returnFlag)
-        success = sendResponse(fd, response);
-    delete response; // Clean up response after use
-    return success;
-}
+//     response = processRequest(request);
+//     delete request; // Clean up request after use
+//     if (!response) {
+//         // Clean up response if necessary
+//         return false;
+//     }
+//     bool success = true;
+//     if (response->returnFlag)
+//         success = sendResponse(fd, response);
+//     delete response; // Clean up response after use
+//     return success;
+// }
 
 
 int sendline(int sockfd, char* buffer, int Size) {
@@ -201,52 +205,13 @@ int sendline(int sockfd, char* buffer, int Size) {
 
 Server::Server(const char *ip, unsigned int port)
 {
-    // 创建socket并绑定端口
-    server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_fd < 0) {
-        perror("socket");
-        ::exit(EXIT_FAILURE);
+    if (ip == NULL) {
+        mServerIP = "";
     }
-
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    if (ip == NULL)
-        server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    else
-        server_addr.sin_addr.s_addr = inet_addr(ip);
-    server_addr.sin_port = htons(port);
-    int opt = 1;
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-        perror("Error: setsockopt failed SO_REUSEADDR ");
-        exit(EXIT_FAILURE);
+    else {
+        mServerIP = ip;
     }
-    // 将socket设置为非阻塞模式
-    if (fcntl(server_fd, F_SETFL, O_NONBLOCK) < 0) {
-        perror("fcntl");
-        exit(EXIT_FAILURE);
-    }
-    if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        perror("bind");
-        ::exit(EXIT_FAILURE);
-    }
-    if (listen(server_fd, 5) < 0) {
-        perror("listen");
-        exit(EXIT_FAILURE);
-    }
-    // 创建epoll实例并将socket添加到epoll中
-    epoll_fd = epoll_create1(0);
-    if (epoll_fd < 0) {
-        perror("epoll_create1");
-        exit(EXIT_FAILURE);
-    }
-    struct epoll_event ev;
-    memset(&ev, 0, sizeof(ev));
-    ev.events = EPOLLIN | EPOLLET;
-    ev.data.fd = server_fd;
-    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &ev) < 0) {
-        perror("epoll_ctl");
-        exit(EXIT_FAILURE);
-    }
+    mServerPort = port;
 
     requestProcessor[FunctionCode::TEST] = new RequestProcessor;
     requestProcessor[FunctionCode::Register] = new RegisterProcessor;
@@ -285,88 +250,86 @@ Server::Server(const char *ip, unsigned int port)
     requestProcessor[FunctionCode::GetAllOfflineFile] = new ProcessGetAllOfflineFileProcessor;
     
     requestProcessor[FunctionCode::GetOfflineFile] = new ProcessGetOfflineFileProcessor;
-    
+
     requestProcessor[FunctionCode::SearchAllGroup] = new SearchAllGroupProcessor;
     requestProcessor[FunctionCode::FindGroup] = new FindGroupProcessor;
-    for (int i = 40; i < 100; i++) {
+    for (int i = 50; i < 100; i++) {
         requestProcessor[i] = new RequestProcessor;
     }
-
-    
 }
 
-void Server::run()
+
+void runx(Server* server) {
+
+}
+
+int Server::selectAlgorithm() {
+    static int loop = 0;
+    return loop++ % IO_THREAD_NUM;
+}
+
+int Server::run()
 {
-    // 进入循环，等待事件发生
-    while (1) {
-        int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-        if (nfds < 0) {
-            perror("epoll_wait");
-            exit(EXIT_FAILURE);
-        }
-        struct sockaddr_in client_addr;
-        memset(&client_addr, 0, sizeof(client_addr));
-        socklen_t client_len = 0;
-        // 当有事件发生时，处理事件并将socket重新添加到epoll中
-        for (i = 0; i < nfds; i++) {
-            if (events[i].data.fd == server_fd) {
-                while (1) {
-                    int client_fd = ::accept(server_fd, (struct sockaddr *)&client_addr, &client_len);
-                    if (client_fd < 0) {
-                        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                            break;
-                        } else {
-                            printf("%d %d %d\n", server_fd, client_fd, errno);
-                            perror("accept");
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                    std::cout << "get connect in" << client_fd << std::endl;
-                    // 将client socket设置为非阻塞模式
-                    if (fcntl(client_fd, F_SETFL, O_NONBLOCK) < 0) {
-                        perror("fcntl");
-                        exit(EXIT_FAILURE);
-                    }
-                    struct epoll_event ev;
-                    ev.events = EPOLLIN/* | EPOLLET*/;
-                    ev.data.fd = client_fd;
-                    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) < 0) {
-                        perror("epoll_ctl");
-                        exit(EXIT_FAILURE);
-                    }
-                    Connection* conn = new Connection;
-                    conn->clientSocket = client_fd;
-                    mConnectionMap[client_fd] = conn;
-                }
-            } else {
-                int client_fd = events[i].data.fd;
-                char buffer[4096];
-                //process(client_fd, buffer);
-                
-                mConnectionMap[client_fd]->processRead();
-                
-                // Request req;
-                // int len = Trans::receive(client_fd, req);
-				// req.print();
-				// string x = req.serial();
-                // if (len > 0) {
-                //     std::cout << "get data:" << std::endl;
-				// 	Response rsp(1, 2, 3, 4, 1234567890, 200, true, "example data");
-                //     int ret = Trans::send(client_fd, rsp);
-                //     cout << "return data" << buf;
-                // }
-            }
+    mServerSocket = createListener();
+    if (mServerSocket <= 0) {
+        return -1;
+    }
+    for (int i = 0; i < IO_THREAD_NUM; i++) {
+        EventLoop* loop = new EventLoop(this, mServerSocket, i);
+        loop->addWakeupSocket();
+        mEvLoopList.push_back(loop);
+    }
+    for (int i = 0; i < IO_THREAD_NUM; i++) {
+        // 4 IO线程，目前无task线程、数据库线程、http线程、日志线程
+        std::thread *iothread =  new std::thread(std::bind(&EventLoop::Run, mEvLoopList[i]));
+        mEvLoopList[i]->mThread = iothread;
+        if (iothread == nullptr) {
+            printf("ioThread %d create error\n", i);
+            return -3;
         }
     }
-    close(server_fd);
+    mMainEventLoop = new EventLoop(this, mServerSocket);
+    mMainEventLoop->RunMain();
+    return 0;
 }
 
-//循环直到发送完一行内容
-int Server::send(int clientfd, char *str, int len)
+int Server::createListener()
 {
-    n = sendline(clientfd, buf, len);
-    return n;
+        // 创建socket并绑定端口
+    mServerSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (mServerSocket < 0) {
+        perror("socket");
+        ::exit(EXIT_FAILURE);
+    }
+
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    if (mServerIP == "")
+        server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    else
+        server_addr.sin_addr.s_addr = inet_addr(mServerIP.c_str());
+    server_addr.sin_port = htons(mServerPort);
+    int opt = 1;
+    if (setsockopt(mServerSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        perror("Error: setsockopt failed SO_REUSEADDR ");
+        exit(EXIT_FAILURE);
+    }
+    // 将socket设置为非阻塞模式
+    if (fcntl(mServerSocket, F_SETFL, O_NONBLOCK) < 0) {
+        perror("fcntl");
+        exit(EXIT_FAILURE);
+    }
+    if (bind(mServerSocket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+        perror("bind");
+        ::exit(EXIT_FAILURE);
+    }
+    if (listen(mServerSocket, 5) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+    return mServerSocket;
 }
+
 
 Server* Server::mInstance = NULL;
 
@@ -453,15 +416,23 @@ bool Connection::processRead()
     return success;
 }
 
+bool Connection::sendResponse(int clientSocket, Response* response)
+{
+    std::string responseData = serialResponse(response);
+    if (responseData == "") {
+        return false;
+    }
+    return mEvLoop->sendDataAll(clientSocket, responseData);
+}
+
 //flag = 0,默认关闭  flag = 1,强行关闭
 bool Connection::closeConnection(int flag)
 {
     //删除顺序有待确认，这是IO线程，某些对象在业务线程可能还在用
-    if (epoll_ctl(Server::GetInstance()->epoll_fd, EPOLL_CTL_DEL, clientSocket, NULL) == -1) {
-        printf("epoll del error %d\n", clientSocket);
-        perror("epoll_ctl: EPOLL_CTL_DEL");
-        return false;
-    }
+    //这一步是异步的
+    mEvLoop->eraseSocket(clientSocket);
+    //TODO：后续删除是在此处删除，还是在移除从Epoll中移除时再删除？
+    
     //先关掉接收，再删除session,再关掉发送
     close(clientSocket);
     Connection* conn = Server::GetInstance()->mConnectionMap[clientSocket];
@@ -476,6 +447,7 @@ bool Connection::closeConnection(int flag)
         delete session;
     }
     if (userId != -1) {
+        //通知其他朋友用户离线
         ProcessNotifyStateProcessor processor;
         vector<int> friendList = FriendCache::GetInstance()->getFriendList(userId);
         processor.Notify(conn, friendList, userId, OFFLINE);
