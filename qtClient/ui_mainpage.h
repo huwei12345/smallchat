@@ -36,6 +36,7 @@ public:
     QWidget *widget_4;
     QHBoxLayout *horizontalLayout_3;
     QToolButton *toolButton;
+    QToolButton *toolButton_4;
     QToolButton *toolButton_2;
     QToolButton *toolButton_3;
     QWidget *widget_2;
@@ -94,6 +95,11 @@ public:
         toolButton->setObjectName(QString::fromUtf8("toolButton"));
 
         horizontalLayout_3->addWidget(toolButton);
+
+        toolButton_4 = new QToolButton(widget_4);
+        toolButton_4->setObjectName(QString::fromUtf8("toolButton_4"));
+
+        horizontalLayout_3->addWidget(toolButton_4);
 
         toolButton_2 = new QToolButton(widget_4);
         toolButton_2->setObjectName(QString::fromUtf8("toolButton_2"));
@@ -167,7 +173,8 @@ public:
         label->setText(QCoreApplication::translate("MainPage", "\344\270\252\344\272\272\347\251\272\351\227\264", nullptr));
         pushButton->setText(QCoreApplication::translate("MainPage", "\350\277\224\345\233\236", nullptr));
         toolButton->setText(QCoreApplication::translate("MainPage", "\344\270\212\344\274\240", nullptr));
-        toolButton_2->setText(QCoreApplication::translate("MainPage", "\346\233\264\346\226\260", nullptr));
+        toolButton_4->setText(QCoreApplication::translate("MainPage", "\345\220\214\346\255\245", nullptr));
+        toolButton_2->setText(QCoreApplication::translate("MainPage", "\346\216\250\351\200\201", nullptr));
         toolButton_3->setText(QCoreApplication::translate("MainPage", "Test", nullptr));
         QTreeWidgetItem *___qtreewidgetitem = treeWidget->headerItem();
         ___qtreewidgetitem->setText(2, QCoreApplication::translate("MainPage", "size", nullptr));

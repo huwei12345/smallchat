@@ -1,4 +1,4 @@
-#include "mainpage.h"
+﻿#include "mainpage.h"
 #include "ui_mainpage.h"
 #include <QAction>
 #include <QDebug>
@@ -103,10 +103,9 @@ void MainPage::StoreFileSuccess(FileInfo info)
 {
     //根据info，显示在界面上
     QTreeWidgetItem *item = new QTreeWidgetItem;
-    char text[200];
-    sprintf(text, "%15s %15s parentId: %d id: %d\n", info.serverFileName.c_str(), info.serverPath.c_str(), info.parentId, info.id);
-    QString *str = new QString(text);
-    item->setText(0, *str);
+    item->setText(0, QString::fromStdString(info.serverFileName));
+    item->setText(1, QString::fromStdString(info.serverPath));
+    item->setText(2, QString::number(info.filesize));
     ui->treeWidget->addTopLevelItem(item);
 }
 
@@ -124,7 +123,6 @@ void MainPage::on_toolButton_3_clicked()
         return;
     }
     QTreeWidgetItem *item = new QTreeWidgetItem;
-    char text[200];
     FileInfo info;
     info.ClientPath = fileName.toStdString();
     info.serverPath = std::string("userInfo/") + std::to_string(user_id) + std::string("/");

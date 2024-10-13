@@ -10,9 +10,13 @@
 #include <QAction>
 #include "globalvaria.h"
 #include "ftpsender.h"
+#include "emojiselector.h"
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    EmojiSelector selector;
+    selector.exec();
+    //return 1;
     GlobalVaria::GetInstance();
     FtpSender* ftpSender = FtpSender::GetInstance();
     ClientNetWork *client = ClientNetWork::GetInstance();

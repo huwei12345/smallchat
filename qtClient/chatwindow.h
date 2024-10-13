@@ -3,10 +3,10 @@
 
 #include <QWidget>
 #include "Protocol.h"
+class EmojiCoder;
 namespace Ui {
 class ChatWindow;
 }
-
 class ChatWindow : public QWidget
 {
     Q_OBJECT
@@ -45,7 +45,8 @@ public slots:
 private:
     Ui::ChatWindow *ui;
     UserInfo mInfo;
-UserInfo* clientInfo;
+    EmojiCoder* mEmojiCoder;
+    UserInfo* clientInfo;
 };
 
 #endif // CHATWINDOW_H

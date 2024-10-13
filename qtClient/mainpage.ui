@@ -102,9 +102,16 @@
        </widget>
       </item>
       <item>
+       <widget class="QToolButton" name="toolButton_4">
+        <property name="text">
+         <string>同步</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QToolButton" name="toolButton_2">
         <property name="text">
-         <string>更新</string>
+         <string>推送</string>
         </property>
        </widget>
       </item>

@@ -9,6 +9,8 @@
 #include <QKeyEvent>
 #include <QMessageBox>
 #include <QPlainTextEdit>
+#include "emojiccoder.h"
+
 ChatWindow::ChatWindow(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::ChatWindow)
@@ -22,7 +24,6 @@ ChatWindow::ChatWindow(QWidget *parent) :
 
     //这两个应该放在网络线程（通用 通信确认业务），但同时，发送完文件也应该通知聊天框，看具体业务。
     //connect(FtpSender::GetInstance(), &FtpSender::ftpFileSendOver, this, &ChatWindow::ftpSendFileSuccess);
-
 
     connect(ClientNetWork::GetInstance(), &ClientNetWork::offlineTransFileSuccess, this, &ChatWindow::offlineTransFileSuccess);
 
@@ -74,12 +75,15 @@ void ChatWindow::addMessage(MessageInfo info)
         mCurrentMessageList.push_back(info);
         ui->plainTextEdit->append(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(info.timestamp));
         ui->plainTextEdit->append(QString::fromStdString(info.message_text));
+        mEmojiCoder->explain(ui->plainTextEdit, QString::fromStdString(info.message_text));
         messageUpdate();
     }
     else {
     mUnReadMessageList.push_back(info);
     }
 }
+
+
 
 void ChatWindow::addFileArrive(FileInfo info)
 {
