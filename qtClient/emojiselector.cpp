@@ -13,6 +13,8 @@
 #include <QJsonArray>
 #include <QCoreApplication>
 #include <QDebug>
+#include <QDir>
+#include <QTextEdit>
 
 
 class Emoji {
@@ -79,49 +81,75 @@ EmojiSelector::EmojiSelector(QWidget *parent) :
 {
     ui->setupUi(this);
     setWindowTitle("选择表情");
-    resize(400, 300);
+    resize(420, 300);
     // 创建表情模型
     QStandardItemModel *model = new QStandardItemModel(4, 4, this); // 4x4 网格
     setEmojis(model);
     // 创建表格视图
     QTableView *tableView = new QTableView(this);
     tableView->setModel(model);
-    tableView->setFixedSize(380, 200);
+    tableView->setFixedSize(400, 200);
     tableView->setSelectionMode(QAbstractItemView::SingleSelection);
     tableView->setSelectionBehavior(QAbstractItemView::SelectItems);
     tableView->horizontalHeader()->setVisible(false);
     tableView->verticalHeader()->setVisible(false);
 
     // 设置图标大小
-    tableView->setIconSize(QSize(30, 30));
+    tableView->setIconSize(QSize(32, 32));
 
     tableView->resizeColumnsToContents(); // 根据内容调整列宽
     // 调整每列宽度
     for (int i = 0; i < model->columnCount(); ++i) {
         int currentWidth = tableView->columnWidth(i);
-        tableView->setColumnWidth(i, currentWidth - 10); // 调整为更窄的宽度
+        tableView->setColumnWidth(i, currentWidth - 7); // 调整为更窄的宽度
     }
     // 创建布局
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addWidget(tableView);
 
-    // 确认按钮
-    QPushButton *confirmButton = new QPushButton("确认", this);
-    layout->addWidget(confirmButton);
 
     connect(tableView, &QTableView::clicked, this, [this, model](const QModelIndex &index) {
         if (index.isValid()) {
-            QString emoji = model->item(index.row(), index.column())->icon().name();
+
+            QString emoji = model->item(index.row(), index.column())->data().toString();
+            qDebug() << index << emoji;
             // 这里可以处理选择的表情，例如发送信号或保存选择
+            QString emojiStr = QString("#0xa") + emoji;
             emit emojiSelected(emoji);
+            QDialog::accept();
         }
     });
-    connect(confirmButton, &QPushButton::clicked, this, &QDialog::accept);
 }
 
 EmojiSelector::~EmojiSelector()
 {
     delete ui;
+}
+
+int EmojiSelector::explain(QTextEdit *plain, QString context)
+{
+    QString appPath = QCoreApplication::applicationDirPath();
+    QDir appDir(appPath);
+    QString file = appDir.absolutePath() + "/default-emojis/" + context + ".png";
+    qDebug() << "emojiFile : " << file;
+    QTextCursor cursor = plain->textCursor();
+    QTextImageFormat format;
+    format.setName(file);
+    format.setWidth(30);
+    format.setHeight(30);
+
+    if (mEmojiPalinMap.count(context)) {
+        Emoji *emo = mEmojiPalinMap[context];
+        format.setToolTip(context + emo->describe);
+    }
+    cursor.insertImage(format);
+    plain->toPlainText();
+    qDebug() << plain->toPlainText();
+    //TODO: 这里plain是没法解出的，需要再去考虑
+    for (int i = 0; i < 00; i++) {
+
+    }
+    return 1;
 }
 
 
@@ -130,8 +158,12 @@ EmojiSelector::~EmojiSelector()
 //发送，然后在把内容拷贝到textEdit2里，注意解码为表情，进行渲染。发送到服务器后就是QString,
 //到客户端就要进行解码渲染。
 void EmojiSelector::jsonGet() {
-    QFile file("D:/BaiduNetdiskDownload/untitled2/default-emojis/default_config.json");
-
+    // 获取应用程序的完整路径
+    QString appPath = QCoreApplication::applicationDirPath();
+    QDir appDir(appPath);
+    QString proFileDir = appDir.absolutePath();
+    QFile file(proFileDir + "/default-emojis/default_config.json");
+    qDebug() << "exe File Directory:" << proFileDir;
     // 打开文件
     if (!file.open(QIODevice::ReadOnly)) {
         qDebug() << "Could not open file:" << file.errorString();
@@ -172,7 +204,7 @@ void EmojiSelector::jsonGet() {
                 Emoji &emo = *(new Emoji);
                 emo.fromJson(emojiObj);
                 qDebug() << "arrName:" << arrName << ", emojiId:" << emo.emojiId << ", describe:" << emo.describe;
-                EmojiMap[arrName][emo.emojiId] = &emo;
+                mEmojiStructureMap[arrName][emo.emojiId] = &emo;
             }
         }
     }
@@ -191,7 +223,8 @@ void EmojiSelector::jsonGet() {
                 Emoji &emo = *(new Emoji);
                 emo.fromJson(emojiObj);
                 qDebug() << "arrName:" << arrName << ", emojiId:" << emo.emojiId << ", describe:" << emo.describe;
-                EmojiMap[arrName][emo.emojiId] = &emo;
+                mEmojiStructureMap[arrName][emo.emojiId] = &emo;
+                mEmojiPalinMap[emo.emojiId] = &emo;
             }
         }
     }
@@ -205,24 +238,27 @@ void EmojiSelector::setEmojis(QStandardItemModel *model)
     };
     jsonGet();
     int k = 0;
-    for (auto &mapt : EmojiMap) {
+    for (auto &mapt : mEmojiStructureMap) {
         for (auto &emo : mapt.second) {
             Emoji& emoji = *emo.second;
             QString emojiId = emo.first;
             int id = emojiId.toInt();
             if (id > 0) {
-                QString path = ":/emoji/default-emojis/" + QString::number(id) + ".png";
+                QString path = ":/emoji/debug/default-emojis/" + QString::number(id) + ".png";
                 QPixmap pixmap(path); // 每个图标大小
-                QPixmap scaledPixmap = pixmap.scaled(20, 20, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                QPixmap scaledPixmap = pixmap.scaled(30, 30, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         //        pixmap.fill(Qt::transparent);
         //        QPainter painter(&pixmap);
         //        painter.drawText(pixmap.rect(), Qt::AlignCenter, emojis[i]);
                 QStandardItem *item = new QStandardItem();
                 item->setIcon(QIcon(pixmap));
-                item->setData(emojis);
+                item->setData(emoji.emojiId);
                 item->setToolTip(emoji.describe);
                 model->setItem(k / 10, k % 10, item); // 设置图标到模型
                 k++;
+            }
+            else {
+
             }
         }
     }

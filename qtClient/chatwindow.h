@@ -4,6 +4,7 @@
 #include <QWidget>
 #include "Protocol.h"
 class EmojiCoder;
+class EmojiSelector;
 namespace Ui {
 class ChatWindow;
 }
@@ -37,6 +38,9 @@ private slots:
     void on_toolButton_9_clicked();
     void handleCursorPositionChange();
 
+    void on_toolButton_4_clicked();
+
+    void emojiSelected(QString emoji);
 signals:
     void confirmMessage(int sender, int reciver, int start, int end);
     void friendPageUpdate(int);
@@ -47,6 +51,7 @@ private:
     UserInfo mInfo;
     EmojiCoder* mEmojiCoder;
     UserInfo* clientInfo;
+    EmojiSelector *mEmojiSelector;
 };
 
 #endif // CHATWINDOW_H

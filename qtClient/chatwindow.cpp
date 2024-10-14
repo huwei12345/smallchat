@@ -10,7 +10,7 @@
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include "emojiccoder.h"
-
+#include "emojiselector.h"
 ChatWindow::ChatWindow(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::ChatWindow)
@@ -24,10 +24,12 @@ ChatWindow::ChatWindow(QWidget *parent) :
 
     //这两个应该放在网络线程（通用 通信确认业务），但同时，发送完文件也应该通知聊天框，看具体业务。
     //connect(FtpSender::GetInstance(), &FtpSender::ftpFileSendOver, this, &ChatWindow::ftpSendFileSuccess);
-
+    mEmojiSelector = new EmojiSelector;
     connect(ClientNetWork::GetInstance(), &ClientNetWork::offlineTransFileSuccess, this, &ChatWindow::offlineTransFileSuccess);
 
     QObject::connect(ui->plainTextEdit_2, &QTextEdit::cursorPositionChanged, this, &ChatWindow::handleCursorPositionChange);
+
+    connect(mEmojiSelector, &EmojiSelector::emojiSelected, this, &ChatWindow::emojiSelected);
 }
 
 ChatWindow::ChatWindow(UserInfo info, QWidget *parent) :
@@ -263,3 +265,13 @@ void ChatWindow::handleCursorPositionChange() {
 //        }
 //    }
 }
+
+void ChatWindow::emojiSelected(QString emoji) {
+    mEmojiSelector->explain(ui->plainTextEdit_2, emoji);
+}
+
+void ChatWindow::on_toolButton_4_clicked()
+{
+    mEmojiSelector->exec();
+}
+

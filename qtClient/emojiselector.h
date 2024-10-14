@@ -7,7 +7,7 @@
 namespace Ui {
 class EmojiSelector;
 }
-
+class QTextEdit;
 class Emoji;
 
 class EmojiSelector : public QDialog
@@ -17,7 +17,7 @@ class EmojiSelector : public QDialog
 public:
     explicit EmojiSelector(QWidget *parent = nullptr);
     ~EmojiSelector();
-
+    int explain(QTextEdit* , QString context);
     void jsonGet();
 signals:
     void emojiSelected(const QString &emoji);
@@ -26,7 +26,8 @@ signals:
 private:
     void setEmojis(QStandardItemModel *model);
     Ui::EmojiSelector *ui;
-    std::map<QString, std::map<QString, Emoji*>> EmojiMap;
+    std::map<QString, std::map<QString, Emoji*>> mEmojiStructureMap;
+    std::map<QString, Emoji*> mEmojiPalinMap;
 };
 
 #endif // EMOJISELECTOR_H

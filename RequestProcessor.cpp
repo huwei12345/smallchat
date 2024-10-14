@@ -1966,3 +1966,11 @@ bool ProcessGroupJoinReqProcessor::ProcessGroupJoinRequest(Request &request, Gro
 
 群名字通过Qt对象关联
 */
+
+
+/*
+BUG: 第一个朋友的status是错的，在线不在线状态不对，不是由于网络模块变化引起的。
+
+
+
+*/
