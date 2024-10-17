@@ -41,6 +41,8 @@ public:
 
     bool processMessageRead(std::vector<int> messageList);
     static bool getFriendPhoto(UserInfo& info);
+
+    static bool findSpaceFileTree(int userId);
 };
 
 #endif // PROCESSOR_H

@@ -204,6 +204,10 @@ break;
         emit findAllGroupSuccess(rsp);
         break;
     }
+    case FunctionCode::FindSpaceFileTree: {
+        emit findSpaceFileTreeSuccess(rsp);
+        break;
+    }
     default: {
         break;
     }

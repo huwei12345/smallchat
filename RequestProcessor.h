@@ -193,5 +193,11 @@ public:
     bool Notify(Connection *conn, vector<int> &friendList, int mUserId, int state);
 };
 
+
+class ProcessFindSpaceFileTreeProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response& response);
+    bool FindSpaceFileTree(const Request& request, vector<FileInfo>& fileList);
+};
+
 #endif
 

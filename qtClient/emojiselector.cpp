@@ -15,7 +15,9 @@
 #include <QDebug>
 #include <QDir>
 #include <QTextEdit>
-
+#include <QTextInlineObject>
+#include <QTextBlock>
+#include <QTextFrame>
 
 class Emoji {
 public:
@@ -126,6 +128,37 @@ EmojiSelector::~EmojiSelector()
     delete ui;
 }
 
+
+QString extractContentWithImages(QTextEdit *textEdit) {
+    QString result;
+    QTextDocument *document = textEdit->document();
+    QTextCursor cursor(document);
+    cursor.movePosition(QTextCursor::Start);
+    while (!cursor.isNull() && !cursor.atEnd()) {
+        if (cursor.blockFormat().isValid()) {
+            // Get the format of the current selection
+            QTextFormat format = cursor.blockFormat();
+            if (format.isImageFormat()) {
+                QTextImageFormat imageFormat = format.toImageFormat();
+                // Get the image source, adjust as needed
+                QString imageSrc = imageFormat.name(); // Replace with your image source retrieval
+                result += "abx" + imageSrc + "\n";
+                qDebug() << result;
+            } else {
+                result += cursor.block().text() + "\n";
+                qDebug() << result;
+            }
+        } else {
+            // Handle text without an active selection
+            result += cursor.block().text() + "\t\r\n";
+            qDebug() << result;
+        }
+        // Move to the next block
+        cursor.movePosition(QTextCursor::NextBlock);
+    }
+    return result;
+}
+
 int EmojiSelector::explain(QTextEdit *plain, QString context)
 {
     QString appPath = QCoreApplication::applicationDirPath();
@@ -143,12 +176,10 @@ int EmojiSelector::explain(QTextEdit *plain, QString context)
         format.setToolTip(context + emo->describe);
     }
     cursor.insertImage(format);
-    plain->toPlainText();
-    qDebug() << plain->toPlainText();
-    //TODO: 这里plain是没法解出的，需要再去考虑
-    for (int i = 0; i < 00; i++) {
+    plain->setTextCursor(cursor); // 更新文本光标
 
-    }
+    QString text = extractContentWithImages(plain);;
+    qDebug() << text;
     return 1;
 }
 

@@ -19,9 +19,13 @@ public:
     ~MainPage();
     void StoreFileAllow(Response response);
     void StoreFileSuccess(FileInfo info);
+    bool initSpaceFileTree();
+    int init();
+    void addSpaceFileToPage(int i, FileInfo info);
 
 private slots:
     void on_pushButton_clicked();
+    void findSpaceFileTreeSuccess(Response response);
 
     void on_toolButton_clicked();
     void on_toolButton_3_clicked();
@@ -36,6 +40,8 @@ private:
     Ui::MainPage *ui;
     QWidget* returnWindow;
     UserInfo mInfo;
+    int mUserId;
+    std::map<int, FileInfo> mSpaceFileMap;
 };
 
 #endif // MAINPAGE_H

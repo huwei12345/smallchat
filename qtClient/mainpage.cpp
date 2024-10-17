@@ -23,12 +23,28 @@ MainPage::MainPage(QWidget *parent) :
     connect(ClientNetWork::GetInstance(), &ClientNetWork::storeFileResponse, this, &MainPage::StoreFileAllow);
     //ui->treeWidget->setHeaderLabel("Tree Example");
     ui->treeWidget->setContextMenuPolicy(Qt::CustomContextMenu); // 设置上下文菜单策略
+
+    connect(ClientNetWork::GetInstance(), ClientNetWork::findSpaceFileTreeSuccess, this, MainPage::findSpaceFileTreeSuccess);
 }
 
 MainPage::MainPage(UserInfo info, QWidget *parent) :
     MainPage(parent)
 {
     mInfo = info;
+    mUserId = info.user_id;
+}
+
+int MainPage::init() {
+    int ret = initSpaceFileTree();
+    return ret;
+}
+
+bool MainPage::initSpaceFileTree() {
+    bool ret = Processor::findSpaceFileTree(mUserId);
+    if (!ret) {
+        QMessageBox::information(this,"提示","网络不可达！");
+    }
+    return ret;
 }
 
 void MainPage::setReturn(QWidget *widget)
@@ -179,3 +195,29 @@ void MainPage::on_treeWidget_customContextMenuRequested(const QPoint &pos)
     }
 }
 
+void MainPage::addSpaceFileToPage(int i, FileInfo info) {
+
+}
+
+void MainPage::findSpaceFileTreeSuccess(Response response) {
+    std::string mdata = response.mData;
+    MyProtocolStream stream(mdata);
+    int size = 0;
+    stream >> size;
+    for (int i = 0; i < size; i++) {
+        //TODO:ToolButton put in widget
+        FileInfo info;
+            stream
+            >> info.id
+            >> info.parentId
+            >> info.serverFileName
+            >> info.fileType
+            >> info.serverPath
+            >> info.timestamp
+            //>> fileList[i].updated_at
+            >> info.expiredTime;
+        addSpaceFileToPage(i, info);//
+        info.print();
+        mSpaceFileMap[info.id] = info;
+    }
+}

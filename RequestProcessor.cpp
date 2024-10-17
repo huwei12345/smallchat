@@ -1974,3 +1974,79 @@ BUG: 第一个朋友的status是错的，在线不在线状态不对，不是由
 
 
 */
+
+void ProcessFindSpaceFileTreeProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    vector<FileInfo> fileList;
+    bool ret = FindSpaceFileTree(request, fileList);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        response.mhasData = true;
+        //绑定Cache中好友
+        MyProtocolStream stream(response.mData);
+        stream << (int)fileList.size();
+        for (int i = 0; i < fileList.size(); i++) {
+            stream 
+            << fileList[i].id
+            << fileList[i].parentId
+            << fileList[i].serverFileName
+            << fileList[i].fileType
+            << fileList[i].serverPath
+            << fileList[i].timestamp
+            //<< fileList[i].updated_at
+            << fileList[i].expiredTime;
+        }
+    }
+    else {
+        //some error info add
+    }
+}
+
+//目前协议暂时在data里放user_id吧，因为后续有其他用户访问另一个用户的文件的操作。
+//不要用request.mUserId,但是其实应该用另一个Exex，因为某些内容是不能返回给非本人用户的。
+bool ProcessFindSpaceFileTreeProcessor::FindSpaceFileTree(const Request &request, vector<FileInfo> &fileList)
+{
+    std::string mData = request.mData;
+    MyProtocolStream stream(mData);
+    FileInfo info;
+    int user_id = 0;
+    stream >> user_id;
+    
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == NULL) {
+        return false;
+    }
+    //TODO: 联合查询，用户的名字、email等返回
+	sql::PreparedStatement* state2 = conn->prepareStatement(R"(
+        SELECT storage_id, parent_id, item_name, item_type, file_path, created_at, updated_at, expired_time
+        FROM user_storage WHERE user_id = ?;
+        )");
+    state2->setInt(1, user_id);
+    sql::ResultSet *st = state2->executeQuery();
+
+    int id = -1;
+    try {
+        while (st->next()) {
+            info.id = st->getInt("storage_id");
+            info.parentId = st->getInt("parent_id");
+            info.serverFileName = st->getString("item_name");
+            info.fileType = st->getInt("item_type");
+            info.serverPath = st->getString("file_path");
+            info.timestamp = st->getString("description");
+            //info.updated_at = ?
+            info.expiredTime = st->getInt("expired_time");
+            //cout << "id:" << info.id << " name:" << info.role << " email:" << info.group_name << "status:" << info.admin_id << std::endl;
+            fileList.push_back(info);
+        }
+    }
+    catch(sql::SQLException& e) {
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    MysqlPool::GetInstance()->releaseConncetion(conn);
+
+    return true;
+}

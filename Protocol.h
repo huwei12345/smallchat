@@ -27,10 +27,10 @@ public:
     bool readRequest(std::string &requestData);
     // CallBack processRead; //CallBack
     bool processRead();
-    bool sendResponse(int clientSocket, Response *response);
+bool sendResponse(int clientSocket, Response *response);
     bool closeConnection(int flag = 0);
     Session* session;
-    EventLoop* mEvLoop;
+EventLoop* mEvLoop;
 };
 
 enum SessionState {
@@ -101,6 +101,8 @@ namespace FunctionCode {
         SearchAllGroup                            = 29,
         GetAllGroupRequest                        = 30,
         ProcessGroupJoinReq                       = 31,
+
+        FindSpaceFileTree                         = 32,
         //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
     };
 
@@ -140,6 +142,7 @@ namespace FunctionCode {
         "SearchAllGroup      ",
         "GetAllGroupRequest  ",
         "ProcessGroupJoinReq "
+        "FindSpaceFileTree   "
     };
 };
 

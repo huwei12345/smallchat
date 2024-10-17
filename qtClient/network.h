@@ -33,7 +33,7 @@ signals:
     void getAllFriendRequestSuccess(Response response);
     void getAllGroupRequestSuccess(Response response);
     void UpDateUserStateSuccess(Response response);
-void ReciveMessageSuccess(Response response);
+    void ReciveMessageSuccess(Response response);
     void MessageArriveClient(Response response);
 
     void createGroupSuccess(Response response);
@@ -46,6 +46,9 @@ void ReciveMessageSuccess(Response response);
     void GetFileFirstSuccess(Response response);
     void GetFileSuccess(Response response);
     void NofifyFileComing(Response response);
+
+    void findSpaceFileTreeSuccess(Response response);
+
 private:
     ClientNetWork();
     QTcpSocket mSocket;
