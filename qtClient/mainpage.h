@@ -1,4 +1,4 @@
-#ifndef MAINPAGE_H
+﻿#ifndef MAINPAGE_H
 #define MAINPAGE_H
 
 #include <QTreeWidgetItem>
@@ -7,6 +7,16 @@
 namespace Ui {
 class MainPage;
 }
+
+class TreeNode {
+public:
+    TreeNode() : parent(nullptr), fileId(-1), item(nullptr) {}
+    TreeNode(int id) : parent(nullptr), fileId(id), item(nullptr) {}
+    TreeNode* parent;
+    std::vector<TreeNode*> son;
+    int fileId;
+    QTreeWidgetItem* item;
+};
 
 class MainPage : public QWidget
 {
@@ -21,7 +31,8 @@ public:
     void StoreFileSuccess(FileInfo info);
     bool initSpaceFileTree();
     int init();
-    void addSpaceFileToPage(int i, FileInfo info);
+    TreeNode* addSpaceFileToPage(FileInfo info);
+    TreeNode *addAllSpaceFileToPage();
 
 private slots:
     void on_pushButton_clicked();
@@ -42,6 +53,8 @@ private:
     UserInfo mInfo;
     int mUserId;
     std::map<int, FileInfo> mSpaceFileMap;
+    TreeNode* mRoot;
+    std::map<int, TreeNode*> idBook;//暂时这么写，后续肯定是只有TreeNode，每次都查找
 };
 
 #endif // MAINPAGE_H

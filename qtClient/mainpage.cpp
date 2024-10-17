@@ -9,6 +9,7 @@
 #include "processor.h"
 #include "ftpsender.h"
 #include "network.h"
+#include <set>
 
 MainPage::MainPage(QWidget *parent) :
     QWidget(parent),
@@ -19,12 +20,13 @@ MainPage::MainPage(QWidget *parent) :
     setWindowIcon(windowIcon);
     setWindowTitle(tr("Qfei"));
     returnWindow = NULL;
+    mRoot = nullptr;
     ui->pushButton->setShortcut(tr("Esc"));
     connect(ClientNetWork::GetInstance(), &ClientNetWork::storeFileResponse, this, &MainPage::StoreFileAllow);
     //ui->treeWidget->setHeaderLabel("Tree Example");
     ui->treeWidget->setContextMenuPolicy(Qt::CustomContextMenu); // 设置上下文菜单策略
 
-    connect(ClientNetWork::GetInstance(), ClientNetWork::findSpaceFileTreeSuccess, this, MainPage::findSpaceFileTreeSuccess);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::findSpaceFileTreeSuccess, this, &MainPage::findSpaceFileTreeSuccess);
 }
 
 MainPage::MainPage(UserInfo info, QWidget *parent) :
@@ -81,6 +83,7 @@ void MainPage::on_toolButton_clicked()
     info.ClientPath = fileName.toStdString();
     info.serverPath = std::string("userInfo/") + std::to_string(user_id) + std::string("/");
     QFileInfo fileInfo(QString::fromStdString(info.ClientPath));
+
     // 获取文件名（包括扩展名）
     info.serverFileName = fileInfo.fileName().toStdString();
     info.send_id = user_id;
@@ -118,11 +121,20 @@ void MainPage::StoreFileAllow(Response response)
 void MainPage::StoreFileSuccess(FileInfo info)
 {
     //根据info，显示在界面上
+    QTreeWidgetItem* parentItem = nullptr;
+    if (idBook.count(info.parentId)) {
+        parentItem = idBook[info.parentId]->item;
+    }
     QTreeWidgetItem *item = new QTreeWidgetItem;
     item->setText(0, QString::fromStdString(info.serverFileName));
     item->setText(1, QString::fromStdString(info.serverPath));
     item->setText(2, QString::number(info.filesize));
-    ui->treeWidget->addTopLevelItem(item);
+    if (parentItem == nullptr) {
+        ui->treeWidget->addTopLevelItem(item);
+    }
+    else {
+        parentItem->addChild(item);
+    }
 }
 
 void MainPage::on_toolButton_3_clicked()
@@ -195,10 +207,61 @@ void MainPage::on_treeWidget_customContextMenuRequested(const QPoint &pos)
     }
 }
 
-void MainPage::addSpaceFileToPage(int i, FileInfo info) {
+TreeNode* MainPage::addAllSpaceFileToPage() {
+    //O(n^2)遍历建树，层次
+
+    TreeNode* node = nullptr;
+    TreeNode* root = nullptr;
+    for (int i = 0; i < (int)mSpaceFileMap.size(); i++) {
+        //最多进行size次
+        bool insertFlag = false;
+        for (auto& son : mSpaceFileMap) {
+            if (idBook.count(son.second.id)) {
+                continue;
+            }
+            if (son.second.parentId == 0) {
+                //root
+                root = new TreeNode(son.second.id);
+                root->parent = nullptr;
+                idBook[root->fileId] = root;
+                insertFlag = true;
+                QTreeWidgetItem* item = new QTreeWidgetItem;
+
+                item->setText(0, QString::fromStdString(son.second.serverFileName));
+                item->setText(1, QString::fromStdString(son.second.serverPath));
+                item->setText(2, QString::number(son.second.filesize));
+                root->item = item;
+                ui->treeWidget->addTopLevelItem(item);
+            }
+            else if (idBook.count(son.second.parentId)) {
+                node = new TreeNode(son.second.id);
+                node->parent = idBook[son.second.parentId];
+                idBook[son.second.parentId]->son.push_back(node);
+                idBook[son.second.id] = node;
+                insertFlag = true;
+                QTreeWidgetItem* item = new QTreeWidgetItem;
+                item->setText(0, QString::fromStdString(son.second.serverFileName));
+                item->setText(1, QString::fromStdString(son.second.serverPath));
+                item->setText(2, QString::number(son.second.filesize));
+                node->item = item;
+                if (node->parent->item) {
+                    node->parent->item->addChild(item);
+                }
+                else {
+                    qDebug() << "Error parent has no widget";
+                }
+            }
+        }
+    }
+    return root;
+}
+
+TreeNode *MainPage::addSpaceFileToPage(FileInfo info)
+{
 
 }
 
+//findAllFile
 void MainPage::findSpaceFileTreeSuccess(Response response) {
     std::string mdata = response.mData;
     MyProtocolStream stream(mdata);
@@ -216,8 +279,12 @@ void MainPage::findSpaceFileTreeSuccess(Response response) {
             >> info.timestamp
             //>> fileList[i].updated_at
             >> info.expiredTime;
-        addSpaceFileToPage(i, info);//
-        info.print();
+        std::cout << info.serverPath << info.serverFileName << std::endl;
         mSpaceFileMap[info.id] = info;
+    }
+
+    mRoot = addAllSpaceFileToPage();
+    if (!mRoot) {
+        qDebug() << "init Space File Tree Error";
     }
 }

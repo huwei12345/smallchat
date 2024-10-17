@@ -2030,9 +2030,9 @@ bool ProcessFindSpaceFileTreeProcessor::FindSpaceFileTree(const Request &request
             info.id = st->getInt("storage_id");
             info.parentId = st->getInt("parent_id");
             info.serverFileName = st->getString("item_name");
-            info.fileType = st->getInt("item_type");
+            info.fileType = st->getString("item_type");
             info.serverPath = st->getString("file_path");
-            info.timestamp = st->getString("description");
+            info.timestamp = st->getString("created_at");
             //info.updated_at = ?
             info.expiredTime = st->getInt("expired_time");
             //cout << "id:" << info.id << " name:" << info.role << " email:" << info.group_name << "status:" << info.admin_id << std::endl;

@@ -1012,6 +1012,7 @@ void FriendPage::on_toolButton_4_clicked()
     if (mSpacePage == NULL) {
         mSpacePage = new MainPage(mInfo);
         mSpacePage->setReturn(this);
+        mSpacePage->init();
     }
     connect(this, &FriendPage::StoreFileSuccess, mSpacePage, &MainPage::StoreFileSuccess);
     mSpacePage->show();
