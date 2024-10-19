@@ -264,6 +264,7 @@ QString EmojiSelector::extractContentWithImages(QTextEdit *textEdit) {
         // 移动光标到下一个块
         //TODO: nextChar， imageBook or Skip to nextBlock
         if (cursor.atEnd()) {
+            //TODO: 使用while(1) 在此处break是危险的，但目前没有好的办法遍历
             break;
         }
         cursor.movePosition(QTextCursor::NextCharacter);

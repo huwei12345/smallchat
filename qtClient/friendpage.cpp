@@ -919,12 +919,17 @@ void FriendPage::SendFileSuccess(Response response)
     MyProtocolStream stream(mdata);
     bool ret = response.mCode;
     if (ret) {
-        QMessageBox::information(this, "提示", "SendFile %s Over");
         int ftptaskId = 0;
         stream >> ftptaskId;
         FileInfo info = FtpSender::GetInstance()->file(ftptaskId);
         if (info.serviceType == STOREFILE) {
             emit StoreFileSuccess(info);
+        }
+        else if (info.serviceType == SENDTOPERSON) {
+            mChatWindowMap[info.recv_id]->emitSendFiletoPerson(info);
+        }
+        else {
+            QMessageBox::information(this, "提示", "SendFile %s Over");
         }
     }
     else {
@@ -933,6 +938,7 @@ void FriendPage::SendFileSuccess(Response response)
     //TODO:
     //FtpSender::GetInstance()->removeFile(info);
 }
+
 
 //头像按钮,上传头像
 void FriendPage::on_toolButton_5_clicked()

@@ -10,8 +10,10 @@
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPropertyAnimation>
+#include <QSplitter>
 #include <cmath>
 #include "emojiselector.h"
+#include "clientpersoninfo.h"
 ChatWindow::ChatWindow(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::ChatWindow)
@@ -31,6 +33,30 @@ ChatWindow::ChatWindow(QWidget *parent) :
     QObject::connect(ui->plainTextEdit_2, &QTextEdit::cursorPositionChanged, this, &ChatWindow::handleCursorPositionChange);
 
     connect(mEmojiSelector, &EmojiSelector::emojiSelected, this, &ChatWindow::emojiSelected);
+    connect(this, &ChatWindow::sendFiletoPersonSuccess, this, &ChatWindow::sendFiletoPersonSucc);
+
+
+    // 创建一个垂直布局
+    QWidget* widget = ui->widget_2;
+
+    // 创建一个 QSplitter
+    QSplitter *splitter = new QSplitter(Qt::Vertical);
+
+    // 添加左侧和右侧的部件
+    QWidget *upWidget = ui->plainTextEdit;
+    QWidget *downWidget = ui->widget_5;
+
+    // 将部件添加到分隔器
+    splitter->addWidget(upWidget);
+    splitter->addWidget(downWidget);
+
+    // 设置分隔条的初始大小
+    splitter->setSizes(QList<int>({240, 150}));  // 左右部件的初始宽度
+
+    // 将分隔器添加到布局
+    QLayout* layout = widget->layout();
+    layout->addWidget(splitter);
+    // 设置主窗口的布局
 }
 
 ChatWindow::ChatWindow(UserInfo info, QWidget *parent) :
@@ -82,7 +108,7 @@ void ChatWindow::addMessage(MessageInfo info)
         messageUpdate();
     }
     else {
-    mUnReadMessageList.push_back(info);
+        mUnReadMessageList.push_back(info);
     }
 }
 
@@ -90,17 +116,6 @@ void ChatWindow::addMessage(MessageInfo info)
 
 void ChatWindow::addFileArrive(FileInfo info)
 {
-//    if (this->isVisible()) {
-//        printf("isVis");
-//        fflush(stdout);
-//        mCurrentMessageList.push_back(info);
-//        ui->plainTextEdit->appendPlainText(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(info.timestamp));
-//        ui->plainTextEdit->appendPlainText(QString::fromStdString(info.message_text));
-//        messageUpdate();
-//    }
-//    else {
-//    mUnReadMessageList.push_back(info);
-//    }
     MessageInfo infom;
     infom.message_text = "[" + info.serverFileName + " Arrive in " + info.ClientPath + "]";
     if (this->isVisible()) {
@@ -193,6 +208,7 @@ void ChatWindow::showContentWithImages(QString s) {
 
 void ChatWindow::offlineTransFileSuccess(Response rsp)
 {
+    Q_UNUSED(rsp);
 }
 
 void ChatWindow::userMessageRead()
@@ -202,7 +218,63 @@ void ChatWindow::userMessageRead()
     }
 }
 
+void ChatWindow::emitSendFiletoPerson(FileInfo info) {
+    emit sendFiletoPersonSuccess(info);
+}
 
+void ChatWindow::sendFiletoPersonSucc(FileInfo info) {
+
+    if (info.fileType == "PicTure") {
+        //TODO:调试
+        //    if (!imagePath.isEmpty()) {
+        //        QTextCursor cursor = ui->plainTextEdit_2->textCursor();
+        //        cursor.insertImage(imagePath);
+        //    }
+        QString imagePath = QString::fromStdString(info.ClientPath);
+        if (!imagePath.isEmpty()) {
+            // 插入文件名作为超链接
+            QTextCursor cursor = ui->plainTextEdit->textCursor();
+            cursor.movePosition(QTextCursor::End); // 移动到末尾
+            cursor.insertText("File: "); // 插入文件前缀
+
+            // 设置超链接格式
+            QTextCharFormat linkFormat;
+            linkFormat.setForeground(Qt::blue); // 设置字体颜色为蓝色
+            linkFormat.setFontUnderline(true); // 设置字体为下划线
+            cursor.insertText(QFileInfo(imagePath).fileName(), linkFormat);
+            cursor.insertText("\n"); // 插入换行
+
+            // 插入可点击的文件名
+            QTextImageFormat format;
+            format.setName(imagePath);
+            format.setWidth(80);
+            format.setHeight(80);
+            format.setToolTip(imagePath);
+            cursor.insertImage(format);
+            // 插入可点击的文件名
+            ui->plainTextEdit->setTextCursor(cursor); // 更新光标位置
+        }
+        return;
+    }
+
+    MessageInfo infom;
+    infom.message_text = "[" + info.ClientPath + " Send Success " + "]";
+    if (this->isVisible()) {
+        printf("isVis");
+        fflush(stdout);
+        mCurrentMessageList.push_back(infom);
+        //TODO:修改显示
+        QDateTime currentDateTime = QDateTime::currentDateTime();
+        QString currentDateTimeStr = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
+
+        ui->plainTextEdit->append(QString::fromStdString(ClientPersonInfo::GetInstance()->username) + "           " + currentDateTimeStr);
+        ui->plainTextEdit->append(QString::fromStdString(infom.message_text));
+        messageUpdate();
+    }
+    else {
+        mUnReadMessageList.push_back(infom);
+    }
+}
 
 //发送给好友文件
 void ChatWindow::on_toolButton_5_clicked()
@@ -228,9 +300,32 @@ void ChatWindow::on_toolButton_5_clicked()
     info.send_id = user_id;
     info.recv_id = this->mInfo.user_id;
     info.serviceType = FileServerType::SENDTOPERSON;
+    info.fileType = "PicTure";
     FtpSender::GetInstance()->addFile(info);
     bool ret = Processor::SendFile(info);
+    if (!ret) {
+        QMessageBox::information(this,"提示","网络不可达！");
+    }
+
+    MessageInfo infom;
+    infom.message_text = "[" + info.ClientPath + " Send Begin... " + "]";
+    if (this->isVisible()) {
+        printf("isVis");
+        fflush(stdout);
+        mCurrentMessageList.push_back(infom);
+        //TODO:修改显示
+        QDateTime currentDateTime = QDateTime::currentDateTime();
+        QString currentDateTimeStr = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
+
+        ui->plainTextEdit->append(QString::fromStdString(ClientPersonInfo::GetInstance()->username) + "           " + currentDateTimeStr);
+        ui->plainTextEdit->append(QString::fromStdString(infom.message_text));
+        messageUpdate();
+    }
+    else {
+        mUnReadMessageList.push_back(infom);
+    }
 }
+
 /*
 QFileInfo fileInfo(filePath);
 
@@ -250,12 +345,32 @@ QFileInfo fileInfo(filePath);
 void ChatWindow::on_toolButton_8_clicked()
 {
     QString imagePath = QFileDialog::getOpenFileName(this, "Select Image", "", "Images (*.png *.jpg *.jpeg *.bmp)");
+    //D:/easybcd.zip
     if (!imagePath.isEmpty()) {
-        QTextCursor cursor = ui->plainTextEdit_2->textCursor();
-        cursor.insertImage(imagePath);
+        qDebug() << "Selected file:" << imagePath;
+    } else {
+        qDebug() << "No file selected.";
+        return;
     }
+    FileInfo info;
+    info.Generate();
+    info.ClientPath = imagePath.toStdString();
+    info.serverPath = std::to_string(user_id) + string("/");
+    QFileInfo fileInfo(QString::fromStdString(info.ClientPath));
+    // 获取文件名（包括扩展名）
+    info.serverFileName = fileInfo.fileName().toStdString();
+    info.send_id = user_id;
+    info.recv_id = this->mInfo.user_id;
+    info.serviceType = FileServerType::SENDTOPERSON;
+    FtpSender::GetInstance()->addFile(info);
+    bool ret = Processor::SendFile(info);
+    if (!ret) {
+        QMessageBox::information(this,"提示","网络不可达！");
+    }
+    return;
 }
 
+//文件2
 void ChatWindow::on_toolButton_9_clicked()
 {
     QString filePath = QFileDialog::getOpenFileName(this, "Select File", "", "All Files (*)");
@@ -315,4 +430,3 @@ void ChatWindow::on_toolButton_7_clicked()
 {
     sendMessage("0xa500");
 }
-

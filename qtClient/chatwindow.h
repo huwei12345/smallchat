@@ -28,6 +28,7 @@ public:
     void sharkWindow();
 
     bool sendMessage(const QString &content);
+    void emitSendFiletoPerson(FileInfo info);
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -45,10 +46,11 @@ private slots:
 
     void emojiSelected(QString emoji);
     void on_toolButton_7_clicked();
-
+    void sendFiletoPersonSucc(FileInfo info);
 signals:
     void confirmMessage(int sender, int reciver, int start, int end);
     void friendPageUpdate(int);
+    void sendFiletoPersonSuccess(FileInfo info);
 public slots:
     void userMessageRead();
 private:

@@ -144,6 +144,7 @@ void MainPage::StoreFileAllow(Response response)
 
 void MainPage::StoreFileSuccess(FileInfo info)
 {
+    QMessageBox::information(this, "提示", "SendFile %s Over");
     //根据info，显示在界面上
     QTreeWidgetItem* parentItem = nullptr;
     if (idBook.count(info.parentId)) {

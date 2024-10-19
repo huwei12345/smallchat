@@ -217,7 +217,7 @@ enum FileServerType {
     SENDTOGROUP,
     STOREFILE,
     STORETIMEFILE,
-    ARRIVEFROMPOG//从他人或者群来的文件
+    ARRIVEFROMPOG,//从他人或者群来的文件
 };
 
 class FileInfo {
