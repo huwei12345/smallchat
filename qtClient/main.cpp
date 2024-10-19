@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 
 
     ftpSender->start();
-
+    cout << FunctionCode::FindSpaceFileTree << FunctionCode::FunctionCodeString[FunctionCode::FindSpaceFileTree] << endl;
     /*framelessWidget w;
     w.setWindowFlag(Qt::FramelessWindowHint);//设置无边框属性
     w.setAttribute(Qt::WA_TranslucentBackground);//设置背景透明

@@ -6,10 +6,11 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QMessageBox>
+#include <QSplitter>
 #include "processor.h"
 #include "ftpsender.h"
 #include "network.h"
-#include <set>
+#include <bits/stl_set.h>
 
 MainPage::MainPage(QWidget *parent) :
     QWidget(parent),
@@ -27,6 +28,29 @@ MainPage::MainPage(QWidget *parent) :
     ui->treeWidget->setContextMenuPolicy(Qt::CustomContextMenu); // 设置上下文菜单策略
 
     connect(ClientNetWork::GetInstance(), &ClientNetWork::findSpaceFileTreeSuccess, this, &MainPage::findSpaceFileTreeSuccess);
+
+
+    // 创建一个垂直布局
+    QWidget* widget = ui->widget_2;
+
+    // 创建一个 QSplitter
+    QSplitter *splitter = new QSplitter(Qt::Horizontal);
+
+    // 添加左侧和右侧的部件
+    QWidget *leftWidget = ui->treeWidget;
+    QWidget *rightWidget = ui->widget;
+
+    // 将部件添加到分隔器
+    splitter->addWidget(leftWidget);
+    splitter->addWidget(rightWidget);
+
+    // 设置分隔条的初始大小
+    splitter->setSizes(QList<int>({200, 200}));  // 左右部件的初始宽度
+
+    // 将分隔器添加到布局
+    QLayout* layout = widget->layout();
+    layout->addWidget(splitter);
+    // 设置主窗口的布局
 }
 
 MainPage::MainPage(UserInfo info, QWidget *parent) :

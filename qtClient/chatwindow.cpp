@@ -9,7 +9,8 @@
 #include <QKeyEvent>
 #include <QMessageBox>
 #include <QPlainTextEdit>
-#include "emojiccoder.h"
+#include <QPropertyAnimation>
+#include <cmath>
 #include "emojiselector.h"
 ChatWindow::ChatWindow(QWidget *parent) :
     QWidget(parent),
@@ -61,7 +62,8 @@ void ChatWindow::showChatContent()
     printf("size = %d\n", (int)mUnReadMessageList.size());
     for (int i = 0; i < (int)mUnReadMessageList.size(); i++) {
         ui->plainTextEdit->append(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(mUnReadMessageList[i].timestamp));
-        ui->plainTextEdit->append(QString::fromStdString(mUnReadMessageList[i].message_text));
+        showContentWithImages(QString::fromStdString(mUnReadMessageList[i].message_text));
+
         mCurrentMessageList.push_back(mUnReadMessageList[i]);
     }
     messageUpdate();
@@ -70,14 +72,13 @@ void ChatWindow::showChatContent()
 
 void ChatWindow::addMessage(MessageInfo info)
 {
-//单条消息，显示 切换 显示
+    //单条消息，显示 切换 显示
     if (this->isVisible()) {
         printf("isVis");
         fflush(stdout);
         mCurrentMessageList.push_back(info);
         ui->plainTextEdit->append(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(info.timestamp));
-        ui->plainTextEdit->append(QString::fromStdString(info.message_text));
-        mEmojiCoder->explain(ui->plainTextEdit, QString::fromStdString(info.message_text));
+        showContentWithImages(QString::fromStdString(info.message_text));
         messageUpdate();
     }
     else {
@@ -129,10 +130,7 @@ void ChatWindow::keyPressEvent(QKeyEvent *event)
     }
 }
 
-//发送消息
-void ChatWindow::on_pushButton_clicked()
-{
-    std::string content = ui->plainTextEdit_2->toPlainText().toStdString();
+bool ChatWindow::sendMessage(const QString &content) {
     if (content != "") {
         QDateTime currentDateTime = QDateTime::currentDateTime();
         std::string name = ((FriendPage*)returnWindow)->mInfo.username;
@@ -143,25 +141,58 @@ void ChatWindow::on_pushButton_clicked()
         info.sender_id = mUserId;
         info.timestamp = currentDateTimeStr.toStdString();
         //此处应优化为以info为参数
-        bool ret = Processor::SendMessage(mUserId, content);
+        bool ret = Processor::SendMessage(mUserId, content.toStdString());
         if (!ret) {
             QMessageBox::information(this,"提示","网络不可达！");
-            QString s = QString::fromStdString(content);
             ui->plainTextEdit->append(QString::fromStdString(name) + "           " + currentDateTimeStr);
-            ui->plainTextEdit->append(s);
+            showContentWithImages(content);
             ui->plainTextEdit->append("Trans failure......Try Again\n");
-            return;
+            return false;
         }
-        QString s = QString::fromStdString(content);
         ui->plainTextEdit->append(QString::fromStdString(name) + "           " + currentDateTimeStr);
-        ui->plainTextEdit->append(s);
+        showContentWithImages(content);
         mCurrentMessageList.push_back(info);
     }
+    return true;
+}
+
+//发送消息
+void ChatWindow::on_pushButton_clicked()
+{
+    QString content = mEmojiSelector->extractContentWithImages(ui->plainTextEdit_2);
+    sendMessage(content);
+}
+
+
+
+//抖动窗口
+void ChatWindow::sharkWindow() {
+    QPropertyAnimation *animation = new QPropertyAnimation(this, "geometry");
+    animation->setDuration(200);
+    animation->setLoopCount(3);
+    animation->setKeyValueAt(0, this->geometry());
+    int x = this->x();
+    int y = this->y();
+    for (int i = 1; i <= 4; ++i) {
+        animation->setKeyValueAt(0.25 * i, QRect(x + 2 * pow(-1, i), y + 10 * i, this->width(), this->height()));
+        //animation->setKeyValueAt(0.5 * i + 0.25, QRect(button->x() + 5 * i, button->y(), button->width(), button->height()));
+    }
+    animation->start();
+}
+
+//解析表情
+void ChatWindow::showContentWithImages(QString s) {
+    ui->plainTextEdit->append("");
+    if (s == "0xa500") {
+        ui->plainTextEdit->insertPlainText("抖动窗口！");
+        sharkWindow();
+        return;
+    }
+    mEmojiSelector->showContentWithImages(ui->plainTextEdit, s);
 }
 
 void ChatWindow::offlineTransFileSuccess(Response rsp)
 {
-
 }
 
 void ChatWindow::userMessageRead()
@@ -215,6 +246,7 @@ QFileInfo fileInfo(filePath);
     QString extension = fileInfo.suffix();
 */
 
+//发送图片
 void ChatWindow::on_toolButton_8_clicked()
 {
     QString imagePath = QFileDialog::getOpenFileName(this, "Select Image", "", "Images (*.png *.jpg *.jpeg *.bmp)");
@@ -266,6 +298,9 @@ void ChatWindow::handleCursorPositionChange() {
 //    }
 }
 
+
+//从edit里读取出QString,然后在位置中加入表情的代号如#0xa301，然后清空edit，重新绘制，
+//绘制的时候如果是字符直接写，如果是表情，那么替换为表情图片。
 void ChatWindow::emojiSelected(QString emoji) {
     mEmojiSelector->explain(ui->plainTextEdit_2, emoji);
 }
@@ -273,5 +308,11 @@ void ChatWindow::emojiSelected(QString emoji) {
 void ChatWindow::on_toolButton_4_clicked()
 {
     mEmojiSelector->exec();
+}
+
+//抖动窗口
+void ChatWindow::on_toolButton_7_clicked()
+{
+    sendMessage("0xa500");
 }
 

@@ -10,7 +10,7 @@ public:
     Processor();
     static bool Login(std::string& username, std::string& password);
     static bool Register(std::string& username, std::string& password, std::string& email);
-    static bool SendMessage(int reciveId, std::string& content);
+    static bool SendMessage(int reciveId, const string &content);
     static bool FindFriend(int friendId);
     static bool FindFriendByName(std::string &friendName);
     static bool AddFriend(int friendId);

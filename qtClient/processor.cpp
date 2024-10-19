@@ -51,7 +51,7 @@ bool Processor::Register(string& username, string& password, string& email) {
     return false;
 }
 
-bool Processor::SendMessage(int reciveId, string& content) {
+bool Processor::SendMessage(int reciveId, const string& content) {
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     MessageInfo message;
     message.receiver_id = reciveId;

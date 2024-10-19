@@ -16,7 +16,6 @@ SOURCES += \
     chatwindow.cpp \
     clientpersoninfo.cpp \
     creategrouppage.cpp \
-    emojiccoder.cpp \
     emojiselector.cpp \
     findfriendpage.cpp \
     framelessWidget.cpp \
@@ -47,7 +46,6 @@ HEADERS += \
     chatwindow.h \
     clientpersoninfo.h \
     creategrouppage.h \
-    emojiccoder.h \
     emojiselector.h \
     findfriendpage.h \
     framelessWidget.h \

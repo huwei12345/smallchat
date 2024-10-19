@@ -27,7 +27,7 @@ public:
     bool readRequest(std::string &requestData);
     // CallBack processRead; //CallBack
     bool processRead();
-    bool sendResponse(int clientSocket, Response *response);
+bool sendResponse(int clientSocket, Response *response);
     bool closeConnection(int flag = 0);
     Session* session;
 EventLoop* mEvLoop;
@@ -131,21 +131,19 @@ namespace FunctionCode {
 //上送文件，头像、图片、文件等
         "StartUpLoadFile     ",
         "UpLoadFileSuccess   ",
-        
         "GetFile             ",
         "GetFileSuccess      ",
         "GetFileThird        ",
-        
+
         "NofifyFileComing    ",
         "AgreeRecvFile       ",
         "TransFileOver       ",
-        
+
         "GetAllOfflineFile   ",
         "GetOfflineFile      ",
         "SearchAllGroup      ",
         "GetAllGroupRequest  ",
         "ProcessGroupJoinReq ",
-        
         "FindSpaceFileTree   "
     };
 };

@@ -18,7 +18,7 @@
 #include <QTextInlineObject>
 #include <QTextBlock>
 #include <QTextFrame>
-
+#include <set>
 class Emoji {
 public:
     // 构造函数
@@ -65,6 +65,7 @@ public:
     QString emojiId;
     QString describe;
     QString qzoneCode;
+    QString path;
     int qcid;
     int emojiType;
     int aniStickerPackId;
@@ -109,7 +110,7 @@ EmojiSelector::EmojiSelector(QWidget *parent) :
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addWidget(tableView);
 
-
+    //表情选择处理函数lambda
     connect(tableView, &QTableView::clicked, this, [this, model](const QModelIndex &index) {
         if (index.isValid()) {
 
@@ -129,34 +130,152 @@ EmojiSelector::~EmojiSelector()
 }
 
 
-QString extractContentWithImages(QTextEdit *textEdit) {
-    QString result;
+//重载 当复制文件和图片到TextEdit里的处理函数，弹出对话框，确认发送。
+//图片进行一些修剪
+
+//显示TextEdit最好用ListWidget.
+
+//重载ListWidget的勾选处理函数。
+
+int getRealId(const QString& str) {
+    if (str.isEmpty()) {
+        return -1; // 使用 -1 表示无效输入
+    }
+    int ret = 0;
+    for (int i = 0; i < str.size(); i++) {
+        if (str[i].isDigit()) {
+            ret = ret * 10 + str[i].digitValue(); // 使用 digitValue() 获取数字
+        } else if (str[i] == ' ') {
+            break; // 遇到空格时停止
+        } else {
+            // 遇到非法字符，返回 -1 或其他明确的错误指示符
+            return -1;
+        }
+    }
+
+    return ret; // 返回解析得到的 ID
+}
+
+//解码
+bool EmojiSelector::showContentWithImages(QTextEdit *textEdit, QString context) {
+    //从好友到本人,context show in TextEdit
+    QString tmp;
+    for (int i = 0; i < (int)context.size(); ) {
+        if (context[i] == '#' && i + 5 < (int)context.size()) {
+            QString subStr = context.mid(i, 10);
+            qDebug() << "subStr" << subStr;
+            if (subStr.startsWith("#0xa")) {
+                int id = getRealId(subStr.mid(4));
+                QString numberStr = QString::number(id);
+                qDebug() << "number" << id << " sub " << subStr;
+                int digit = numberStr.size();
+                if (i + 4 + digit < context.size() && context[i + 4 + digit] == ' ') {
+                    if (!tmp.isEmpty()) {
+                        textEdit->insertPlainText(tmp);
+                        tmp.clear();
+                    }
+                    if (mEmojiPalinMap.count(numberStr)) {
+                        Emoji* emo = mEmojiPalinMap[numberStr];
+                        QTextCursor cursor = textEdit->textCursor();
+                        QTextImageFormat format;
+                        format.setName(emo->path);
+                        format.setWidth(30);
+                        format.setHeight(30);
+                        format.setToolTip(context + emo->describe);
+                        cursor.insertImage(format);
+                        textEdit->setTextCursor(cursor); // 更新文本光标
+                        i = i + 4 + digit + 1;
+                    }
+                    else {
+                        tmp += context[i];
+                        i++;
+                        continue;
+                    }
+                    continue;
+                }
+                else {
+                    tmp += context[i];
+                    i++;
+                    continue;
+                }
+            }
+        }
+        else {
+            tmp += context[i];
+            i++;
+        }
+    }
+    if (!tmp.isEmpty()) {
+        textEdit->insertPlainText(tmp);
+        tmp.clear();
+    }
+    //textEdit->append("");
+    return true;
+}
+
+//编码
+QString EmojiSelector::extractContentWithImages(QTextEdit *textEdit) {
     QTextDocument *document = textEdit->document();
     QTextCursor cursor(document);
     cursor.movePosition(QTextCursor::Start);
-    while (!cursor.isNull() && !cursor.atEnd()) {
-        if (cursor.blockFormat().isValid()) {
-            // Get the format of the current selection
-            QTextFormat format = cursor.blockFormat();
-            if (format.isImageFormat()) {
-                QTextImageFormat imageFormat = format.toImageFormat();
-                // Get the image source, adjust as needed
-                QString imageSrc = imageFormat.name(); // Replace with your image source retrieval
-                result += "abx" + imageSrc + "\n";
-                qDebug() << result;
-            } else {
-                result += cursor.block().text() + "\n";
-                qDebug() << result;
+    cursor.movePosition(QTextCursor::NextCharacter);
+    QString plainText;
+    std::set<QString> imageBook;
+    while (1) {
+        QTextCharFormat charFormat = cursor.charFormat(); // 仅调用一次
+        qDebug() << "pos:" << cursor.position() << " Type:" << charFormat.type() << "  ObjType:" << charFormat.objectType();
+        // 检查是否是图片
+        if (charFormat.isImageFormat()) {
+            QTextImageFormat imageFormat = charFormat.toImageFormat();
+            QString imageUrl = imageFormat.name();  // 获取图片地址
+            qDebug() << "Image URL:" << imageUrl;
+            Emoji* curEmoji = nullptr;
+            if (imageUrl.indexOf("default-emojis") != -1) {
+                for (auto &emoji : mEmojiPalinMap) {
+                    QFileInfo info(emoji.second->path);
+                    QFileInfo info2(imageUrl);
+                    if (info2.fileName() == info.fileName()) {
+                        curEmoji = emoji.second;
+                        break;
+                    }
+                }
+                if (curEmoji != nullptr) {
+                    plainText += QString("#0xa") + curEmoji->emojiId + " ";
+                }
+                else {
+                    //未找到该表情，不处理，跳过
+                    qDebug() << "can not find default-emojis " << imageUrl;
+                    cursor.movePosition(QTextCursor::NextCharacter);
+                    continue; // 直接跳到下一个字符
+                }
             }
-        } else {
-            // Handle text without an active selection
-            result += cursor.block().text() + "\t\r\n";
-            qDebug() << result;
+            else {
+                // 跳过非表情
+                cursor.movePosition(QTextCursor::NextCharacter);
+                continue; // 直接跳到下一个字符
+            }
         }
-        // Move to the next block
-        cursor.movePosition(QTextCursor::NextBlock);
+        else {
+            int position = cursor.position() - 1;  // 获取当前光标位置
+            // 使用字符位置获取文本字符
+            QChar currentChar = document->characterAt(position);
+            plainText += currentChar;
+        }
+        // 移动光标到下一个块
+        //TODO: nextChar， imageBook or Skip to nextBlock
+        if (cursor.atEnd()) {
+            break;
+        }
+        cursor.movePosition(QTextCursor::NextCharacter);
     }
-    return result;
+    qDebug() << "plainText: "<< plainText;
+    return plainText;
+}
+
+
+int EmojiSelector::cxplain(QTextEdit *plaintest, QTextEdit *plain, QString context) {
+    QString text = extractContentWithImages(plaintest);
+    showContentWithImages(plain, text);
 }
 
 int EmojiSelector::explain(QTextEdit *plain, QString context)
@@ -177,9 +296,6 @@ int EmojiSelector::explain(QTextEdit *plain, QString context)
     }
     cursor.insertImage(format);
     plain->setTextCursor(cursor); // 更新文本光标
-
-    QString text = extractContentWithImages(plain);;
-    qDebug() << text;
     return 1;
 }
 
@@ -234,7 +350,7 @@ void EmojiSelector::jsonGet() {
                 QJsonObject emojiObj = value.toObject();
                 Emoji &emo = *(new Emoji);
                 emo.fromJson(emojiObj);
-                qDebug() << "arrName:" << arrName << ", emojiId:" << emo.emojiId << ", describe:" << emo.describe;
+                qDebug() << "arrName:" << arrName << ", emojiId:" << emo.emojiId << ", describe:" << emo.describe << "path: " << emo.path;
                 mEmojiStructureMap[arrName][emo.emojiId] = &emo;
             }
         }
@@ -276,15 +392,13 @@ void EmojiSelector::setEmojis(QStandardItemModel *model)
             int id = emojiId.toInt();
             if (id > 0) {
                 QString path = ":/emoji/debug/default-emojis/" + QString::number(id) + ".png";
+                emoji.path = path;
                 QPixmap pixmap(path); // 每个图标大小
                 QPixmap scaledPixmap = pixmap.scaled(30, 30, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        //        pixmap.fill(Qt::transparent);
-        //        QPainter painter(&pixmap);
-        //        painter.drawText(pixmap.rect(), Qt::AlignCenter, emojis[i]);
                 QStandardItem *item = new QStandardItem();
                 item->setIcon(QIcon(pixmap));
                 item->setData(emoji.emojiId);
-                item->setToolTip(emoji.describe);
+                item->setToolTip(emoji.emojiId + emoji.describe);
                 model->setItem(k / 10, k % 10, item); // 设置图标到模型
                 k++;
             }

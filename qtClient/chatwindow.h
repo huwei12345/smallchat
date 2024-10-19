@@ -24,7 +24,10 @@ public:
     vector<MessageInfo> mCurrentMessageList;//包括已读取和已发送和一些历史记录，可能需要持久化
     int mUserId;
     void showChatContent();
+    void showContentWithImages(QString s);
+    void sharkWindow();
 
+    bool sendMessage(const QString &content);
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -41,6 +44,8 @@ private slots:
     void on_toolButton_4_clicked();
 
     void emojiSelected(QString emoji);
+    void on_toolButton_7_clicked();
+
 signals:
     void confirmMessage(int sender, int reciver, int start, int end);
     void friendPageUpdate(int);
