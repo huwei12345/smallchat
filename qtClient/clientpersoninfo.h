@@ -1,6 +1,7 @@
 ﻿#ifndef CLIENTPERSONINFO_H
 #define CLIENTPERSONINFO_H
 #include "Protocol.h"
+#include <QIcon>
 #include <string>
 class ClientPersonInfo
 {
@@ -18,7 +19,7 @@ public:
     std::string address;
     std::string friendStatus;
     std::string avatar_localPath;
-
+    QIcon photo;
 private:
     static ClientPersonInfo* info;
     ClientPersonInfo() : user_id(0), username(""), email(""), full_name(""), avatar_url(""),

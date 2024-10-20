@@ -351,7 +351,7 @@ void EmojiSelector::jsonGet() {
                 QJsonObject emojiObj = value.toObject();
                 Emoji &emo = *(new Emoji);
                 emo.fromJson(emojiObj);
-                qDebug() << "arrName:" << arrName << ", emojiId:" << emo.emojiId << ", describe:" << emo.describe << "path: " << emo.path;
+                //qDebug() << "arrName:" << arrName << ", emojiId:" << emo.emojiId << ", describe:" << emo.describe << "path: " << emo.path;
                 mEmojiStructureMap[arrName][emo.emojiId] = &emo;
             }
         }
@@ -370,7 +370,7 @@ void EmojiSelector::jsonGet() {
                 QJsonObject emojiObj = value.toObject();
                 Emoji &emo = *(new Emoji);
                 emo.fromJson(emojiObj);
-                qDebug() << "arrName:" << arrName << ", emojiId:" << emo.emojiId << ", describe:" << emo.describe;
+                //qDebug() << "arrName:" << arrName << ", emojiId:" << emo.emojiId << ", describe:" << emo.describe;
                 mEmojiStructureMap[arrName][emo.emojiId] = &emo;
                 mEmojiPalinMap[emo.emojiId] = &emo;
             }

@@ -99,7 +99,7 @@ private:
     int mUserId;
 
 
-    std::vector<UserInfo> mFriendList;
+    std::map<int, UserInfo> mFriendMap;
     std::map<int, GroupInfo> mGroupList;
 
     std::map<int, ChatWindow*> mChatWindowMap;

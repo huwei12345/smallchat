@@ -23,6 +23,8 @@
 #include "ftpsender.h"
 #include "globalvaria.h"
 #include "mainpage.h"
+#include "personcache.h"
+
 bool FriendPage::initPage() {
     setWindowTitle(tr("Qfei"));
     // 设置图片，可以是本地文件路径或者网络图片URL
@@ -63,6 +65,7 @@ bool FriendPage::initPage() {
     //获取 服务器对客户端已经收发完成消息的相应，服务器的响应文件操作成功，非FTP的文件操作成功
     connect(ClientNetWork::GetInstance(), &ClientNetWork::GetFileSuccess, this, &FriendPage::GetFileSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::UpLoadFileSuccess, this, &FriendPage::SendFileSuccess);
+    PersonCache::GetInstance()->setPersonPhoto(0, icon);
     return true;
 }
 
@@ -157,6 +160,7 @@ int FriendPage::init() {
 
     ret &= initMyPhoto();
 
+    //TODO:最好在打开chatWindow时再初始化。
     ret &= initAllOfflineFile();
 
     ret &= initGroupList();
@@ -166,8 +170,8 @@ int FriendPage::init() {
 
 bool FriendPage::initFriendPhoto() {
     //发送一大堆图片获取命令，根据在获取朋友列表里得到的url
-    for (size_t i = 0; i < mFriendList.size(); i++) {
-        getFriendPhoto(mFriendList[i]);
+    for (auto person : mFriendMap) {
+        getFriendPhoto(person.second);
     }
     return true;
 }
@@ -196,6 +200,9 @@ int FriendPage::getFriendPhoto(UserInfo& userinfo) {
             mFriendButton[userinfo.user_id]->setIcon(*icon);
             mPhotoMap[userinfo.user_id] = icon;
             mFriendButton[userinfo.user_id]->setIconSize(QSize(50, 50));
+            PersonCache::GetInstance()->setPersonPhoto(userinfo.user_id, *icon);
+            qDebug() << "333333333333333333333333" << userinfo.user_id;
+            mChatWindowMap[userinfo.user_id]->updateUserPhoto();
         } else {
             // 文件不存在，给用户提示
             QMessageBox::warning(nullptr, "警告", "常规头像文件不存在[客户端错误1]");
@@ -235,6 +242,7 @@ bool FriendPage::initMyPhoto() {
             QIcon icon(filePath);
             ui->toolButton_5->setIcon(icon);
             ui->toolButton_5->setIconSize(QSize(50, 50));
+            ClientPersonInfo::GetInstance()->photo = icon;
         } else {
             // 文件不存在，给用户提示
             QMessageBox::warning(nullptr, "警告", "常规头像文件不存在[客户端错误2]");
@@ -321,7 +329,8 @@ void FriendPage::findAllFriendSuccess(Response response)
         stream2 >> info.user_id >> info.friendStatus >> info.username >> info.email >> info.avatar_url >> info.status;
         addFriendToPage(i, info);//
         info.print();
-        mFriendList.push_back(info);
+        mFriendMap[info.user_id] = info;
+        PersonCache::GetInstance()->addPerson(info);
         ChatWindow* chatWindow = new ChatWindow(info);
         mChatWindowMap[info.user_id] = chatWindow;
         connect(this, &FriendPage::userMessageUnRead, chatWindow, &ChatWindow::userMessageRead);
@@ -351,22 +360,22 @@ void FriendPage::findAllGroupSuccess(Response response)
 }
 
 void FriendPage::initFriendState() {
-    for (size_t i = 0; i < mFriendList.size(); i++) {
-        QToolButton* button = mFriendButton[mFriendList[i].user_id];
-        if (mFriendList[i].status == SessionState::ONLINE) {
-            QIcon *icon = mPhotoMap[mFriendList[i].user_id];
+    for (auto &person : mFriendMap) {
+        QToolButton* button = mFriendButton[person.second.user_id];
+        if (person.second.status == SessionState::ONLINE) {
+            QIcon *icon = mPhotoMap[person.second.user_id];
             QPixmap pix = icon->pixmap(100, 100, QIcon::Normal);
             button->setIcon(pix);
             button->setIconSize(pix.size());
         }
-        else if (mFriendList[i].status == SessionState::ONLINE) {
-            QIcon *icon = mPhotoMap[mFriendList[i].user_id];
+        else if (person.second.status == SessionState::ONLINE) {
+            QIcon *icon = mPhotoMap[person.second.user_id];
             QPixmap pix = icon->pixmap(100, 100, QIcon::Disabled);
             button->setIcon(pix);
             button->setIconSize(pix.size());
         }
         else {
-            QIcon *icon = mPhotoMap[mFriendList[i].user_id];
+            QIcon *icon = mPhotoMap[person.second.user_id];
             QPixmap pix = icon->pixmap(100, 100, QIcon::Disabled);
             button->setIcon(pix);
             button->setIconSize(pix.size());
@@ -428,6 +437,7 @@ void FriendPage::getAllOfflineFileSuccess(Response response)
         //有新消息来时添加text,点击后，出现新消息后，删除text
         mFriendButton[info.send_id]->setText(str + "  [New Message]");
 
+        //这里不一定接收完，需要在文件传输完毕后的槽函数里进行
         //这个ChatWindow一定一定已经在上面一个函数里创建了
         mChatWindowMap[info.send_id]->addFileArrive(info);
     }
@@ -479,8 +489,6 @@ void FriendPage::getAllGroupRequestSuccess(Response response)
                 >> info.age >> info.address
                 >> info.groupId >> info.group_name >> info.applyTimeStamp;
         mGroupRequestSet.insert(info);
-        //friendRequestArrive(info);
-        //addFriendToPage(i, info.username);//
         printf("user[%d]%s apply join [%d]%s group\n", info.user_id, info.username.c_str(), info.groupId, info.group_name.c_str());
         fflush(stdout);
     }
@@ -613,6 +621,7 @@ bool FriendPage::addGroupToPage(GroupInfo info)
     mGroupWindowMap[info.id] = chatWindow;
     //        connect(this, &FriendPage::userMessageUnRead, chatWindow, &GroupChatWindow::userMessageRead);
     //        connect(chatWindow, &ChatWindow::friendPageUpdate, this, &GroupChatWindow::friendPageUpdate);
+    return true;
 }
 
 void FriendPage::chatWithFriend(QListWidgetItem* item) {
@@ -794,6 +803,7 @@ void FriendPage::ChangeUserPicBySend(FileInfo info) {
             // 如果文件存在，加载图像并设置为头像
             QIcon *icon = new QIcon(clientPath);
             ui->toolButton_5->setIcon(*icon);
+            ClientPersonInfo::GetInstance()->photo = *icon;
             ui->toolButton_5->setIconSize(QSize(60, 60));
         } else {
             // 文件不存在，给用户提示
@@ -831,6 +841,8 @@ void FriendPage::ChangeUserPicBySend(FileInfo info) {
             QIcon *icon = new QIcon(clientPath);
             button->setIcon(*icon);
             button->setIconSize(QSize(60, 60));
+            PersonCache::GetInstance()->setPersonPhoto(info.owner, *icon);
+            mChatWindowMap[info.owner]->updateUserPhoto();
         }
     }
 }
@@ -850,6 +862,7 @@ void FriendPage::ChangeUserPic(FileInfo info)
             QIcon *icon = new QIcon(clientPath);
             ui->toolButton_5->setIcon(*icon);
             ui->toolButton_5->setIconSize(QSize(60, 60));
+            ClientPersonInfo::GetInstance()->photo = *icon;
         } else {
             // 文件不存在，给用户提示
             QMessageBox::warning(nullptr, "警告", "头像文件不存在。");
@@ -861,13 +874,13 @@ void FriendPage::ChangeUserPic(FileInfo info)
         }
         //修改其他用户头像
         QToolButton* button = mFriendButton[info.owner];
-        qDebug() << "bbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
         if (QFile::exists(clientPath)) {
-            qDebug() << "bbbbbbbbbbbbbbbbbbbbbbbbbbbbb222";
             // 如果文件存在，加载图像并设置为头像
             QIcon *icon = new QIcon(clientPath);
             button->setIcon(*icon);
             button->setIconSize(QSize(60, 60));
+            PersonCache::GetInstance()->setPersonPhoto(info.owner, *icon);
+            mChatWindowMap[info.owner]->updateUserPhoto();
         }
     }
 }
@@ -897,18 +910,30 @@ void FriendPage::GetFileFirstSuccess(Response response)
     }
 }
 
+
 //服务器可返回，也可不返回
 void FriendPage::GetFileSuccess(Response response)
 {
     std::string mdata = response.mData;
     MyProtocolStream stream2(mdata);
     bool ret = response.mCode;
+    FileInfo info;
+    stream2 >> info.ftpTaskId;
+    info = FtpSender::GetInstance()->file(info.ftpTaskId);
+    stream2 >> info.id >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.md5sum;
     if (ret) {
-        qDebug() << "GetFile Over";
+        qDebug() << "GetFile Over Success";
+        QMessageBox::information(this, "提示", "文件获取成功");
     }
     else {
         qDebug() << "GetFile Failure";
     }
+
+    info.print();
+//    if (info.serviceType == SENDTOPERSON) {
+//        chatFileGetSuccess();
+//    }
+
     //TODO:
     //FtpSender::GetInstance()->removeFile(info);
 }

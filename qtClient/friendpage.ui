@@ -172,8 +172,11 @@
          </property>
          <item>
           <widget class="QTabWidget" name="tabWidget">
+           <property name="layoutDirection">
+            <enum>Qt::LeftToRight</enum>
+           </property>
            <property name="currentIndex">
-            <number>1</number>
+            <number>0</number>
            </property>
            <widget class="QWidget" name="tab">
             <attribute name="title">
@@ -200,7 +203,7 @@
              </item>
             </layout>
            </widget>
-           <widget class="QWidget" name="tab_2">
+           <widget class="QWidget" name="tab">
             <attribute name="title">
              <string>关系</string>
             </attribute>

@@ -29,6 +29,7 @@ public:
 
     bool sendMessage(const QString &content);
     void emitSendFiletoPerson(FileInfo info);
+    void updateUserPhoto();
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 

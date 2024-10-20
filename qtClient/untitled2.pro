@@ -31,6 +31,7 @@ SOURCES += \
     mainwindow.cpp \
     netthread.cpp \
     network.cpp \
+    personcache.cpp \
     processor.cpp \
     processqueue.cpp \
     registerpage.cpp \
@@ -60,6 +61,7 @@ HEADERS += \
     mainwindow.h \
     netthread.h \
     network.h \
+    personcache.h \
     processor.h \
     processqueue.h \
     registerpage.h \

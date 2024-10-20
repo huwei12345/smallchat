@@ -23,7 +23,6 @@ void ClientNetWork::ftpFileSendOver(FileInfo info)
     std::cout << "ftpFileSendOver      : " << info.serverPath + info.serverFileName << std::endl;
 
     QString fileName = QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName);
-    qDebug() << "zzzzzzzzzzzzzzzzzzzzzzzzzzzzz" << info.serviceType;
     if (info.serviceType == FileServerType::TOUXIANG) {
         emit ChangeUserPicBySend(info);
     }
@@ -42,11 +41,9 @@ void ClientNetWork::ftpFileGetOver(FileInfo info)
     //QString fileName = QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName);
 
     //具体业务，也许可以使用回调函数
-    qDebug() << "zzzzzzzzzzzzzzzzzzzzzzzzzzzzz" << info.serviceType;
     if (info.serviceType == FileServerType::TOUXIANG) {
         emit ChangeUserPic(info);
     }
-
     bool ret = Processor::GetFileSuccess(info);
     if (!ret) {
         QMessageBox::information(NULL,"提示","网络不可达！");
