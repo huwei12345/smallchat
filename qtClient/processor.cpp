@@ -53,12 +53,12 @@ bool Processor::Register(string& username, string& password, string& email) {
 
 bool Processor::SendMessage(int reciveId, const string& content) {
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
-    MessageInfo message;
-    message.receiver_id = reciveId;
+    TextMessageInfo message;
+    message.recv_id = reciveId;
     message.message_text = content;
     std::string data;
     MyProtocolStream stream(data);
-    stream << message.receiver_id << message.message_text;
+    stream << message.recv_id << message.message_text;
     Request req(1, FunctionCode::SendMessage, 3, 4, 5, data, user_id);
 
     string str = req.serial();
@@ -511,7 +511,6 @@ bool Processor::AgreeRecvFile(bool agree, FileInfo info)
     if (r > 0) {
         req.print();
         if (agree) {
-            qDebug() << "LPL";
             FtpSender::GetInstance()->GetFile(info);
         }
         return true;

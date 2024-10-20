@@ -1,6 +1,7 @@
 ﻿#ifndef CHATWINDOW_H
 #define CHATWINDOW_H
 
+#include <QTextEdit>
 #include <QWidget>
 #include "Protocol.h"
 class EmojiCoder;
@@ -17,19 +18,27 @@ public:
     explicit ChatWindow(QWidget *parent = nullptr);
     explicit ChatWindow(UserInfo info, QWidget *parent = nullptr);
     ~ChatWindow();
-    void addMessage(MessageInfo info);
+    void addMessage(MessageInfo* info);
     void addFileArrive(FileInfo info);
     void messageUpdate();
-    vector<MessageInfo> mUnReadMessageList;
-    vector<MessageInfo> mCurrentMessageList;//包括已读取和已发送和一些历史记录，可能需要持久化
+    vector<MessageInfo*> mUnReadMessageList;
+    vector<MessageInfo*> mCurrentMessageList;//包括已读取和已发送和一些历史记录，可能需要持久化
     int mUserId;
     void showChatContent();
-    void showContentWithImages(QString s);
+    void showContentWithEmoji(QString s);
     void sharkWindow();
 
     bool sendMessage(const QString &content);
     void emitSendFiletoPerson(FileInfo info);
     void updateUserPhoto();
+    void showPictureInEdit(QTextEdit *textEdit, MessageInfo *info);
+
+    void notifyFileWillArrive(FileInfo fileInfo);
+    void notifyFileAlreadyArrive(FileInfo fileInfo);
+    void showMessage(MessageInfo *messageInfo);
+
+    void showFileInEdit(QTextEdit *textEdit, MessageInfo *info);
+
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -50,7 +59,7 @@ private slots:
     void sendFiletoPersonSucc(FileInfo info);
 signals:
     void confirmMessage(int sender, int reciver, int start, int end);
-    void friendPageUpdate(int);
+    void resetFriendNewMessage(int);
     void sendFiletoPersonSuccess(FileInfo info);
 public slots:
     void userMessageRead();

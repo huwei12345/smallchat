@@ -201,7 +201,6 @@ int FriendPage::getFriendPhoto(UserInfo& userinfo) {
             mPhotoMap[userinfo.user_id] = icon;
             mFriendButton[userinfo.user_id]->setIconSize(QSize(50, 50));
             PersonCache::GetInstance()->setPersonPhoto(userinfo.user_id, *icon);
-            qDebug() << "333333333333333333333333" << userinfo.user_id;
             mChatWindowMap[userinfo.user_id]->updateUserPhoto();
         } else {
             // 文件不存在，给用户提示
@@ -334,7 +333,7 @@ void FriendPage::findAllFriendSuccess(Response response)
         ChatWindow* chatWindow = new ChatWindow(info);
         mChatWindowMap[info.user_id] = chatWindow;
         connect(this, &FriendPage::userMessageUnRead, chatWindow, &ChatWindow::userMessageRead);
-        connect(chatWindow, &ChatWindow::friendPageUpdate, this, &FriendPage::friendPageUpdate);
+        connect(chatWindow, &ChatWindow::resetFriendNewMessage, this, &FriendPage::resetFriendNewMessage);
     }
     initFriendPhoto();
     initFriendState();
@@ -392,58 +391,31 @@ void FriendPage::getAllMessageSuccess(Response response) {
     qDebug() << "sizeMessage: " << size;
     for (int i = 0; i < size; i++) {
         //TODO:ToolButton put in widget
-        MessageInfo info;
-        stream2 >> info.id >> info.sender_id >> info.message_text >> info.timestamp;
-        qDebug() << info.sender_id;
-        qDebug() << QString::fromStdString(info.message_text);
-        info.receiver_id = user_id;
-
-        info.print();
-        QString str = mFriendButton[info.sender_id]->text();
-        int index = str.indexOf("[New");
-        if (index != -1)
-            str = str.remove(index, str.length() - index);
-        //有新消息来时添加text,点击后，出现新消息后，删除text
-        mFriendButton[info.sender_id]->setText(str + "  [New Message]");
+        MessageInfo* info = new TextMessageInfo;
+        stream2 >> info->id >> info->send_id >> info->message_text >> info->timestamp;
+        qDebug() << info->send_id;
+        qDebug() << QString::fromStdString(info->message_text);
+        info->recv_id = user_id;
+        info->print();
+        notifyFriendNewMessage(info->send_id);
 
         //这个ChatWindow一定一定已经在上面一个函数里创建了
-        mChatWindowMap[info.sender_id]->addMessage(info);
+        mChatWindowMap[info->send_id]->addMessage(info);
     }
 }
 
-void FriendPage::getAllOfflineFileSuccess(Response response)
-{
-    std::string mdata = response.mData;
-    MyProtocolStream stream2(mdata);
-    int size = 0;
-    stream2 >> size;
-    qDebug() << "sizeOfflineFile: " << size;
-    for (int i = 0; i < size; i++) {
-        //TODO:ToolButton put in widget
-        FileInfo info;
-        info.Generate();
-        stream2 >> info.ftpTaskId >> info.id >> info.send_id >> info.recv_id >>
-                info.serviceType >> info.serverPath >> info.serverFileName >> info.timestamp;
-        info.ClientPath = std::string("D:/BaiduNetdiskDownload/untitled2/userInfo/") + info.serverFileName;
-        info.print();
-        FtpSender::GetInstance()->addFile(info);
-        FtpSender::GetInstance()->GetFile(info);
-        //当获取后还需要提醒窗口已下载完成
-
-        QString str = mFriendButton[info.send_id]->text();
-        int index = str.indexOf("[New");
-        if (index != -1)
-            str = str.remove(index, str.length() - index);
-        //有新消息来时添加text,点击后，出现新消息后，删除text
-        mFriendButton[info.send_id]->setText(str + "  [New Message]");
-
-        //这里不一定接收完，需要在文件传输完毕后的槽函数里进行
-        //这个ChatWindow一定一定已经在上面一个函数里创建了
-        mChatWindowMap[info.send_id]->addFileArrive(info);
-    }
+//显示
+void FriendPage::notifyFriendNewMessage(int userId) {
+    QString str = mFriendButton[userId]->text();
+    int index = str.indexOf("[New");
+    if (index != -1)
+        str = str.remove(index, str.length() - index);
+    //有新消息来时添加text,点击后，出现新消息后，删除text
+    mFriendButton[userId]->setText(str + "  [New Message]");
 }
 
-void FriendPage::friendPageUpdate(int uid) {
+//消除
+void FriendPage::resetFriendNewMessage(int uid) {
     fflush(stdout);
     QString str = mFriendButton[uid]->text();
     int index = str.indexOf("[New");
@@ -452,6 +424,39 @@ void FriendPage::friendPageUpdate(int uid) {
     //有新消息来时添加text,点击后，出现新消息后，删除text
     mFriendButton[uid]->setText(str);
 }
+
+void FriendPage::getAllOfflineFileSuccess(Response response)
+{
+    std::string mdata = response.mData;
+    MyProtocolStream stream2(mdata);
+    int size = 0;
+    stream2 >> size;
+    qDebug() << "offlineFile count: " << size;
+    for (int i = 0; i < size; i++) {
+        //TODO:ToolButton put in widget
+        FileInfo info;
+        info.Generate();
+        stream2 >> info.ftpTaskId >> info.id >> info.send_id >> info.recv_id >>
+                info.serviceType >> info.serverPath >> info.serverFileName >> info.timestamp;
+        if (info.send_id == 0) {
+            info.ClientPath = QCoreApplication::applicationDirPath().toStdString() + std::string("/userInfo/") + info.serverFileName;
+        }
+        else {
+            info.ClientPath = QCoreApplication::applicationDirPath().toStdString() + std::string("/userInfo/") + info.serverFileName;
+        }
+        info.print();
+        FtpSender::GetInstance()->addFile(info);
+        //添加下载任务
+        FtpSender::GetInstance()->GetFile(info);
+
+        notifyFriendNewMessage(info.send_id);
+
+        //提示开始进行文件传输
+        mChatWindowMap[info.send_id]->notifyFileWillArrive(info);
+    }
+}
+
+
 
 
 void FriendPage::getAllFriendRequestSuccess(Response response) {
@@ -538,16 +543,12 @@ void FriendPage::MessageArriveClient(Response response)
     //在线消息到达
     std::string &mData = response.mData;
     MyProtocolStream stream(mData);
-    MessageInfo info;
-    stream >> info.id >> info.sender_id >> info.receiver_id >> info.timestamp >> info.message_text;
-    QString str = mFriendButton[info.sender_id]->text();
-    int index = str.indexOf("[New");
-    if (index != -1)
-        str = str.remove(index, str.length() - index);
-    //有新消息来时添加text,点击后，出现新消息后，删除text
-    mFriendButton[info.sender_id]->setText(str + "  [New Message]");
+    MessageInfo* info = new TextMessageInfo;
+    stream >> info->id >> info->send_id >> info->recv_id >> info->timestamp >> info->message_text;
+    QString str = mFriendButton[info->send_id]->text();
 
-    mChatWindowMap[info.sender_id]->addMessage(info);
+    notifyFriendNewMessage(info->send_id);
+    mChatWindowMap[info->send_id]->addMessage(info);
 }
 
 
@@ -570,7 +571,6 @@ void FriendPage::addFriendToPage(int i, UserInfo info) {
     ui->listWidget->addItem(str2);
     ui->listWidget->setItemWidget(ui->listWidget->item(i), button);
     ui->listWidget->item(i)->setWhatsThis(QString::number(info.user_id));
-    qDebug() << "Hello XXXXX!" << button;
     //installEventFilter + eventFilter overide可以实现防覆
     button->installEventFilter(this); // 在当前类中实现 eventFilter 方法
     mFriendButton[info.user_id] =button;
@@ -602,10 +602,8 @@ bool FriendPage::addGroupToPage(GroupInfo info)
     QString str2("item");
     groupWidget->addItem(str2);
     int i = groupWidget->count() - 1;
-    qDebug() << "Hello LLLLL!" << i << " id "<< info.id ;
     groupWidget->setItemWidget(groupWidget->item(i), button);
     groupWidget->item(i)->setWhatsThis(QString::number(info.id));
-    qDebug() << "Hello TTTTT!" << button;
     button->setProperty("type", "Group");
     button->installEventFilter(this); // 在当前类中实现 eventFilter 方法
     mGroupButton[info.id] =button;
@@ -756,7 +754,12 @@ void FriendPage::NofifyFileComing(Response response)
     stream >> info.ftpTaskId >> info.id >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.filesize >> info.fileType;
     info.print();
     //判断是否接收
-    info.ClientPath = std::string("D:/BaiduNetdiskDownload/untitled2/userInfo/") + info.serverFileName;
+    if (info.send_id == 0) {
+        info.ClientPath = QCoreApplication::applicationDirPath().toStdString() + std::string("/userInfo/") + info.serverFileName;
+    }
+    else {
+        info.ClientPath = QCoreApplication::applicationDirPath().toStdString() + std::string("/userInfo/") + info.serverFileName;
+    }
     info.filesize = 10;
     int ret = false;
     if (info.filesize < 1000 * 1000 * 10) {
@@ -776,15 +779,12 @@ void FriendPage::NofifyFileComing(Response response)
     }
 
     if (ret) {
-        //界面显示，具体怎么提示是否接收，怎么显示后续再看...
-        QString str = mFriendButton[info.send_id]->text();
-        int index = str.indexOf("[New");
-        if (index != -1)
-            str = str.remove(index, str.length() - index);
-        //有新消息来时添加text,点击后，出现新消息后，删除text
-        mFriendButton[info.send_id]->setText(str + "  [New Message]");
+        //开始接收不等于已经接受完，需要接受完再去显示
 
-        mChatWindowMap[info.send_id]->addFileArrive(info);
+        //文件可以先提示开始接收，等接受完也提示接收完
+        notifyFriendNewMessage(info.send_id);
+
+        mChatWindowMap[info.send_id]->notifyFileWillArrive(info);
         //FtpSender::GetInstance()->GetFile(info);
     }
 }
@@ -834,9 +834,7 @@ void FriendPage::ChangeUserPicBySend(FileInfo info) {
         }
         //修改其他用户头像
         QToolButton* button = mFriendButton[info.owner];
-        qDebug() << "bbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
         if (QFile::exists(clientPath)) {
-            qDebug() << "bbbbbbbbbbbbbbbbbbbbbbbbbbbbb222";
             // 如果文件存在，加载图像并设置为头像
             QIcon *icon = new QIcon(clientPath);
             button->setIcon(*icon);
@@ -921,18 +919,20 @@ void FriendPage::GetFileSuccess(Response response)
     stream2 >> info.ftpTaskId;
     info = FtpSender::GetInstance()->file(info.ftpTaskId);
     stream2 >> info.id >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.md5sum;
+    info.print();
     if (ret) {
-        qDebug() << "GetFile Over Success";
+        qDebug() << "GetFile Over Success" << QString::fromStdString(info.serverFileName);
         QMessageBox::information(this, "提示", "文件获取成功");
     }
     else {
         qDebug() << "GetFile Failure";
     }
 
-    info.print();
-//    if (info.serviceType == SENDTOPERSON) {
-//        chatFileGetSuccess();
-//    }
+    if (info.serviceType == SENDTOPERSON || info.serviceType == ARRIVEFROMPOG) {
+        if (mChatWindowMap.count(info.send_id)) {
+            mChatWindowMap[info.send_id]->notifyFileAlreadyArrive(info);
+        }
+    }
 
     //TODO:
     //FtpSender::GetInstance()->removeFile(info);

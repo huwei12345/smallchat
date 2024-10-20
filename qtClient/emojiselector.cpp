@@ -157,7 +157,7 @@ int getRealId(const QString& str) {
 }
 
 //解码
-bool EmojiSelector::showContentWithImages(QTextEdit *textEdit, QString context) {
+bool EmojiSelector::showContentWithEmoji(QTextEdit *textEdit, QString context) {
     //从好友到本人,context show in TextEdit
     QString tmp;
     for (int i = 0; i < (int)context.size(); ) {
@@ -276,7 +276,7 @@ QString EmojiSelector::extractContentWithImages(QTextEdit *textEdit) {
 
 int EmojiSelector::cxplain(QTextEdit *plaintest, QTextEdit *plain, QString context) {
     QString text = extractContentWithImages(plaintest);
-    showContentWithImages(plain, text);
+    showContentWithEmoji(plain, text);
 }
 
 int EmojiSelector::explain(QTextEdit *plain, QString context)

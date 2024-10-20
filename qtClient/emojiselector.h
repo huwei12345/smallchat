@@ -20,7 +20,7 @@ public:
     int explain(QTextEdit* , QString context);
     void jsonGet();
     QString extractContentWithImages(QTextEdit *textEdit);
-    bool showContentWithImages(QTextEdit *textEdit, QString context);
+    bool showContentWithEmoji(QTextEdit *textEdit, QString context);
     int cxplain(QTextEdit *plaintest, QTextEdit *plain, QString context);
 signals:
     void emojiSelected(const QString &emoji);

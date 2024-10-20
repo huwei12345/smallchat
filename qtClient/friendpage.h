@@ -39,7 +39,7 @@ public:
     bool initFriendPhoto();
     bool initAllOfflineFile();
     bool initPage();
-    void friendPageUpdate(int uid);
+    void resetFriendNewMessage(int uid);
     UserInfo mInfo;
     void GetFileSuccess(Response response);
     void SendFileSuccess(Response response);
@@ -54,6 +54,7 @@ public:
     void addFriendToPage(int index, UserInfo info);
     bool addGroupToPage(GroupInfo info);
 
+    void notifyFriendNewMessage(int userId);
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 

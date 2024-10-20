@@ -194,20 +194,59 @@ public:
 
 class MessageInfo {
 public:
-    MessageInfo() : id(0), sender_id(0), message_text(""),
-        receiver_id(0), message_id(0) { }
-    MessageInfo(int sendId, std::string message) : id(0), sender_id(sendId), message_text(message),
-        receiver_id(0), message_id(0) { }
+    enum MessageType {Row, Text, Picture, File};
+    MessageInfo() : id(0), send_id(0), recv_id(0) , type(Row) { }
     int id;
-    int sender_id;
-    std::string message_text;
-    int receiver_id;
-    int message_id;
-    std::string timestamp;
-    // 可以添加其他需要返回的消息信息字段，如时间戳等
-    inline void print() {
-        std::cout << "sender_id: " << sender_id << "   "
-                  << "message: " << message_text << "\n";
+    int send_id;
+    int recv_id;
+    MessageType type;
+    std::string message_text;//Text
+    std::string path;//Picture File
+    std::string timestamp;//发送时间
+    virtual void print() = 0;
+};
+
+class TextMessageInfo : public MessageInfo {
+public:
+    TextMessageInfo() { type = Text; }
+
+    void print() override {
+        std::cout << "id"        << id
+                  << "send_id: " << send_id << "   "
+                  << "recv_id: " << recv_id << "   "
+                  << "type : "   << type
+                  << "message: " << message_text
+                  << "timestamp" << timestamp
+                  << "\n";
+    }
+};
+
+class PictureMessageInfo : public MessageInfo {
+public:
+    PictureMessageInfo() { type = Picture; }
+
+    void print() override {
+        std::cout << "id"        << id
+                  << "send_id: " << send_id << "   "
+                  << "recv_id: " << recv_id << "   "
+                  << "type : "   << type
+                  << "PicturePath: " << path
+                  << "timestamp" << timestamp
+                  << "\n";
+    }
+};
+
+class FileMessageInfo : public MessageInfo {
+public:
+    FileMessageInfo() { type = File; }
+    void print() override {
+        std::cout << "id"        << id
+                  << "send_id: " << send_id << "   "
+                  << "recv_id: " << recv_id << "   "
+                  << "type : "   << type
+                  << "FilePath: " << path
+                  << "timestamp" << timestamp
+                  << "\n";
     }
 };
 

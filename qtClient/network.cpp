@@ -189,7 +189,7 @@ break;
         break;
     }
     case FunctionCode::GetFileSuccess: {
-        //收到服务器 （服务器已知道客户端发送完成） 服务器可以不发
+        //收到服务器响应（服务器已知道客户端接收完成）
         emit GetFileSuccess(rsp);
         break;
     }
