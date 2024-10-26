@@ -39,6 +39,7 @@ public:
 
     void showFileInEdit(QTextEdit *textEdit, MessageInfo *info);
 
+    void showFileMessageInEdit(QTextEdit *textEdit, MessageInfo *messageInfo);
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -62,7 +63,6 @@ signals:
     void resetFriendNewMessage(int);
     void sendFiletoPersonSuccess(FileInfo info);
 public slots:
-    void userMessageRead();
 private:
     Ui::ChatWindow *ui;
     UserInfo mInfo;

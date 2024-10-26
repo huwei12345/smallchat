@@ -12,6 +12,8 @@
 #include <QPropertyAnimation>
 #include <QSplitter>
 #include <cmath>
+#include <QDesktopServices>
+#include <QTextBlock>
 #include "emojiselector.h"
 #include "clientpersoninfo.h"
 #include "personcache.h"
@@ -32,7 +34,7 @@ ChatWindow::ChatWindow(QWidget *parent) :
     mEmojiSelector = new EmojiSelector;
     connect(ClientNetWork::GetInstance(), &ClientNetWork::offlineTransFileSuccess, this, &ChatWindow::offlineTransFileSuccess);
 
-    QObject::connect(ui->plainTextEdit_2, &QTextEdit::cursorPositionChanged, this, &ChatWindow::handleCursorPositionChange);
+    QObject::connect(ui->plainTextEdit, &QTextEdit::cursorPositionChanged, this, &ChatWindow::handleCursorPositionChange);
 
     connect(mEmojiSelector, &EmojiSelector::emojiSelected, this, &ChatWindow::emojiSelected);
     connect(this, &ChatWindow::sendFiletoPersonSuccess, this, &ChatWindow::sendFiletoPersonSucc);
@@ -99,67 +101,23 @@ void ChatWindow::messageUpdate() {
     int smallNum = INT_MAX;
     int bigNum = 0;
     for (int i = 0; i < (int)mUnReadMessageList.size(); i++) {
-                smallNum = min(smallNum, mUnReadMessageList[i]->id);
-        bigNum = max(bigNum, mUnReadMessageList[i]->id);
+        if (mUnReadMessageList[i]->type == MessageInfo::Text) {
+            smallNum = min(smallNum, mUnReadMessageList[i]->id);
+            bigNum = max(bigNum, mUnReadMessageList[i]->id);
+        }
     }
     if (!mUnReadMessageList.empty()) {
         emit confirmMessage(mUserId, ::user_id, smallNum, bigNum);//网络发送给服务器确认收到【start，end】的消息
     }
 }
 
-void ChatWindow::showMessage(MessageInfo* messageInfo) {
-    if (messageInfo == nullptr) return;
-    qDebug() << "oooooooooooooooooooo" << QString::fromStdString(messageInfo->path) << " : " << messageInfo->type;
-    if (messageInfo->type == MessageInfo::Text) {
-        showContentWithEmoji(QString::fromStdString(messageInfo->message_text));
-    }
-    else if (messageInfo->type == MessageInfo::Picture) {
-        showPictureInEdit(ui->plainTextEdit, messageInfo);
-    }
-    else if (messageInfo->type == MessageInfo::File) {
-        showFileInEdit(ui->plainTextEdit, messageInfo);
-    }
-}
-
-//非显示 切换 显示
-void ChatWindow::showChatContent()
-{
-    printf("mUnReadMessageList size = %d\n", (int)mUnReadMessageList.size());
-    for (int i = 0; i < (int)mUnReadMessageList.size(); i++) {
-        ui->plainTextEdit->append(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(mUnReadMessageList[i]->timestamp));
-        showMessage(mUnReadMessageList[i]);
-
-        mCurrentMessageList.push_back(mUnReadMessageList[i]);
-    }
-    messageUpdate();
-    emit resetFriendNewMessage(mUserId);
-    mUnReadMessageList.clear();
-}
 
 void ChatWindow::addMessage(MessageInfo* info)
 {
     //单条消息，显示 切换 显示
     if (this->isVisible()) {
-        switch (info->type) {
-            case MessageInfo::Text : {
-                printf("isVis");
-                fflush(stdout);
-                mCurrentMessageList.push_back(info);
-                ui->plainTextEdit->append(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(info->timestamp));
-                showContentWithEmoji(QString::fromStdString(info->message_text));
-                messageUpdate();
-                emit resetFriendNewMessage(mUserId);
-                break;
-            }
-            case MessageInfo::Picture : {
-                break;
-            }
-            case MessageInfo::File :{
-                break;
-            }
-            default: {
-            }
-        }
+        showMessage(info);
+        emit resetFriendNewMessage(mUserId);
     }
     else {
         mUnReadMessageList.push_back(info);
@@ -167,23 +125,60 @@ void ChatWindow::addMessage(MessageInfo* info)
 }
 
 
+void ChatWindow::showMessage(MessageInfo* messageInfo) {
+    if (messageInfo == nullptr)
+        return;
+    qDebug() << "oooooooooooooooooooo" << QString::fromStdString(messageInfo->path) << " : " << messageInfo->type;
+
+    if (messageInfo->send_id == user_id) {
+        ui->plainTextEdit->append(QString::fromStdString(ClientPersonInfo::GetInstance()->username) + "           " + QString::fromStdString(messageInfo->timestamp));
+    }
+    else {
+        ui->plainTextEdit->append(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(messageInfo->timestamp));
+    }
+
+    if (messageInfo->type == MessageInfo::Text) {
+        showContentWithEmoji(QString::fromStdString(messageInfo->message_text));
+    }
+    else if (messageInfo->type == MessageInfo::Picture) {
+        showPictureInEdit(ui->plainTextEdit, messageInfo);
+    }
+    else if (messageInfo->type == MessageInfo::File) {
+        showFileMessageInEdit(ui->plainTextEdit, messageInfo);
+    }
+    mCurrentMessageList.push_back(messageInfo);
+}
+
+//非显示 切换 显示
+void ChatWindow::showChatContent()
+{
+    printf("mUnReadMessageList size = %d\n", (int)mUnReadMessageList.size());
+    for (int i = 0; i < (int)mUnReadMessageList.size(); i++) {
+        showMessage(mUnReadMessageList[i]);
+    }
+    messageUpdate();
+    emit resetFriendNewMessage(mUserId);
+    mUnReadMessageList.clear();
+}
+
+//显示文字消息，解析表情
+void ChatWindow::showContentWithEmoji(QString s) {
+    ui->plainTextEdit->append("");
+    if (s == "0xa500") {
+        ui->plainTextEdit->insertPlainText("抖动窗口！");
+        sharkWindow();
+        return;
+    }
+    mEmojiSelector->showContentWithEmoji(ui->plainTextEdit, s);
+}
+
+//图片显示，但考虑窗口是否打开
 void ChatWindow::showPictureInEdit(QTextEdit* textEdit, MessageInfo* info) {
-    //图片显示，但考虑窗口是否打开
     QString imagePath = QString::fromStdString(info->path);
+    textEdit->append("");
     if (!imagePath.isEmpty() && info->type == MessageInfo::Picture) {
-        // 插入文件名作为超链接
         QTextCursor cursor = textEdit->textCursor();
         cursor.movePosition(QTextCursor::End); // 移动到末尾
-        cursor.insertText("File: "); // 插入文件前缀
-
-        // 设置超链接格式
-        QTextCharFormat linkFormat;
-        linkFormat.setForeground(Qt::blue); // 设置字体颜色为蓝色
-        linkFormat.setFontUnderline(true); // 设置字体为下划线
-        cursor.insertText(QFileInfo(imagePath).fileName(), linkFormat);
-        cursor.insertText("\n"); // 插入换行
-
-        // 插入可点击的文件名
         QTextImageFormat format;
         format.setName(imagePath);
         format.setWidth(80);
@@ -195,20 +190,37 @@ void ChatWindow::showPictureInEdit(QTextEdit* textEdit, MessageInfo* info) {
     }
 }
 
-void ChatWindow::showFileInEdit(QTextEdit* textEdit, MessageInfo* info) {
-    textEdit->append(QString::fromStdString(info->message_text));
+//显示文件消息
+void ChatWindow::showFileMessageInEdit(QTextEdit* textEdit, MessageInfo* messageInfo) {
+    //textEdit->append(QString::fromStdString(info->message_text));
+    QString str = QString::fromStdString(messageInfo->message_text);
+    QString completeTip = "Complete Trans Coming in ";
+    int index = str.indexOf(completeTip);
+    //如果是文件传输完毕消息
+    if (index != -1) {
+        QString filePath = str.mid(index + completeTip.size());
+        QString frontText = str.mid(0, index + completeTip.size());
+        qDebug() << "filePathx " << filePath;
+        textEdit->append(frontText);
+        if (!filePath.isEmpty()) {
+            // 插入文件名作为超链接
+            QTextCursor cursor = textEdit->textCursor();
+            cursor.movePosition(QTextCursor::End); // 移动到末尾
+            // 设置超链接格式
+            QTextCharFormat linkFormat;
+            linkFormat.setForeground(Qt::blue); // 设置字体颜色为蓝色
+            linkFormat.setFontUnderline(true); // 设置字体为下划线
+            // 插入可点击的文件名
+            cursor.insertText(filePath, linkFormat);
+            cursor.insertText("\n"); // 插入换行
+            textEdit->setTextCursor(cursor); // 更新光标位置
+        }
+    }
+    else {
+        textEdit->append(str);
+    }
 }
 
-//解析表情
-void ChatWindow::showContentWithEmoji(QString s) {
-    ui->plainTextEdit->append("");
-    if (s == "0xa500") {
-        ui->plainTextEdit->insertPlainText("抖动窗口！");
-        sharkWindow();
-        return;
-    }
-    mEmojiSelector->showContentWithEmoji(ui->plainTextEdit, s);
-}
 
 /*
 FileMessageInfo
@@ -218,12 +230,13 @@ FileMessageInfo
 4. send end
 */
 
+//将要到达
 void ChatWindow::notifyFileWillArrive(FileInfo fileInfo)
 {
     qDebug() << QString::fromStdString(fileInfo.fileType);
     fileInfo.print();
     if (fileInfo.fileType == "Picture") {
-        //图片不提示
+        //图片不提示将要到达
         return;
     }
     MessageInfo *messageInfo = nullptr;
@@ -231,12 +244,7 @@ void ChatWindow::notifyFileWillArrive(FileInfo fileInfo)
     messageInfo->path = fileInfo.ClientPath;
     messageInfo->message_text = "[" + fileInfo.serverFileName + " Beging Trans Coming in " + fileInfo.ClientPath + "]";
     if (this->isVisible()) {
-        printf("isVis");
-        fflush(stdout);
-        mCurrentMessageList.push_back(messageInfo);
-        ui->plainTextEdit->append(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(messageInfo->timestamp));
-        ui->plainTextEdit->append(QString::fromStdString(messageInfo->message_text));
-        emit resetFriendNewMessage(mUserId);//切换为无消息状态
+        showMessage(messageInfo);
     }
     else {
         mUnReadMessageList.push_back(messageInfo);
@@ -257,20 +265,11 @@ void ChatWindow::notifyFileAlreadyArrive(FileInfo fileInfo)
     else {
         messageInfo = new FileMessageInfo;
         messageInfo->path = fileInfo.ClientPath;
-        messageInfo->message_text = "[" + fileInfo.serverFileName + " Complete Trans Coming in " + fileInfo.ClientPath + "]";
+        messageInfo->message_text = "[" + fileInfo.serverFileName + "] Complete Trans Coming in " + fileInfo.ClientPath;
     }
 
     if (this->isVisible()) {
-        if (fileInfo.fileType == std::string("PicTure")) {
-            showPictureInEdit(ui->plainTextEdit, messageInfo);
-        }
-        else {
-            //展示文件
-            ui->plainTextEdit->append(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(messageInfo->timestamp));
-            ui->plainTextEdit->append(QString::fromStdString(messageInfo->message_text));
-        }
-        mCurrentMessageList.push_back(messageInfo);
-        emit resetFriendNewMessage(mUserId);
+        addMessage(messageInfo);
     }
     else {
         mUnReadMessageList.push_back(messageInfo);
@@ -283,26 +282,21 @@ void ChatWindow::emitSendFiletoPerson(FileInfo info) {
 
 void ChatWindow::sendFiletoPersonSucc(FileInfo info) {
     qDebug() << "sendFiletoPersonSucc " << QString::fromStdString(info.serverFileName) << " : " << QString::fromStdString(info.fileType);
+    MessageInfo *messageInfo = nullptr;
     if (info.fileType == std::string("PicTure")) {
-        //TODO:调试
-        MessageInfo *messageInfo = new PictureMessageInfo;
+        messageInfo = new PictureMessageInfo;
         messageInfo->path = info.ClientPath;
-        showPictureInEdit(ui->plainTextEdit, messageInfo);
-        return;
     }
-
-    MessageInfo *messageInfo = new FileMessageInfo;
-    messageInfo->message_text = "[" + info.ClientPath + " Send Success " + "]";
+    else {
+        messageInfo = new FileMessageInfo;
+        messageInfo->message_text = "[" + info.ClientPath + " Send Success  " + "]";
+    }
+    QDateTime currentDateTime = QDateTime::currentDateTime();
+    QString currentDateTimeStr = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
+    messageInfo->timestamp = currentDateTimeStr.toStdString();
+    messageInfo->send_id = user_id;
     if (this->isVisible()) {
-        printf("isVis");
-        fflush(stdout);
-        mCurrentMessageList.push_back(messageInfo);
-        //TODO:修改显示
-        QDateTime currentDateTime = QDateTime::currentDateTime();
-        QString currentDateTimeStr = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
-        ui->plainTextEdit->append(QString::fromStdString(ClientPersonInfo::GetInstance()->username) + "           " + currentDateTimeStr);
-        ui->plainTextEdit->append(QString::fromStdString(messageInfo->message_text));
-        emit resetFriendNewMessage(mUserId);
+        addMessage(messageInfo);
     }
     else {
         mUnReadMessageList.push_back(messageInfo);
@@ -310,7 +304,7 @@ void ChatWindow::sendFiletoPersonSucc(FileInfo info) {
 }
 
 
-//发送给好友文件,作为文件发送的图片不显示
+//开始发送给好友文件,作为文件发送的图片不显示
 void ChatWindow::on_toolButton_5_clicked()
 {
     QString fileName = QFileDialog::getOpenFileName(this,
@@ -342,15 +336,12 @@ void ChatWindow::on_toolButton_5_clicked()
 
     MessageInfo* messageInfo = new FileMessageInfo;
     messageInfo->message_text = "[" + info.ClientPath + " Send Begin... " + "]";
+    QDateTime currentDateTime = QDateTime::currentDateTime();
+    QString currentDateTimeStr = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
+    messageInfo->timestamp = currentDateTimeStr.toStdString();
 
     if (this->isVisible()) {
-        mCurrentMessageList.push_back(messageInfo);
-        //TODO:修改显示
-        QDateTime currentDateTime = QDateTime::currentDateTime();
-        QString currentDateTimeStr = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
-        ui->plainTextEdit->append(QString::fromStdString(ClientPersonInfo::GetInstance()->username) + "           " + currentDateTimeStr);
-        ui->plainTextEdit->append(QString::fromStdString(messageInfo->message_text));
-        emit resetFriendNewMessage(mUserId);
+        addMessage(messageInfo);
     }
     else {
         mUnReadMessageList.push_back(messageInfo);
@@ -370,6 +361,7 @@ void ChatWindow::keyPressEvent(QKeyEvent *event)
     }
 }
 
+//发送文字消息
 bool ChatWindow::sendMessage(const QString &content) {
     if (content != "") {
         QDateTime currentDateTime = QDateTime::currentDateTime();
@@ -378,7 +370,7 @@ bool ChatWindow::sendMessage(const QString &content) {
         QString currentDateTimeStr = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
         MessageInfo* info = new TextMessageInfo;
         info->recv_id = mInfo.user_id;
-        info->send_id = mUserId;
+        info->send_id = user_id;
         info->timestamp = currentDateTimeStr.toStdString();
         //此处应优化为以info为参数
         bool ret = Processor::SendMessage(mUserId, content.toStdString());
@@ -420,18 +412,9 @@ void ChatWindow::sharkWindow() {
     animation->start();
 }
 
-
-
 void ChatWindow::offlineTransFileSuccess(Response rsp)
 {
     Q_UNUSED(rsp);
-}
-
-void ChatWindow::userMessageRead()
-{
-    if (mUnReadMessageList.size() > 0) {
-        //闪烁
-    }
 }
 
 
@@ -480,7 +463,7 @@ void ChatWindow::on_toolButton_8_clicked()
     }
 }
 
-//文件2
+//文件2 废弃
 void ChatWindow::on_toolButton_9_clicked()
 {
     QString filePath = QFileDialog::getOpenFileName(this, "Select File", "", "All Files (*)");
@@ -502,25 +485,50 @@ void ChatWindow::on_toolButton_9_clicked()
     }
 }
 
+
+bool openFileDirectory(const QString &filePath) {
+    QFileInfo fileInfo(filePath);
+    if (fileInfo.exists() && fileInfo.isFile()) {
+        QString directoryPath = fileInfo.absolutePath();
+        QUrl url = QUrl::fromLocalFile(directoryPath);
+        // 打开文件所在目录
+        QDesktopServices::openUrl(url);
+        return true;
+    } else {
+        qWarning() << "File does not exist or is not a valid file.";
+        return false;
+    }
+    return false;
+}
+
 //TODO:实现超链接功能
 void ChatWindow::handleCursorPositionChange() {
-//    // 处理文本框中的点击事件
-//    QTextCursor cursor = ui->plainTextEdit_2->textCursor();
-//    if (cursor.hasSelection()) {
-//        return; // 如果有选中内容，不处理
-//    }
-
-//    QTextCharFormat format = cursor.charFormat();
-//    if (format.foreground().color() == Qt::blue && format.fontUnderline()) {
-//        QString fileName = cursor.selectedText();
-//        QString filePath = QFileDialog::getOpenFileName(this, "Open File", fileName, "All Files (*)");
-//        if (!filePath.isEmpty()) {
-//            // 在这里可以处理打开文件的逻辑
-//            // 例如，打开文件或执行其他操作
-//            // QFile file(filePath);
-//            // 进行读取或其他操作
-//        }
-//    }
+    // 处理文本框中的点击事件
+    QTextCursor cursor = ui->plainTextEdit->textCursor();
+    if (cursor.hasSelection()) {
+        return; // 如果有选中内容，不处理
+    }
+    QTextCharFormat format = cursor.charFormat();
+    if (format.foreground().color() == Qt::blue && format.fontUnderline()) {
+        QString str = cursor.block().text();
+        QString completeTip = "Complete Trans Coming in ";
+        int index = str.indexOf(completeTip);
+        QString filePath;
+        if (index != -1) {
+            filePath = str.mid(index + completeTip.size());
+        }
+        qDebug() << filePath;
+        if (!filePath.isEmpty()) {
+            // 在这里可以处理打开文件的逻辑
+            // 例如，打开文件或执行其他操作
+            // QFile file(filePath);
+            // 进行读取或其他操作
+            bool ret = openFileDirectory(filePath);
+            if (ret) {
+                qDebug() << "Open " << filePath << " Success";
+            }
+        }
+    }
 }
 
 

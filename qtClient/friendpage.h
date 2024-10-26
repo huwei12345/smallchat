@@ -63,7 +63,6 @@ protected:
 
 
 signals:
-    void userMessageUnRead();
     void StoreFileSuccess(FileInfo info);
 private slots:
 

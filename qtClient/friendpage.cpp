@@ -332,7 +332,6 @@ void FriendPage::findAllFriendSuccess(Response response)
         PersonCache::GetInstance()->addPerson(info);
         ChatWindow* chatWindow = new ChatWindow(info);
         mChatWindowMap[info.user_id] = chatWindow;
-        connect(this, &FriendPage::userMessageUnRead, chatWindow, &ChatWindow::userMessageRead);
         connect(chatWindow, &ChatWindow::resetFriendNewMessage, this, &FriendPage::resetFriendNewMessage);
     }
     initFriendPhoto();
@@ -617,7 +616,6 @@ bool FriendPage::addGroupToPage(GroupInfo info)
     mGroupList[info.id] = info;
     GroupChatWindow* chatWindow = new GroupChatWindow(info);
     mGroupWindowMap[info.id] = chatWindow;
-    //        connect(this, &FriendPage::userMessageUnRead, chatWindow, &GroupChatWindow::userMessageRead);
     //        connect(chatWindow, &ChatWindow::friendPageUpdate, this, &GroupChatWindow::friendPageUpdate);
     return true;
 }
