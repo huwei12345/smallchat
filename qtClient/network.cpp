@@ -168,10 +168,6 @@ break;
         emit storeFileResponse(rsp);
         break;
     }
-    case FunctionCode::TransFile: {
-        emit offlineTransFileSuccess(rsp);
-        break;
-    }
     case FunctionCode::FindGroup: {
         emit FindFriendSuccess(rsp);
         break;

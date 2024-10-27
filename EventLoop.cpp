@@ -56,6 +56,9 @@ void EventLoop::Run()
                     else if (task->type == ALTRM) {
                         doAltrmTask(task);
                     }
+                    else if (task->type == WRITE) {
+                        doWrite(task);
+                    }
                     delete task;
                 }
             }
@@ -175,6 +178,8 @@ void EventLoop::doAltrmTask(Task *task)
 bool EventLoop::doWrite(Task *task)
 {
     //TODO:一次性全部写出，不太好，有缓冲区后修改
+    if (task->mData == nullptr)
+        return true;
     int fd = task->sockFd;
     const char* data = task->mData->c_str();
     int len = task->mData->size();
@@ -187,6 +192,7 @@ bool EventLoop::doWrite(Task *task)
         else if (ret == 0) {
             if (task->mData) {
                 delete task->mData;
+                task->mData = nullptr;
             }
             return ret;
         }
@@ -194,14 +200,17 @@ bool EventLoop::doWrite(Task *task)
             if (errno = EAGAIN || errno == EWOULDBLOCK) {
                 continue;
             }
+            printf("write error %d\n", errno);
             if (task->mData) {
                 delete task->mData;
+                task->mData = nullptr;
             }
             return ret;
         }
     }
     if (task->mData) {
         delete task->mData;
+        task->mData = nullptr;
     }
     return len;
 }

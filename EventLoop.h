@@ -19,6 +19,8 @@ public:
     int sockFd;
     int type;
     std::string* mData;
+    Task() : mData(nullptr) { }
+    ~Task() { if (mData != nullptr) delete mData; }
 };
 
 class EventLoop {

@@ -26,6 +26,8 @@
 #include "personcache.h"
 
 bool FriendPage::initPage() {
+    QIcon windowIcon(QPixmap(":/main/title.jpeg")); // 假设你的图标文件位于资源文件中或者项目目录下
+    setWindowIcon(windowIcon);
     setWindowTitle(tr("Qfei"));
     // 设置图片，可以是本地文件路径或者网络图片URL
     QIcon icon(":/friend/touxiang.jpeg"); // 使用资源文件
@@ -435,8 +437,8 @@ void FriendPage::getAllOfflineFileSuccess(Response response)
         //TODO:ToolButton put in widget
         FileInfo info;
         info.Generate();
-        stream2 >> info.ftpTaskId >> info.id >> info.send_id >> info.recv_id >>
-                info.serviceType >> info.serverPath >> info.serverFileName >> info.timestamp;
+        stream2 >> info.id >> info.send_id >> info.recv_id >>
+                info.serviceType >> info.serverPath >> info.serverFileName >> info.timestamp >> info.fileType >> info.filesize;
         if (info.send_id == 0) {
             info.ClientPath = QCoreApplication::applicationDirPath().toStdString() + std::string("/userInfo/") + info.serverFileName;
         }
@@ -449,7 +451,6 @@ void FriendPage::getAllOfflineFileSuccess(Response response)
         FtpSender::GetInstance()->GetFile(info);
 
         notifyFriendNewMessage(info.send_id);
-
         //提示开始进行文件传输
         mChatWindowMap[info.send_id]->notifyFileWillArrive(info);
     }
@@ -615,6 +616,7 @@ bool FriendPage::addGroupToPage(GroupInfo info)
     groupWidget->item(i)->setSizeHint(size);
     mGroupList[info.id] = info;
     GroupChatWindow* chatWindow = new GroupChatWindow(info);
+    chatWindow->init();
     mGroupWindowMap[info.id] = chatWindow;
     //        connect(chatWindow, &ChatWindow::friendPageUpdate, this, &GroupChatWindow::friendPageUpdate);
     return true;
@@ -749,7 +751,7 @@ void FriendPage::NofifyFileComing(Response response)
     MyProtocolStream stream(mData);
     FileInfo info;
     info.Generate();
-    stream >> info.ftpTaskId >> info.id >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.filesize >> info.fileType;
+    stream >> info.id >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.filesize >> info.fileType;
     info.print();
     //判断是否接收
     if (info.send_id == 0) {
@@ -778,12 +780,10 @@ void FriendPage::NofifyFileComing(Response response)
 
     if (ret) {
         //开始接收不等于已经接受完，需要接受完再去显示
-
-        //文件可以先提示开始接收，等接受完也提示接收完
         notifyFriendNewMessage(info.send_id);
 
+        //提示开始进行文件传输
         mChatWindowMap[info.send_id]->notifyFileWillArrive(info);
-        //FtpSender::GetInstance()->GetFile(info);
     }
 }
 
@@ -917,10 +917,11 @@ void FriendPage::GetFileSuccess(Response response)
     stream2 >> info.ftpTaskId;
     info = FtpSender::GetInstance()->file(info.ftpTaskId);
     stream2 >> info.id >> info.send_id >> info.recv_id >> info.serverPath >> info.serverFileName >> info.md5sum;
-    info.print();
+    qDebug() << "TTTTTTTTTTTTTTTTTTTTTTTTTTTTt" << info.ftpTaskId << " : "<< info.id << " -- " << QString::fromStdString(info.serverFileName);
     if (ret) {
         qDebug() << "GetFile Over Success" << QString::fromStdString(info.serverFileName);
-        QMessageBox::information(this, "提示", "文件获取成功");
+        //不能用提示box，因为会阻塞后边的信号emit,导致其他的同类信号没执行
+        //QMessageBox::information(this, "提示", "文件获取成功");
     }
     else {
         qDebug() << "GetFile Failure";

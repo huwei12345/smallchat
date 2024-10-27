@@ -1,4 +1,4 @@
-#ifndef GROUPCHATWINDOW_H
+﻿#ifndef GROUPCHATWINDOW_H
 #define GROUPCHATWINDOW_H
 
 #include <QWidget>
@@ -17,8 +17,13 @@ public:
     explicit GroupChatWindow(GroupInfo info, QWidget *parent = nullptr);
     ~GroupChatWindow();
     QWidget* returnWindow;
+    bool init();
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+
 private:
     GroupInfo mInfo;
+    int mUserId;
     Ui::GroupChatWindow *ui;
 };
 

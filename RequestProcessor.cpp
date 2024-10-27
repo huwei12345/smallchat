@@ -1164,7 +1164,7 @@ bool StoreFileProcessor::StoreFile(Request &request, FileInfo& fileObject)
     return ret && ret2; 
 }
 
-bool StoreFileProcessor::StoreFileSQL(Request &request, FileInfo &fileObject)
+bool StoreFileProcessor::StoreFileSQL(Request &request, FileInfo &fileInfo)
 {
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == nullptr) {
@@ -1176,12 +1176,12 @@ bool StoreFileProcessor::StoreFileSQL(Request &request, FileInfo &fileObject)
         INSERT INTO user_storage(user_id, parent_id, item_name, item_type, file_path, expired_time) 
         VALUES(?, ?, ?, ?, ?, ?);
     )");
-    pstmt->setInt(1, fileObject.send_id);
-    pstmt->setInt(2, fileObject.parentId);
-    pstmt->setString(3, fileObject.serverFileName);
-    pstmt->setString(4, fileObject.fileType);
-    pstmt->setString(5, fileObject.serverPath);
-    pstmt->setInt(6, fileObject.expiredTime);
+    pstmt->setInt(1, fileInfo.send_id);
+    pstmt->setInt(2, fileInfo.parentId);
+    pstmt->setString(3, fileInfo.serverFileName);
+    pstmt->setString(4, fileInfo.fileType);
+    pstmt->setString(5, fileInfo.serverPath);
+    pstmt->setInt(6, fileInfo.expiredTime);
     try {
         pstmt->execute();
         pstmt->close();
@@ -1200,12 +1200,12 @@ bool StoreFileProcessor::StoreFileSQL(Request &request, FileInfo &fileObject)
 
 bool StoreFileProcessor::InitUserSpaceRoot(int user_id)
 {
-    FileInfo fileObject;
-    fileObject.send_id = user_id;
-    fileObject.serverFileName = "UserRootDir";
-    fileObject.fileType = "rootdir";
-    fileObject.serverPath = "userInfo/" + std::to_string(user_id) + "/";
-    fileObject.expiredTime = 0;
+    FileInfo fileInfo;
+    fileInfo.send_id = user_id;
+    fileInfo.serverFileName = "UserRootDir";
+    fileInfo.fileType = "rootdir";
+    fileInfo.serverPath = "userInfo/" + std::to_string(user_id) + "/";
+    fileInfo.expiredTime = 0;
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == nullptr) {
         std::cerr << "Failed to get database connection." << std::endl;
@@ -1216,11 +1216,11 @@ bool StoreFileProcessor::InitUserSpaceRoot(int user_id)
         INSERT INTO user_storage(user_id, parent_id, item_name, item_type, file_path, expired_time) 
         VALUES(?, NULL, ?, ?, ?, ?);
     )");
-    pstmt->setInt(1, fileObject.send_id);
-    pstmt->setString(2, fileObject.serverFileName);
-    pstmt->setString(3, fileObject.fileType);
-    pstmt->setString(4, fileObject.serverPath);
-    pstmt->setInt(5, fileObject.expiredTime);
+    pstmt->setInt(1, fileInfo.send_id);
+    pstmt->setString(2, fileInfo.serverFileName);
+    pstmt->setString(3, fileInfo.fileType);
+    pstmt->setString(4, fileInfo.serverPath);
+    pstmt->setInt(5, fileInfo.expiredTime);
     try {
         pstmt->execute();
         pstmt->close();
@@ -1277,53 +1277,7 @@ int StoreFileProcessor::GetUserSpaceId(int user_id)
     }
 */
 
-void TransFileProcessor::Exec(Connection *conn, Request &request, Response &response)
-{
-    TransObject fileObject;
-    bool ret = TransFile(request, fileObject);
-    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
-    if (response.mCode) {
-        
-    }
-    else {
-        response.mhasData = false;
-        //some error info add
-    }
-}
 
-bool TransFileProcessor::TransFile(Request &request, TransObject& object)
-{
-    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
-    if (conn == nullptr) {
-        std::cerr << "Failed to get database connection." << std::endl;
-        return false;
-    }
-
-    // Prepare SQL statement to insert into offline_transfer table
-    sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
-        INSERT INTO offline_transfer (sender_id, receiver_id, file_path, message, created_at)
-        VALUES (?, ?, ?, ?, NOW())
-    )");
-    pstmt->setInt(1, object.sender_id);
-    pstmt->setInt(2, object.receiver_id);
-    pstmt->setString(3, object.file_path);
-    pstmt->setString(4, object.message);
-
-    try {
-        pstmt->execute();
-        pstmt->close();
-        MysqlPool::GetInstance()->releaseConncetion(conn);
-        return true;
-    } catch (sql::SQLException& e) {
-        std::cerr << "SQL error: " << e.what() << std::endl;
-        std::cerr << "Error code: " << e.getErrorCode() << std::endl;
-        std::cerr << "SQLState: " << e.getSQLState() << std::endl;
-        pstmt->close();
-        MysqlPool::GetInstance()->releaseConncetion(conn);
-        return false;
-    }
-    return false;
-}
 /*
   int sender_id = 1;  // Replace with actual sender ID
     int receiver_id = 2; // Replace with actual receiver ID
@@ -1457,7 +1411,6 @@ bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadSQL(Request &request, FileI
     }
     std::cout << info.send_id << "   " << info.recv_id << "  " << info.serverPath << " + " << info.serverFileName << info.fileType << "  " << info.filesize;
     // Prepare SQL statement to insert into offline_transfer table
-    info.fileType = "zip";
     info.filesize = 10;
     sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
         INSERT INTO offline_transfers (sender_id, receiver_id, file_name, file_type, file_size)
@@ -1568,6 +1521,8 @@ void ProcessGetFileSuccessProcessor::Exec(Connection *conn, Request &request, Re
     bool ret = ProcessGetFileSuccess(request, info);
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
+        response.mhasData = true;
+        response.mData = request.mData;
     }
     else {
         //some error info add
@@ -1671,7 +1626,7 @@ bool ProcessNofifyFileComingProcessor::sendNotifyFileByNet(Connection* conn, Fil
     std::string data;
     int clientSocket = conn->clientSocket; 
     MyProtocolStream stream(data);
-    stream << info.ftpTaskId << info.id << info.send_id << info.recv_id << info.serverPath << info.serverFileName << info.filesize << info.fileType;
+    stream << info.id << info.send_id << info.recv_id << info.serverPath << info.serverFileName << info.filesize << info.fileType;
     Response rsp(1, FunctionCode::NofifyFileComing, 3, 4, 5, 1, info.send_id, 1, true, data);
     string str = rsp.serial();
     bool success = conn->sendResponse(clientSocket, &rsp);
@@ -1701,7 +1656,6 @@ void ProcessGetAllOfflineFileProcessor::Exec(Connection *conn, Request &request,
         MyProtocolStream stream(data);
         stream << (int)infoList.size();
         for (int i = 0; i < infoList.size(); i++) {
-            stream << infoList[i].ftpTaskId;
             stream << infoList[i].id;
             stream << infoList[i].send_id;
             stream << infoList[i].recv_id;
@@ -1709,6 +1663,8 @@ void ProcessGetAllOfflineFileProcessor::Exec(Connection *conn, Request &request,
             stream << infoList[i].serverPath;
             stream << infoList[i].serverFileName;
             stream << infoList[i].timestamp;
+            stream << infoList[i].fileType;
+            stream << infoList[i].filesize;
             infoList[i].print();
         }
     }
@@ -1744,7 +1700,7 @@ bool ProcessGetAllOfflineFileProcessor::GetAllOfflineFile(Request &request, vect
             info.serverFileName = st->getString("file_name");
             info.fileType = st->getString("file_type");
             info.filesize = st->getInt("file_size");
-            info.timestamp = st->getString("file_type");
+            info.timestamp = st->getString("upload_time");
             infoList.push_back(info);
         }
     }

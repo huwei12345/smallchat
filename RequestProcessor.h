@@ -124,11 +124,6 @@ public:
     int GetUserSpaceId(int user_id);
 };
 
-class TransFileProcessor : public RequestProcessor
-{
-    void Exec(Connection* conn, Request& request, Response&);
-    bool TransFile(Request &request, TransObject &object);
-};
 
 int stoiAll(const std::string &str);
 

@@ -234,7 +234,6 @@ Server::Server(const char *ip, unsigned int port)
     requestProcessor[FunctionCode::JoinGroup] = new JoinGroupProcessor;
     requestProcessor[FunctionCode::ResponseJoinGroup] = new ResponseJoinGroupProcessor;
     requestProcessor[FunctionCode::StoreFile] = new StoreFileProcessor;
-    requestProcessor[FunctionCode::TransFile] = new TransFileProcessor;
 
     
     requestProcessor[FunctionCode::StartUpLoadFile] = new ProcessStartUpLoadFileProcessor;

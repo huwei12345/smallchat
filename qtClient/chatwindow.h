@@ -45,7 +45,6 @@ protected:
 
 private slots:
     void on_pushButton_clicked();
-    void offlineTransFileSuccess(Response rsp);
     void on_toolButton_5_clicked();
 
     void on_toolButton_8_clicked();

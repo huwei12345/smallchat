@@ -486,7 +486,7 @@ bool Processor::GetFileSuccess(FileInfo info)
     MyProtocolStream stream(data);
     stream << info.ftpTaskId << info.id << info.send_id << info.recv_id << info.serverPath << info.serverFileName << info.md5sum;
     Request req(1, FunctionCode::GetFileSuccess, 3, 4, 5, data, user_id);
-
+    qDebug() << "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy " << info.ftpTaskId << " : "<< QString::fromStdString(info.serverFileName);
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());
     int r = clientSocket->SendPacket(array);
