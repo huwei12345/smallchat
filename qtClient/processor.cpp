@@ -393,6 +393,23 @@ bool Processor::findSpaceFileTree(int userId)
     return false;
 }
 
+bool Processor::findAllgroupMember(int groupId)
+{
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << groupId;
+    Request req(1, FunctionCode::FindAllGroupMember, 3, 4, 5, data, user_id);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
 bool Processor::CreateGroup(GroupInfo &info)
 {
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();

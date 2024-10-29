@@ -34,6 +34,18 @@ public:
     TreeNode* addSpaceFileToPage(FileInfo info);
     TreeNode *addAllSpaceFileToPage();
 
+    bool editFile(QTreeWidgetItem *item);
+    bool deleteFile(QTreeWidgetItem *item);
+    bool storeFile(QTreeWidgetItem *item);
+    bool renameFile(QTreeWidgetItem *item);
+    bool openFile(QTreeWidgetItem *item);
+    bool openDir(QTreeWidgetItem *item);
+    bool update(QTreeWidgetItem *item);
+    bool openType(QTreeWidgetItem *item);
+    bool copy(QTreeWidgetItem *item);
+    bool cut(QTreeWidgetItem *item);
+    bool put(QTreeWidgetItem *item);
+    bool close(QTreeWidgetItem *item);
 private slots:
     void on_pushButton_clicked();
     void findSpaceFileTreeSuccess(Response response);

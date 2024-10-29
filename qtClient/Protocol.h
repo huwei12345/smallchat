@@ -103,6 +103,7 @@ namespace FunctionCode {
         ProcessGroupJoinReq                       = 31,
 
         FindSpaceFileTree                         = 32,
+        FindAllGroupMember                        = 33,
         //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
     };
 
@@ -144,7 +145,8 @@ namespace FunctionCode {
         "SearchAllGroup      ",
         "GetAllGroupRequest  ",
         "ProcessGroupJoinReq ",
-        "FindSpaceFileTree   "
+        "FindSpaceFileTree   ",
+        "FindAllGroupMember  ",
     };
 };
 
@@ -195,7 +197,8 @@ public:
 class MessageInfo {
 public:
     enum MessageType {Row, Text, Picture, File};
-    MessageInfo() : id(0), send_id(0), recv_id(0) , type(Row) { }
+    enum FlagType {Person = 0, Group = 1};
+    MessageInfo() : id(0), send_id(0), recv_id(0) , type(Row), flag(Person) { }
     int id;
     int send_id;
     int recv_id;
@@ -203,6 +206,7 @@ public:
     std::string message_text;//Text
     std::string path;//Picture File
     std::string timestamp;//发送时间
+    FlagType flag;
     virtual void print() = 0;
 };
 

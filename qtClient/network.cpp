@@ -123,6 +123,7 @@ break;
     }
     case FunctionCode::ProcessFriendRequest: {
         emit ProcessFriendRequestResult(rsp);
+        break;
     }
     case FunctionCode::SearchAllFriend: {
                 emit findAllFriendSuccess(rsp);
@@ -134,6 +135,7 @@ break;
     }
     case FunctionCode::GetAllOfflineFile: {
         emit getAllOfflineFileSuccess(rsp);
+        break;
     }
     case FunctionCode::GetAllFriendRequest: {
         emit getAllFriendRequestSuccess(rsp);
@@ -199,6 +201,10 @@ break;
     }
     case FunctionCode::FindSpaceFileTree: {
         emit findSpaceFileTreeSuccess(rsp);
+        break;
+    }
+    case FunctionCode::FindAllGroupMember: {
+        emit findAllGroupMemberSuccess(rsp);
         break;
     }
     default: {

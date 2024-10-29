@@ -241,16 +241,9 @@
                 </widget>
                </item>
                <item>
-                <widget class="QToolButton" name="sharkBtn">
-                 <property name="text">
-                  <string>抖动</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
                 <widget class="QToolButton" name="testBtn">
                  <property name="text">
-                  <string>文件2</string>
+                  <string>TEST</string>
                  </property>
                 </widget>
                </item>
@@ -312,7 +305,7 @@
                 </spacer>
                </item>
                <item>
-                <widget class="QPushButton" name="pushButton">
+                <widget class="QPushButton" name="sendMsgBtn">
                  <property name="text">
                   <string>发送</string>
                  </property>
@@ -357,7 +350,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QListWidget" name="listWidget">
+          <widget class="QListWidget" name="memberListWidget">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
              <horstretch>0</horstretch>

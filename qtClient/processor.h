@@ -43,6 +43,8 @@ public:
     static bool getFriendPhoto(UserInfo& info);
 
     static bool findSpaceFileTree(int userId);
+
+    static bool findAllgroupMember(int groupId);
 };
 
 #endif // PROCESSOR_H

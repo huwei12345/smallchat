@@ -24,8 +24,6 @@ public:
     vector<MessageInfo*> mUnReadMessageList;
     vector<MessageInfo*> mCurrentMessageList;//包括已读取和已发送和一些历史记录，可能需要持久化
     int mUserId;
-    void showChatContent();
-    void showContentWithEmoji(QString s);
     void sharkWindow();
 
     bool sendMessage(const QString &content);
@@ -37,9 +35,10 @@ public:
     void notifyFileAlreadyArrive(FileInfo fileInfo);
     void showMessage(MessageInfo *messageInfo);
 
-    void showFileInEdit(QTextEdit *textEdit, MessageInfo *info);
-
+    void showChatContent();
+    void showContentWithEmoji(QString s);
     void showFileMessageInEdit(QTextEdit *textEdit, MessageInfo *messageInfo);
+
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 

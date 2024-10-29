@@ -60,12 +60,12 @@ public:
     QWidget *widget_4;
     QHBoxLayout *horizontalLayout_3;
     QSpacerItem *horizontalSpacer_2;
-    QPushButton *pushButton;
+    QPushButton *sendMsgBtn;
     QWidget *widget_7;
     QVBoxLayout *verticalLayout_4;
     QListWidget *listWidget_2;
     QLabel *label_4;
-    QListWidget *listWidget;
+    QListWidget *memberListWidget;
 
     void setupUi(QWidget *GroupChatWindow)
     {
@@ -233,10 +233,10 @@ public:
 
         horizontalLayout_3->addItem(horizontalSpacer_2);
 
-        pushButton = new QPushButton(widget_4);
-        pushButton->setObjectName(QString::fromUtf8("pushButton"));
+        sendMsgBtn = new QPushButton(widget_4);
+        sendMsgBtn->setObjectName(QString::fromUtf8("sendMsgBtn"));
 
-        horizontalLayout_3->addWidget(pushButton);
+        horizontalLayout_3->addWidget(sendMsgBtn);
 
 
         verticalLayout_2->addWidget(widget_4);
@@ -274,12 +274,12 @@ public:
 
         verticalLayout_4->addWidget(label_4);
 
-        listWidget = new QListWidget(widget_7);
-        listWidget->setObjectName(QString::fromUtf8("listWidget"));
-        sizePolicy3.setHeightForWidth(listWidget->sizePolicy().hasHeightForWidth());
-        listWidget->setSizePolicy(sizePolicy3);
+        memberListWidget = new QListWidget(widget_7);
+        memberListWidget->setObjectName(QString::fromUtf8("memberListWidget"));
+        sizePolicy3.setHeightForWidth(memberListWidget->sizePolicy().hasHeightForWidth());
+        memberListWidget->setSizePolicy(sizePolicy3);
 
-        verticalLayout_4->addWidget(listWidget);
+        verticalLayout_4->addWidget(memberListWidget);
 
 
         horizontalLayout_4->addWidget(widget_7);
@@ -313,7 +313,7 @@ public:
         gifBtn->setText(QCoreApplication::translate("GroupChatWindow", "GIF", nullptr));
         sharkBtn->setText(QCoreApplication::translate("GroupChatWindow", "\346\212\226\345\212\250", nullptr));
         testBtn->setText(QCoreApplication::translate("GroupChatWindow", "\346\226\207\344\273\2662", nullptr));
-        pushButton->setText(QCoreApplication::translate("GroupChatWindow", "\345\217\221\351\200\201", nullptr));
+        sendMsgBtn->setText(QCoreApplication::translate("GroupChatWindow", "\345\217\221\351\200\201", nullptr));
         label_4->setText(QCoreApplication::translate("GroupChatWindow", "\347\276\244\346\210\220\345\221\230", nullptr));
     } // retranslateUi
 

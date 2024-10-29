@@ -47,7 +47,7 @@ signals:
     void NofifyFileComing(Response response);
 
     void findSpaceFileTreeSuccess(Response response);
-
+    void findAllGroupMemberSuccess(Response response);
 private:
     ClientNetWork();
     QTcpSocket mSocket;

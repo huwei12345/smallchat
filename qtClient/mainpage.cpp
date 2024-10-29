@@ -220,14 +220,48 @@ void MainPage::on_treeWidget_customContextMenuRequested(const QPoint &pos)
         QMenu contextMenu("Context Menu", ui->treeWidget);
 
         // 添加自定义菜单项
-        QAction *editAction = contextMenu.addAction("Edit");
-        QAction *deleteAction = contextMenu.addAction("Delete");
+        QAction *openAction = contextMenu.addAction("打开");
+        QAction *editAction = contextMenu.addAction("修改");
+        QAction *deleteAction = contextMenu.addAction("删除");
+        QAction *addAction = contextMenu.addAction("添加");
+        QAction *renameAction = contextMenu.addAction("重命名");
+        QAction *openDirAction = contextMenu.addAction("打开所在目录");
+        QAction *updateAction = contextMenu.addAction("更新");
+        QAction *openTypeAction = contextMenu.addAction("用...方式打开");
+        QAction *copyAction = contextMenu.addAction("复制");
+        QAction *cutAction = contextMenu.addAction("剪切");
+        QAction *putAction = contextMenu.addAction("粘贴");
+        QAction *closeAction = contextMenu.addAction("关闭");
         // 执行菜单
         QAction *selectedAction = contextMenu.exec(ui->treeWidget->viewport()->mapToGlobal(pos));
         if (selectedAction == editAction) {
             QMessageBox::information(this, "Edit Action", QString("Editing: %1").arg(item->text(0)));
+            editFile(item);
         } else if (selectedAction == deleteAction) {
             QMessageBox::information(this, "Delete Action", QString("Deleting: %1").arg(item->text(0)));
+            deleteFile(item);
+        } else if (selectedAction == addAction) {
+            QMessageBox::information(this, "Add Action", QString("Deleting: %1").arg(item->text(0)));
+            storeFile(item);
+        } else if (selectedAction == renameAction) {
+            QMessageBox::information(this, "Rename Action", QString("Deleting: %1").arg(item->text(0)));
+            renameFile(item);
+        } else if (selectedAction == openAction) {
+            openFile(item);
+        } else if (selectedAction == openDirAction) {
+            openDir(item);
+        } else if (selectedAction == updateAction) {
+            update(item);
+        } else if (selectedAction == openTypeAction) {
+            openType(item);
+        } else if (selectedAction == copyAction) {
+            copy(item);
+        } else if (selectedAction == cutAction) {
+            cut(item);
+        } else if (selectedAction == putAction) {
+            put(item);
+        } else if (selectedAction == closeAction) {
+            close(item);
         }
     }
 }
@@ -283,7 +317,7 @@ TreeNode* MainPage::addAllSpaceFileToPage() {
 
 TreeNode *MainPage::addSpaceFileToPage(FileInfo info)
 {
-
+    return nullptr;
 }
 
 //findAllFile
@@ -312,4 +346,42 @@ void MainPage::findSpaceFileTreeSuccess(Response response) {
     if (!mRoot) {
         qDebug() << "init Space File Tree Error";
     }
+}
+
+
+bool MainPage::editFile(QTreeWidgetItem* item) {
+
+}
+bool MainPage::deleteFile(QTreeWidgetItem* item) {
+
+}
+bool MainPage::storeFile(QTreeWidgetItem* item) {
+
+}
+bool MainPage::renameFile(QTreeWidgetItem* item) {
+
+}
+bool MainPage::openFile(QTreeWidgetItem* item) {
+
+}
+bool MainPage::openDir(QTreeWidgetItem* item) {
+
+}
+bool MainPage::update(QTreeWidgetItem* item) {
+
+}
+bool MainPage::openType(QTreeWidgetItem* item) {
+
+}
+bool MainPage::copy(QTreeWidgetItem* item) {
+
+}
+bool MainPage::cut(QTreeWidgetItem* item) {
+
+}
+bool MainPage::put(QTreeWidgetItem* item) {
+
+}
+bool MainPage::close(QTreeWidgetItem* item) {
+
 }
