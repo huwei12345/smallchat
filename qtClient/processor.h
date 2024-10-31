@@ -45,6 +45,9 @@ public:
     static bool findSpaceFileTree(int userId);
 
     static bool findAllgroupMember(int groupId);
+
+    static bool RenameFile(FileInfo info);
+    static bool DeleteFile(FileInfo info);
 };
 
 #endif // PROCESSOR_H

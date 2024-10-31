@@ -447,8 +447,8 @@ bool SendMessageProcessor::sendMessageByNet(Connection* conn, MessageInfo messag
     std::string data;
     int clientSocket = conn->clientSocket; 
     MyProtocolStream stream(data);
-    stream << message.id << message.sender_id << message.receiver_id << message.timestamp << message.message_text;
-    Response rsp(1, FunctionCode::SendMessage, 3, 4, 5, 1, message.sender_id, 1, true, data);
+    stream << message.id << message.send_id << message.recv_id << message.timestamp << message.message_text;
+    Response rsp(1, FunctionCode::SendMessage, 3, 4, 5, 1, message.send_id, 1, true, data);
     string str = rsp.serial();
     bool success = conn->sendResponse(clientSocket, &rsp);
     if (success > 0) {
@@ -463,12 +463,12 @@ void SendMessageProcessor::Exec(Connection* conn, Request &request, Response& re
     bool ret = false;
     ret = SendMessage(request, info);
     //在线时，直接通过网络发送消息给客户端，（接收消息和朋友请求的逻辑）
-    if (Server::GetInstance()->mUserSessionMap.count(info.receiver_id)) {
+    if (Server::GetInstance()->mUserSessionMap.count(info.recv_id)) {
         //从userId索引到Connection再得到clientSocket
         //思路1：在线，直接发送，入库read=0, 等消息确认相应，再修改read=1
         //思路2：直接入库read=0，不发送，等客户端进行心跳连接时，相应新消息和朋友请求
         //思路3：当在库中新增一项时，触发某任务，向客户发送消息，异步发送
-        Session* session = Server::GetInstance()->mUserSessionMap[info.receiver_id];
+        Session* session = Server::GetInstance()->mUserSessionMap[info.recv_id];
         Connection* friendConn = session->mConn;
         if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
             bool ret = sendMessageByNet(friendConn, info/*info.receiver_id*/);
@@ -637,8 +637,8 @@ bool SendMessageProcessor::SendMessage(const Request &request, MessageInfo& info
 {
     std::string mData = request.mData;
     MyProtocolStream stream(mData);
-    stream >> info.receiver_id >> info.message_text;
-    info.sender_id = request.mUserId;
+    stream >> info.recv_id >> info.message_text;
+    info.send_id = request.mUserId;
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
@@ -649,7 +649,7 @@ bool SendMessageProcessor::SendMessage(const Request &request, MessageInfo& info
         (sender_id, recipient_id, content) 
         values(?,?,?);)");
     state2->setInt(1, request.mUserId);
-    state2->setInt(2, info.receiver_id);
+    state2->setInt(2, info.recv_id);
     state2->setString(3, info.message_text);
     state2->execute();
 
@@ -698,7 +698,7 @@ void GetAllMessageProcessor::Exec(Connection* conn, Request &request, Response &
         MyProtocolStream stream(data);
         stream << (int)message.size();
         for (int i = 0; i < message.size(); i++) {
-            stream << message[i].id << message[i].sender_id << message[i].message_text << message[i].timestamp;
+            stream << message[i].id << message[i].send_id << message[i].message_text << message[i].timestamp;
         }
     }
     else {
@@ -726,10 +726,10 @@ bool GetAllMessageProcessor::GetAllMessage(const Request &request, vector<Messag
         while (st->next()) {
             MessageInfo info;
             info.id = st->getInt("message_id");
-            info.sender_id = st->getInt("sender_id");
+            info.send_id = st->getInt("sender_id");
             info.message_text = st->getString("content");
             info.timestamp = st->getString("timestamp");
-            cout << "sender_id:" << info.sender_id << " message:" << info.message_text << std::endl;
+            cout << "sender_id:" << info.send_id << " message:" << info.message_text << std::endl;
             infoList.push_back(info);
         }
     }
@@ -2005,4 +2005,13 @@ bool ProcessFindSpaceFileTreeProcessor::FindSpaceFileTree(const Request &request
     MysqlPool::GetInstance()->releaseConncetion(conn);
 
     return true;
+}
+
+void ProcessFindAllGroupMemberProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+}
+
+bool ProcessFindAllGroupMemberProcessor::FindAllGroupMember(const Request & request, vector<FileInfo>& fileList)
+{
+return false;
 }

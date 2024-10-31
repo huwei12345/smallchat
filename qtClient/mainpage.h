@@ -46,6 +46,7 @@ public:
     bool cut(QTreeWidgetItem *item);
     bool put(QTreeWidgetItem *item);
     bool close(QTreeWidgetItem *item);
+    bool addFile(QTreeWidgetItem *item);
 private slots:
     void on_pushButton_clicked();
     void findSpaceFileTreeSuccess(Response response);

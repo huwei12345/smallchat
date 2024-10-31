@@ -7,6 +7,7 @@
 #include <QMessageBox>
 #include <QMessageBox>
 #include <QSplitter>
+#include <QInputDialog>
 #include "processor.h"
 #include "ftpsender.h"
 #include "network.h"
@@ -224,6 +225,7 @@ void MainPage::on_treeWidget_customContextMenuRequested(const QPoint &pos)
         QAction *editAction = contextMenu.addAction("修改");
         QAction *deleteAction = contextMenu.addAction("删除");
         QAction *addAction = contextMenu.addAction("添加");
+        QAction *storeAction = contextMenu.addAction("保存");
         QAction *renameAction = contextMenu.addAction("重命名");
         QAction *openDirAction = contextMenu.addAction("打开所在目录");
         QAction *updateAction = contextMenu.addAction("更新");
@@ -242,8 +244,12 @@ void MainPage::on_treeWidget_customContextMenuRequested(const QPoint &pos)
             deleteFile(item);
         } else if (selectedAction == addAction) {
             QMessageBox::information(this, "Add Action", QString("Deleting: %1").arg(item->text(0)));
+            addFile(item);
+        } else if (selectedAction == storeAction) {
+            QMessageBox::information(this, "Store Action", QString("Deleting: %1").arg(item->text(0)));
             storeFile(item);
-        } else if (selectedAction == renameAction) {
+        }
+        else if (selectedAction == renameAction) {
             QMessageBox::information(this, "Rename Action", QString("Deleting: %1").arg(item->text(0)));
             renameFile(item);
         } else if (selectedAction == openAction) {
@@ -291,6 +297,7 @@ TreeNode* MainPage::addAllSpaceFileToPage() {
                 item->setText(2, QString::number(son.second.filesize));
                 root->item = item;
                 ui->treeWidget->addTopLevelItem(item);
+                item->setWhatsThis(0, QString::number(root->fileId));
             }
             else if (idBook.count(son.second.parentId)) {
                 node = new TreeNode(son.second.id);
@@ -305,6 +312,7 @@ TreeNode* MainPage::addAllSpaceFileToPage() {
                 node->item = item;
                 if (node->parent->item) {
                     node->parent->item->addChild(item);
+                    item->setWhatsThis(0, QString::number(son.second.id));
                 }
                 else {
                     qDebug() << "Error parent has no widget";
@@ -349,20 +357,47 @@ void MainPage::findSpaceFileTreeSuccess(Response response) {
 }
 
 
+
+//EDITSTOREFILE                             = 35,
+//跟新，直接替换
 bool MainPage::editFile(QTreeWidgetItem* item) {
-
+    int fileId = item->whatsThis(0).toInt();
+    FileInfo info = mSpaceFileMap[fileId];
+    Processor::SendFile(info);
 }
+
+
+//DELETESTOREFILE                           = 34,
 bool MainPage::deleteFile(QTreeWidgetItem* item) {
+    int fileId = item->whatsThis(0).toInt();
+    FileInfo info = mSpaceFileMap[fileId];
+    Processor::DeleteFile(info);
+}
+
+bool MainPage::addFile(QTreeWidgetItem* item) {
 
 }
+
 bool MainPage::storeFile(QTreeWidgetItem* item) {
 
 }
+
+//RENAMESTOREFILE                           = 37,
 bool MainPage::renameFile(QTreeWidgetItem* item) {
-
+    QString newName = QInputDialog::getText(this, "提示", "请输入要修改的名称");
+    int fileId = item->whatsThis(0).toInt();
+    FileInfo info = mSpaceFileMap[fileId];
+    if (!newName.isEmpty()) {
+        info.serverFileName = newName.toStdString();
+        Processor::RenameFile(info);
+    }
 }
-bool MainPage::openFile(QTreeWidgetItem* item) {
 
+//GETSTOREFILE                              = 36,
+bool MainPage::openFile(QTreeWidgetItem* item) {
+    int fileId = item->whatsThis(0).toInt();
+    FileInfo info = mSpaceFileMap[fileId];
+    Processor::GetFile(info);
 }
 bool MainPage::openDir(QTreeWidgetItem* item) {
 

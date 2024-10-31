@@ -74,7 +74,7 @@ namespace FunctionCode {
         CreateGroup                           = 13,
         JoinGroup                             = 14,
         ResponseJoinGroup                     = 15,
-        StoreFile                             = 16,
+
         TransFile                             = 17,
         FindGroup                             = 18,
 
@@ -102,7 +102,16 @@ namespace FunctionCode {
         GetAllGroupRequest                        = 30,
         ProcessGroupJoinReq                       = 31,
 
+        FindAllGroupMember                        = 33,
+
         FindSpaceFileTree                         = 32,
+        StoreFile                                 = 16,
+
+        DELETESTOREFILE                           = 34,
+        EDITSTOREFILE                             = 35,
+        GETSTOREFILE                              = 36,
+        RENAMESTOREFILE                           = 37,
+
         //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
     };
 
@@ -146,7 +155,12 @@ namespace FunctionCode {
         "GetAllGroupRequest  ",
         "ProcessGroupJoinReq ",
 
-        "FindSpaceFileTree   "
+        "FindSpaceFileTree   ",
+        "FindAllGroupMember  ",
+        "DELETESTOREFILE     ",
+        "EDITSTOREFILE       ",
+        "GETSTOREFILE        ",
+        "RENAMESTOREFILE     ",
     };
 };
 
@@ -196,20 +210,61 @@ public:
 
 class MessageInfo {
 public:
-    MessageInfo() : id(0), sender_id(0), message_text(""),
-        receiver_id(0), message_id(0) { }
-    MessageInfo(int sendId, std::string message) : id(0), sender_id(sendId), message_text(message),
-        receiver_id(0), message_id(0) { }
+    enum MessageType {Row, Text, Picture, File};
+    enum FlagType {Person = 0, Group = 1};
+    MessageInfo() : id(0), send_id(0), recv_id(0) , type(Row), flag(Person) { }
     int id;
-    int sender_id;
-    std::string message_text;
-    int receiver_id;
-    int message_id;
-    std::string timestamp;
-    // 可以添加其他需要返回的消息信息字段，如时间戳等
-    inline void print() {
-        std::cout << "sender_id: " << sender_id << "   "
-                  << "message: " << message_text << "\n";
+    int send_id;
+    int recv_id;
+    MessageType type;
+    std::string message_text;//Text
+    std::string path;//Picture File
+    std::string timestamp;//发送时间
+    FlagType flag;
+    virtual void print() { }
+};
+
+class TextMessageInfo : public MessageInfo {
+public:
+    TextMessageInfo() { type = Text; }
+
+    void print() override {
+        std::cout << "id"        << id
+                  << "send_id: " << send_id << "   "
+                  << "recv_id: " << recv_id << "   "
+                  << "type : "   << type
+                  << "message: " << message_text
+                  << "timestamp" << timestamp
+                  << "\n";
+    }
+};
+
+class PictureMessageInfo : public MessageInfo {
+public:
+    PictureMessageInfo() { type = Picture; }
+
+    void print() override {
+        std::cout << "id"        << id
+                  << "send_id: " << send_id << "   "
+                  << "recv_id: " << recv_id << "   "
+                  << "type : "   << type
+                  << "PicturePath: " << path
+                  << "timestamp" << timestamp
+                  << "\n";
+    }
+};
+
+class FileMessageInfo : public MessageInfo {
+public:
+    FileMessageInfo() { type = File; }
+    void print() override {
+        std::cout << "id"        << id
+                  << "send_id: " << send_id << "   "
+                  << "recv_id: " << recv_id << "   "
+                  << "type : "   << type
+                  << "FilePath: " << path
+                  << "timestamp" << timestamp
+                  << "\n";
     }
 };
 
@@ -219,7 +274,7 @@ enum FileServerType {
     SENDTOGROUP,
     STOREFILE,
     STORETIMEFILE,
-    ARRIVEFROMPOG//从他人或者群来的文件
+    ARRIVEFROMPOG,//从他人或者群来的文件
 };
 
 class FileInfo {
@@ -448,7 +503,7 @@ public:
     void print() const {
         std::cout << "[Request] "
                   << "Type: " << mType << ", "
-                  << "Function Code: " << FunctionCode::FunctionCodeString[mFunctionCode] << ", "
+                  << "Function Code: " << (mFunctionCode < (int)FunctionCode::FunctionCodeString.size() ? FunctionCode::FunctionCodeString[mFunctionCode] : "NULL") << ", "
                   << "Flag: " << mFlag << ", "
                   << "Direction: " << mDirection << ", "
                   << "TimeStamp: " << mTimeStamp << ", "
@@ -486,7 +541,7 @@ public:
     void print() const {
         std::cout << "[Response] "
                   << "Type: " << mType << ", "
-                  << "Function Code: " << FunctionCode::FunctionCodeString[mFunctionCode] << ", "
+                  << "Function Code: " << (mFunctionCode < (int)FunctionCode::FunctionCodeString.size() ? FunctionCode::FunctionCodeString[mFunctionCode] : "NULL") << ", "
                   << "Flag: " << mFlag << ", "
                   << "Direction: " << mDirection << ", "
                   << "TimeStamp: " << mTimeStamp << ", "
