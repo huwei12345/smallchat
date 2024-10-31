@@ -447,8 +447,8 @@ bool SendMessageProcessor::sendMessageByNet(Connection* conn, MessageInfo messag
     std::string data;
     int clientSocket = conn->clientSocket; 
     MyProtocolStream stream(data);
-    stream << message.id << message.sender_id << message.receiver_id << message.timestamp << message.message_text;
-    Response rsp(1, FunctionCode::SendMessage, 3, 4, 5, 1, message.sender_id, 1, true, data);
+    stream << message.id << message.send_id << message.recv_id << message.timestamp << message.message_text;
+    Response rsp(1, FunctionCode::SendMessage, 3, 4, 5, 1, message.send_id, 1, true, data);
     string str = rsp.serial();
     bool success = conn->sendResponse(clientSocket, &rsp);
     if (success > 0) {
@@ -678,7 +678,7 @@ bool SendMessageProcessor::SendToPerson(const Request &request, MessageInfo& inf
         (sender_id, recipient_id, content) 
         values(?,?,?);)");
     state2->setInt(1, request.mUserId);
-    state2->setInt(2, info.receiver_id);
+    state2->setInt(2, info.recv_id);
     state2->setString(3, info.message_text);
     state2->execute();
 
@@ -758,7 +758,7 @@ void GetAllMessageProcessor::Exec(Connection* conn, Request &request, Response &
         MyProtocolStream stream(data);
         stream << (int)message.size();
         for (int i = 0; i < message.size(); i++) {
-            stream << message[i].id << message[i].sender_id << message[i].message_text << message[i].timestamp;
+            stream << message[i].id << message[i].send_id << message[i].message_text << message[i].timestamp;
         }
     }
     else {
@@ -786,10 +786,10 @@ bool GetAllMessageProcessor::GetAllMessage(const Request &request, vector<Messag
         while (st->next()) {
             MessageInfo info;
             info.id = st->getInt("message_id");
-            info.sender_id = st->getInt("sender_id");
+            info.send_id = st->getInt("sender_id");
             info.message_text = st->getString("content");
             info.timestamp = st->getString("timestamp");
-            cout << "sender_id:" << info.sender_id << " message:" << info.message_text << std::endl;
+            cout << "sender_id:" << info.send_id << " message:" << info.message_text << std::endl;
             infoList.push_back(info);
         }
     }

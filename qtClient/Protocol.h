@@ -74,7 +74,7 @@ namespace FunctionCode {
         CreateGroup                           = 13,
         JoinGroup                             = 14,
         ResponseJoinGroup                     = 15,
-        StoreFile                             = 16,
+
         TransFile                             = 17,
         FindGroup                             = 18,
 
@@ -102,8 +102,16 @@ namespace FunctionCode {
         GetAllGroupRequest                        = 30,
         ProcessGroupJoinReq                       = 31,
 
-        FindSpaceFileTree                         = 32,
         FindAllGroupMember                        = 33,
+
+        FindSpaceFileTree                         = 32,
+        StoreFile                                 = 16,
+
+        DELETESTOREFILE                           = 34,
+        EDITSTOREFILE                             = 35,
+        GETSTOREFILE                              = 36,
+        RENAMESTOREFILE                           = 37,
+
         //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
     };
 
@@ -132,6 +140,7 @@ namespace FunctionCode {
 //上送文件，头像、图片、文件等
         "StartUpLoadFile     ",
         "UpLoadFileSuccess   ",
+
         "GetFile             ",
         "GetFileSuccess      ",
         "GetFileThird        ",
@@ -145,8 +154,13 @@ namespace FunctionCode {
         "SearchAllGroup      ",
         "GetAllGroupRequest  ",
         "ProcessGroupJoinReq ",
+
         "FindSpaceFileTree   ",
         "FindAllGroupMember  ",
+        "DELETESTOREFILE     ",
+        "EDITSTOREFILE       ",
+        "GETSTOREFILE        ",
+        "RENAMESTOREFILE     ",
     };
 };
 
@@ -212,7 +226,7 @@ public:
     std::string path;//Picture File
     std::string timestamp;//发送时间
     FlagType flag;
-    virtual void print() = 0;
+    virtual void print() { }
 };
 
 class TextMessageInfo : public MessageInfo {
@@ -494,7 +508,7 @@ public:
     void print() const {
         std::cout << "[Request] "
                   << "Type: " << mType << ", "
-                  << "Function Code: " << FunctionCode::FunctionCodeString[mFunctionCode] << ", "
+                  << "Function Code: " << (mFunctionCode < (int)FunctionCode::FunctionCodeString.size() ? FunctionCode::FunctionCodeString[mFunctionCode] : "NULL") << ", "
                   << "Flag: " << mFlag << ", "
                   << "Direction: " << mDirection << ", "
                   << "TimeStamp: " << mTimeStamp << ", "
@@ -532,7 +546,7 @@ public:
     void print() const {
         std::cout << "[Response] "
                   << "Type: " << mType << ", "
-                  << "Function Code: " << FunctionCode::FunctionCodeString[mFunctionCode] << ", "
+                  << "Function Code: " << (mFunctionCode < (int)FunctionCode::FunctionCodeString.size() ? FunctionCode::FunctionCodeString[mFunctionCode] : "NULL") << ", "
                   << "Flag: " << mFlag << ", "
                   << "Direction: " << mDirection << ", "
                   << "TimeStamp: " << mTimeStamp << ", "
