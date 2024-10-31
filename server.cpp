@@ -253,6 +253,8 @@ Server::Server(const char *ip, unsigned int port)
     requestProcessor[FunctionCode::SearchAllGroup] = new SearchAllGroupProcessor;
     requestProcessor[FunctionCode::FindGroup] = new FindGroupProcessor;
     requestProcessor[FunctionCode::FindSpaceFileTree] = new ProcessFindSpaceFileTreeProcessor;
+    
+    requestProcessor[FunctionCode::FindAllGroupMember] = new ProcessFindAllGroupMemberProcessor;
     for (int i = 50; i < 100; i++) {
         requestProcessor[i] = new RequestProcessor;
     }

@@ -53,7 +53,6 @@ public:
     QToolButton *emojiBtn;
     QToolButton *fileBtn;
     QToolButton *gifBtn;
-    QToolButton *sharkBtn;
     QToolButton *testBtn;
     QSpacerItem *horizontalSpacer;
     QTextEdit *plainTextEdit_2;
@@ -200,11 +199,6 @@ public:
 
         horizontalLayout_2->addWidget(gifBtn);
 
-        sharkBtn = new QToolButton(widget_3);
-        sharkBtn->setObjectName(QString::fromUtf8("sharkBtn"));
-
-        horizontalLayout_2->addWidget(sharkBtn);
-
         testBtn = new QToolButton(widget_3);
         testBtn->setObjectName(QString::fromUtf8("testBtn"));
 
@@ -311,8 +305,7 @@ public:
         emojiBtn->setText(QCoreApplication::translate("GroupChatWindow", "\350\241\250\346\203\205", nullptr));
         fileBtn->setText(QCoreApplication::translate("GroupChatWindow", "\346\226\207\344\273\266", nullptr));
         gifBtn->setText(QCoreApplication::translate("GroupChatWindow", "GIF", nullptr));
-        sharkBtn->setText(QCoreApplication::translate("GroupChatWindow", "\346\212\226\345\212\250", nullptr));
-        testBtn->setText(QCoreApplication::translate("GroupChatWindow", "\346\226\207\344\273\2662", nullptr));
+        testBtn->setText(QCoreApplication::translate("GroupChatWindow", "TEST", nullptr));
         sendMsgBtn->setText(QCoreApplication::translate("GroupChatWindow", "\345\217\221\351\200\201", nullptr));
         label_4->setText(QCoreApplication::translate("GroupChatWindow", "\347\276\244\346\210\220\345\221\230", nullptr));
     } // retranslateUi

@@ -53,7 +53,9 @@ class AddFriendProcessor  : public RequestProcessor  {
 class SendMessageProcessor : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
     bool SendMessage(const Request &request, MessageInfo &info);
-        bool sendMessageByNet(Connection *conn, MessageInfo message);
+    bool SendToPerson(const Request &request, MessageInfo &info);
+    bool SendToGroup(const Request &request, MessageInfo &info);
+    bool sendMessageByNet(Connection *conn, MessageInfo message);
 };
 
 class GetAllMessageProcessor : public RequestProcessor  {
@@ -193,6 +195,13 @@ class ProcessFindSpaceFileTreeProcessor : public RequestProcessor {
     void Exec(Connection* conn, Request& request, Response& response);
     bool FindSpaceFileTree(const Request& request, vector<FileInfo>& fileList);
 };
+
+class ProcessFindAllGroupMemberProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response& response);
+    bool FindAllGroupMember(const Request &request, vector<UserInfo> &userList);
+};
+
+
 
 #endif
 

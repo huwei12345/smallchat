@@ -463,15 +463,30 @@ void SendMessageProcessor::Exec(Connection* conn, Request &request, Response& re
     bool ret = false;
     ret = SendMessage(request, info);
     //在线时，直接通过网络发送消息给客户端，（接收消息和朋友请求的逻辑）
-    if (Server::GetInstance()->mUserSessionMap.count(info.receiver_id)) {
-        //从userId索引到Connection再得到clientSocket
-        //思路1：在线，直接发送，入库read=0, 等消息确认相应，再修改read=1
-        //思路2：直接入库read=0，不发送，等客户端进行心跳连接时，相应新消息和朋友请求
-        //思路3：当在库中新增一项时，触发某任务，向客户发送消息，异步发送
-        Session* session = Server::GetInstance()->mUserSessionMap[info.receiver_id];
-        Connection* friendConn = session->mConn;
-        if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
-            bool ret = sendMessageByNet(friendConn, info/*info.receiver_id*/);
+    if (info.flag == MessageInfo::Person) {
+        if (Server::GetInstance()->mUserSessionMap.count(info.receiver_id)) {
+            //从userId索引到Connection再得到clientSocket
+            //思路1：在线，直接发送，入库read=0, 等消息确认相应，再修改read=1
+            //思路2：直接入库read=0，不发送，等客户端进行心跳连接时，相应新消息和朋友请求
+            //思路3：当在库中新增一项时，触发某任务，向客户发送消息，异步发送
+            Session* session = Server::GetInstance()->mUserSessionMap[info.receiver_id];
+            Connection* friendConn = session->mConn;
+            if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
+                bool ret = sendMessageByNet(friendConn, info/*info.receiver_id*/);
+            }
+        }
+    }
+    else {
+        //Group
+        //从GroupCache中取出某群组的所有成员，判断在线，然后依次发送, Redis
+        //receiver_id = groupId
+        if (Server::GetInstance()->mUserSessionMap.count(info.receiver_id)) {
+            
+            Session* session = Server::GetInstance()->mUserSessionMap[info.receiver_id];
+            Connection* friendConn = session->mConn;
+            if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
+                bool ret = sendMessageByNet(friendConn, info/*info.receiver_id*/);
+            }
         }
     }
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
@@ -637,15 +652,29 @@ bool SendMessageProcessor::SendMessage(const Request &request, MessageInfo& info
 {
     std::string mData = request.mData;
     MyProtocolStream stream(mData);
-    stream >> info.receiver_id >> info.message_text;
+    stream >> info.receiver_id >> info.message_text >> info.flag;
     info.sender_id = request.mUserId;
+    
+    info.timestamp = SetTime::GetInstance()->getAccurateTime();
+    printf("info.time = %s\n", info.timestamp.c_str());
+	
+    if (info.flag == MessageInfo::Group) {
+        return SendToGroup(request, info);
+    }
+    else {
+        return SendToPerson(request, info);
+    }
+    
+
+}
+
+bool SendMessageProcessor::SendToPerson(const Request &request, MessageInfo& info)
+{
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
     }
-    info.timestamp = SetTime::GetInstance()->getAccurateTime();
-    printf("info.time = %s\n", info.timestamp.c_str());
-	sql::PreparedStatement* state2 = conn->prepareStatement(R"(insert into messages
+    sql::PreparedStatement* state2 = conn->prepareStatement(R"(insert into messages
         (sender_id, recipient_id, content) 
         values(?,?,?);)");
     state2->setInt(1, request.mUserId);
@@ -669,7 +698,38 @@ bool SendMessageProcessor::SendMessage(const Request &request, MessageInfo& info
     if (info.id <= 0)
         return false;
     return true;
+}
 
+bool SendMessageProcessor::SendToGroup(const Request &request, MessageInfo &info)
+{
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == NULL) {
+        return false;
+    }
+    sql::PreparedStatement* state2 = conn->prepareStatement(R"(insert into group_messages
+        (sender_id, recipient_id, content) 
+        values(?,?,?);)");
+    state2->setInt(1, request.mUserId);
+    state2->setInt(2, info.receiver_id);
+    state2->setString(3, info.message_text);
+    state2->execute();
+
+    state2->close();
+    sql::PreparedStatement* state3 = conn->prepareStatement("SELECT LAST_INSERT_ID();");
+    sql::ResultSet* rs = state3->executeQuery();
+    int autoIncKeyFromFunc = -1;
+    if (rs->next()) {
+        autoIncKeyFromFunc = rs->getInt(1);
+    } else {
+        // throw an exception from here
+    }
+    info.id = autoIncKeyFromFunc;
+    rs->close();
+    state3->close();
+    MysqlPool::GetInstance()->releaseConncetion(conn);
+    if (info.id <= 0)
+        return false;
+    return true;
 }
 
 std::string UserInfo::registerSerial() {
@@ -1993,6 +2053,75 @@ bool ProcessFindSpaceFileTreeProcessor::FindSpaceFileTree(const Request &request
             info.expiredTime = st->getInt("expired_time");
             //cout << "id:" << info.id << " name:" << info.role << " email:" << info.group_name << "status:" << info.admin_id << std::endl;
             fileList.push_back(info);
+        }
+    }
+    catch(sql::SQLException& e) {
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    MysqlPool::GetInstance()->releaseConncetion(conn);
+
+    return true;
+}
+
+void ProcessFindAllGroupMemberProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    vector<UserInfo> friendList;
+    bool ret = FindAllGroupMember(request, friendList);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        response.mhasData = true;
+        //绑定Cache中好友
+        //bindAllFriendState(conn, request, friendList);
+        std::string str;
+        MyProtocolStream stream(str);
+        stream << (int)friendList.size();
+        for (auto it = friendList.begin(); it != friendList.end(); ++it) {
+            stream << it->user_id << it->friendStatus << it->username << it->email << it->avatar_url << it->status << it->role << it->joined_at;
+        }
+        response.mData = str;
+    }
+    else {
+        //some error info add
+    }
+}
+
+bool ProcessFindAllGroupMemberProcessor::FindAllGroupMember(const Request &request, vector<UserInfo> &userList)
+{
+    std::string mData = request.mData;
+    MyProtocolStream stream(mData);
+    UserInfo info;
+    int groupId = 0;
+    stream >> groupId;
+    
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == NULL) {
+        return false;
+    }
+    //TODO: 联合查询，用户的名字、email等返回
+	sql::PreparedStatement* state2 = conn->prepareStatement(R"(
+        SELECT u.user_id AS user_id, u.username AS username, u.email, u.avatar_url, g.role, g.joined_at
+        FROM group_members g
+        JOIN users u ON u.user_id = g.user_id
+        WHERE g.group_id = ? and role <= 3;
+        )");
+    state2->setInt(1, groupId);
+    sql::ResultSet *st = state2->executeQuery();
+
+    int id = -1;
+    try {
+        while (st->next()) {
+            info.user_id = st->getInt("user_id");
+            info.username = st->getString("username");
+            info.email = st->getString("email");
+            info.avatar_url = st->getString("avatar_url");
+            info.role = st->getString("role");
+            info.joined_at = st->getString("joined_at");
+            cout << "id:" << info.user_id << " name:" << info.username << " email:" << info.email << "status:" << info.friendStatus << std::endl;
+            userList.push_back(info);
         }
     }
     catch(sql::SQLException& e) {

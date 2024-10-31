@@ -172,6 +172,8 @@ public:
     // 可以添加其他需要返回的用户信息字段
     int status;//'online', 'offline', ''
     int storage_id;
+    string role;
+    string joined_at;
     // int last_login;
     // int created_at;
     // int flag;
@@ -193,6 +195,9 @@ public:
        << "Address: " << address << "\n";
     }
 };
+
+
+
 
 class MessageInfo {
 public:

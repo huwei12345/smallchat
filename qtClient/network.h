@@ -22,6 +22,7 @@ signals:
     void loginFailure();
     void FindFriendSuccess(Response response);
     void ChangeUserPic(FileInfo info);
+    void ChangeGroupUserPic(FileInfo info);
     void ChangeUserPicBySend(FileInfo info);
     void FindGroupSuccess(Response response);
     void findAllFriendSuccess(Response response);

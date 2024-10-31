@@ -58,7 +58,7 @@ bool Processor::SendMessage(int reciveId, const string& content) {
     message.message_text = content;
     std::string data;
     MyProtocolStream stream(data);
-    stream << message.recv_id << message.message_text;
+    stream << message.recv_id << message.message_text << message.flag;
     Request req(1, FunctionCode::SendMessage, 3, 4, 5, data, user_id);
 
     string str = req.serial();

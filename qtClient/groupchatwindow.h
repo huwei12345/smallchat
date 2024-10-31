@@ -1,6 +1,8 @@
 ﻿#ifndef GROUPCHATWINDOW_H
 #define GROUPCHATWINDOW_H
 
+#include <QListWidget>
+#include <QToolButton>
 #include <QWidget>
 #include "Protocol.h"
 #include "emojiselector.h"
@@ -21,7 +23,6 @@ public:
     bool init();
     bool initGroupMember();
 
-    void addGroupMemberToPage(int index, UserInfo info);
     bool initGroupMemberPhoto();
     bool sendMessage(const QString &content);
     void addMessage(MessageInfo *info);
@@ -38,6 +39,9 @@ public:
     void handleCursorPositionChange();
     bool openFileDirectory(const QString &filePath);
 
+    void addGroupMemberToPage(int index, UserInfo info);
+    bool showPersonCard(QListWidgetItem *item);
+    int getFriendPhoto(UserInfo &userinfo);
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -51,13 +55,17 @@ private slots:
     void on_imageBtn_clicked();
 
     void on_fileBtn_clicked();
-
+    void ChangeGroupUserPic(FileInfo info);
 private:
     GroupInfo mInfo;
     int mUserId;
     std::map<int, UserInfo> mGroupMemberMap;
     Ui::GroupChatWindow *ui;
     EmojiSelector *mEmojiSelector;
+
+    std::map<int, QToolButton*> mFriendButton;
+
+    std::map<int, QIcon*> mPhotoMap;
 };
 
 #endif // GROUPCHATWINDOW_H

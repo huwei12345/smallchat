@@ -616,7 +616,6 @@ bool FriendPage::addGroupToPage(GroupInfo info)
     groupWidget->item(i)->setSizeHint(size);
     mGroupList[info.id] = info;
     GroupChatWindow* chatWindow = new GroupChatWindow(info);
-    chatWindow->init();
     mGroupWindowMap[info.id] = chatWindow;
     //        connect(chatWindow, &ChatWindow::friendPageUpdate, this, &GroupChatWindow::friendPageUpdate);
     return true;
@@ -637,6 +636,7 @@ void FriendPage::chatWithGroup(QListWidgetItem* item) {
     qDebug() << "groupId" << groupId;
     GroupChatWindow* chatWindow = mGroupWindowMap[groupId];
     chatWindow->returnWindow = this;
+    chatWindow->init();
     chatWindow->show();
     //chatWindow->showChatContent();
 }

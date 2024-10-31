@@ -50,6 +50,18 @@ vector<std::string> tableCreateStringMap = {
     FOREIGN KEY (recipient_id) REFERENCES users(user_id)
 	);
 )",
+	//Messages
+	R"(
+	CREATE TABLE group_messages (
+    message_id INT AUTO_INCREMENT PRIMARY KEY,
+    sender_id INT NOT NULL,
+    recipient_id INT NOT NULL,
+    content TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sender_id) REFERENCES users(user_id),
+    FOREIGN KEY (recipient_id) REFERENCES users(user_id)
+	);
+)",
 	//FriendShips
 	R"(
 	CREATE TABLE friendships (

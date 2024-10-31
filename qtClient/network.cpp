@@ -43,6 +43,7 @@ void ClientNetWork::ftpFileGetOver(FileInfo info)
     //具体业务，也许可以使用回调函数
     if (info.serviceType == FileServerType::TOUXIANG) {
         emit ChangeUserPic(info);
+        emit ChangeGroupUserPic(info);
     }
     bool ret = Processor::GetFileSuccess(info);
     if (!ret) {

@@ -1,5 +1,6 @@
 ﻿#include "clientpersoninfo.h"
 #include "friendpage.h"
+#include "ftpsender.h"
 #include "groupchatwindow.h"
 #include "network.h"
 #include "personcache.h"
@@ -13,6 +14,7 @@
 #include <QTextBlock>
 #include <QFileInfo>
 #include <QDesktopServices>
+#include <QSplitter>
 #include "processor.h"
 
 GroupChatWindow::GroupChatWindow(QWidget *parent) :
@@ -32,7 +34,8 @@ GroupChatWindow::GroupChatWindow(QWidget *parent) :
 
     ui->plainTextEdit->setReadOnly(true); // 设置为只读，防止用户编辑内容
 
-    QObject::connect(ui->plainTextEdit, &QTextEdit::cursorPositionChanged, this, &GroupChatWindow::handleCursorPositionChange);
+    connect(ui->plainTextEdit, &QTextEdit::cursorPositionChanged, this, &GroupChatWindow::handleCursorPositionChange);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::ChangeGroupUserPic, this, &GroupChatWindow::ChangeGroupUserPic);
     //TODO:
     //    connect(this, &ChatWindow::confirmMessage, ClientNetWork::GetInstance(), &ClientNetWork::confirmMessage);
 
@@ -41,26 +44,26 @@ GroupChatWindow::GroupChatWindow(QWidget *parent) :
 
 
     // 创建一个垂直布局
-//    QWidget* widget = ui->widget_2;
+    QWidget* widget = ui->widget_2;
 
-//    // 创建一个 QSplitter
-//    QSplitter *splitter = new QSplitter(Qt::Vertical);
+    // 创建一个 QSplitter
+    QSplitter *splitter = new QSplitter(Qt::Vertical);
 
-//    // 添加左侧和右侧的部件
-//    QWidget *upWidget = ui->plainTextEdit;
-//    QWidget *downWidget = ui->widget_5;
-//    ui->widget_5->setMinimumWidth(80); // 设置最小宽度
-//    // 将部件添加到分隔器
-//    splitter->addWidget(upWidget);
-//    splitter->addWidget(downWidget);
+    // 添加左侧和右侧的部件
+    QWidget *upWidget = ui->plainTextEdit;
+    QWidget *downWidget = ui->widget_5;
+    ui->widget_5->setMinimumWidth(80); // 设置最小宽度
+    // 将部件添加到分隔器
+    splitter->addWidget(upWidget);
+    splitter->addWidget(downWidget);
 
-//    // 设置分隔条的初始大小
-//    splitter->setSizes(QList<int>({240, 150}));  // 左右部件的初始宽度
+    // 设置分隔条的初始大小
+    splitter->setSizes(QList<int>({240, 150}));  // 左右部件的初始宽度
 
-//    // 将分隔器添加到布局
-//    QLayout* layout = widget->layout();
-//    layout->addWidget(splitter);
-    // 设置主窗口的布局
+    // 将分隔器添加到布局
+    QLayout* layout = widget->layout();
+    layout->addWidget(splitter);
+    //设置主窗口的布局
 }
 
 GroupChatWindow::GroupChatWindow(GroupInfo info, QWidget *parent) :
@@ -121,10 +124,11 @@ void GroupChatWindow::findAllGroupMemberSuccess(Response response)
     MyProtocolStream stream2(mdata);
     int size = 0;
     stream2 >> size;
+    qDebug() << "lllllllllllll " << size;
     for (int i = 0; i < size; i++) {
         //TODO:ToolButton put in widget
         UserInfo info;
-        stream2 >> info.user_id >> info.friendStatus >> info.username >> info.email >> info.avatar_url >> info.status;
+        stream2 >> info.user_id >> info.friendStatus >> info.username >> info.email >> info.avatar_url >> info.status >> info.role >> info.joined_at;
         addGroupMemberToPage(i, info);//
         info.print();
         mGroupMemberMap[info.user_id] = info;
@@ -136,11 +140,86 @@ void GroupChatWindow::findAllGroupMemberSuccess(Response response)
 
 void GroupChatWindow::addGroupMemberToPage(int index, UserInfo info) {
     Q_UNUSED(index);
-    QString str = QString::number(info.user_id) + " : " + QString::fromStdString(info.username);
-    ui->memberListWidget->addItem(str);
+
+    QToolButton* button = new QToolButton();
+    QString str = QString::fromStdString(info.username);
+    //str += QString::number(i);
+    button->setText(str);
+    button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    QIcon *userIcon = new QIcon(QPixmap(":/friend/touxiang.jpeg"));
+    button->setIcon(*userIcon);
+    mPhotoMap[info.user_id] = userIcon;
+    //button->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
+    button->setMinimumHeight(25);
+    button->setMinimumWidth(25);
+    button->setIconSize(QSize(25, 25));
+    QString str2("item");
+    str2 += QString::number(index);
+    ui->memberListWidget->addItem(str2);
+    ui->memberListWidget->setItemWidget(ui->memberListWidget->item(index), button);
+    ui->memberListWidget->item(index)->setWhatsThis(QString::number(info.user_id));
+    //installEventFilter + eventFilter overide可以实现防覆
+    button->installEventFilter(this); // 在当前类中实现 eventFilter 方法
+    mFriendButton[info.user_id] =button;
+    button->setProperty("type", "Friend");
+    // 连接信号和槽
+    connect(ui->memberListWidget, &QListWidget::itemClicked, this, &GroupChatWindow::showPersonCard);
+    QSize size;
+    size.setHeight(25);
+    size.setWidth(60);
+    ui->memberListWidget->item(index)->setSizeHint(size);
+}
+
+bool GroupChatWindow::showPersonCard(QListWidgetItem* item) {
+
+}
+
+int GroupChatWindow::getFriendPhoto(UserInfo& userinfo) {
+    if (userinfo.avatar_url == "avatar_url") {
+        return 0;
+    }
+    FileInfo info;
+    QString serverPath = QString::fromStdString(userinfo.avatar_url);
+    QFileInfo fileInfo(serverPath);
+    // 获取文件名（包括扩展名）
+    QString fileName = fileInfo.fileName();
+
+    QRegularExpression pattern(R"(^mr(1[0-9]|20|[1-9])\.jpg$)");
+    bool regularPic = pattern.match(fileName).hasMatch();
+    if (regularPic) {
+        QString filePath = QCoreApplication::applicationDirPath() + "/userPhoto/regular/" + fileName;
+        qDebug() << "修改朋友头像，当前工作目录:" << filePath;
+        if (QFile::exists(filePath)) {
+            // 如果文件存在，加载图像并设置为头像
+            QIcon *icon = new QIcon(filePath);
+            mFriendButton[userinfo.user_id]->setIcon(*icon);
+            mPhotoMap[userinfo.user_id] = icon;
+            mFriendButton[userinfo.user_id]->setIconSize(QSize(50, 50));
+            PersonCache::GetInstance()->setPersonPhoto(userinfo.user_id, *icon);
+        } else {
+            // 文件不存在，给用户提示
+            QMessageBox::warning(nullptr, "警告", "常规头像文件不存在[客户端错误1]");
+        }
+        return 2;
+    }
+    info.Generate();
+    info.serviceType = FileServerType::TOUXIANG;
+    //截取服务器发来的图片路径和名字
+    info.serverPath = fileInfo.path().toStdString() + "/";
+    info.serverFileName = fileInfo.fileName().toStdString();
+    info.owner = userinfo.user_id;
+    qDebug() << QString::fromStdString(userinfo.username) << " 头像： " << QString::fromStdString(info.serverFileName);
+    //客户端名字统一为userPhoto/tx...[.suffex]
+    info.ClientPath = QCoreApplication::applicationDirPath().toStdString() + "/userPhoto/tx" + userinfo.username + "." + fileInfo.suffix().toStdString();
+    FtpSender::GetInstance()->addFile(info);
+    return Processor::GetFile(info);
 }
 
 bool GroupChatWindow::initGroupMemberPhoto() {
+    //发送一大堆图片获取命令，根据在获取朋友列表里得到的url
+    for (auto person : mGroupMemberMap) {
+        getFriendPhoto(person.second);
+    }
     return true;
 }
 
@@ -300,6 +379,37 @@ void GroupChatWindow::on_imageBtn_clicked()
 void GroupChatWindow::on_fileBtn_clicked()
 {
 
+}
+
+void GroupChatWindow::ChangeGroupUserPic(FileInfo info)
+{
+    if (!mGroupMemberMap.count(info.owner)) {
+        return;
+    }
+    QString clientPath = QString::fromStdString(info.ClientPath);//需要改为的名字
+    size_t regular = info.ClientPath.find("regular/");
+
+    if (QFile::exists(clientPath)) {
+            // 如果文件存在，加载图像并设置为头像
+            QIcon *icon = new QIcon(clientPath);
+            mFriendButton[info.owner]->setIcon(*icon);
+            mFriendButton[info.owner]->setIconSize(QSize(25, 25));
+            ClientPersonInfo::GetInstance()->photo = *icon;
+    }
+    else {
+        if (regular != std::string::npos) {
+            return;
+        }
+        //修改其他用户头像
+        QToolButton* button = mFriendButton[info.owner];
+        if (QFile::exists(clientPath)) {
+            // 如果文件存在，加载图像并设置为头像
+            QIcon *icon = new QIcon(clientPath);
+            button->setIcon(*icon);
+            button->setIconSize(QSize(25, 25));
+            PersonCache::GetInstance()->setPersonPhoto(info.owner, *icon);
+        }
+    }
 }
 
 //从edit里读取出QString,然后在位置中加入表情的代号如#0xa301，然后清空edit，重新绘制，

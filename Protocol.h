@@ -103,6 +103,7 @@ namespace FunctionCode {
         ProcessGroupJoinReq                       = 31,
 
         FindSpaceFileTree                         = 32,
+        FindAllGroupMember                        = 33,
         //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
     };
 
@@ -131,7 +132,6 @@ namespace FunctionCode {
 //上送文件，头像、图片、文件等
         "StartUpLoadFile     ",
         "UpLoadFileSuccess   ",
-
         "GetFile             ",
         "GetFileSuccess      ",
         "GetFileThird        ",
@@ -145,8 +145,8 @@ namespace FunctionCode {
         "SearchAllGroup      ",
         "GetAllGroupRequest  ",
         "ProcessGroupJoinReq ",
-
-        "FindSpaceFileTree   "
+        "FindSpaceFileTree   ",
+        "FindAllGroupMember  ",
     };
 };
 
@@ -172,6 +172,8 @@ public:
     // 可以添加其他需要返回的用户信息字段
     int status;//'online', 'offline', ''
     int storage_id;
+    string role;
+    string joined_at;
     // int last_login;
     // int created_at;
     // int flag;
@@ -196,16 +198,18 @@ public:
 
 class MessageInfo {
 public:
+    enum FlagType {Person = 0, Group = 1};
     MessageInfo() : id(0), sender_id(0), message_text(""),
-        receiver_id(0), message_id(0) { }
+        receiver_id(0), message_id(0), flag(Person) { }
     MessageInfo(int sendId, std::string message) : id(0), sender_id(sendId), message_text(message),
-        receiver_id(0), message_id(0) { }
+        receiver_id(0), message_id(0), flag(Person) { }
     int id;
     int sender_id;
     std::string message_text;
     int receiver_id;
     int message_id;
     std::string timestamp;
+    int flag;
     // 可以添加其他需要返回的消息信息字段，如时间戳等
     inline void print() {
         std::cout << "sender_id: " << sender_id << "   "

@@ -191,4 +191,7 @@
         <file>debug/default-emojis/394.png</file>
         <file>debug/default-emojis/395.png</file>
     </qresource>
+    <qresource prefix="/">
+        <file>PersonCard.qml</file>
+    </qresource>
 </RCC>
