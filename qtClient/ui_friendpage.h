@@ -221,7 +221,7 @@ public:
         retranslateUi(FriendPage);
 
         tabWidget->setCurrentIndex(0);
-        tabWidget_2->setCurrentIndex(1);
+        tabWidget_2->setCurrentIndex(0);
 
 
         QMetaObject::connectSlotsByName(FriendPage);
@@ -241,7 +241,7 @@ public:
         tabWidget_2->setTabText(tabWidget_2->indexOf(tab_3), QCoreApplication::translate("FriendPage", "\345\245\275\345\217\213", nullptr));
         tabWidget_2->setTabText(tabWidget_2->indexOf(tab_4), QCoreApplication::translate("FriendPage", "\347\276\244", nullptr));
         tabWidget->setTabText(tabWidget->indexOf(tab1), QCoreApplication::translate("FriendPage", "\345\205\263\347\263\273", nullptr));
-        toolButton_4->setText(QCoreApplication::translate("FriendPage", "...", nullptr));
+        toolButton_4->setText(QCoreApplication::translate("FriendPage", "\347\251\272\351\227\264", nullptr));
         toolButton->setText(QCoreApplication::translate("FriendPage", "\346\237\245\346\211\276", nullptr));
         toolButton_3->setText(QCoreApplication::translate("FriendPage", "\345\210\233\345\273\272\347\276\244", nullptr));
         toolButton_2->setText(QCoreApplication::translate("FriendPage", "\345\245\275\345\217\213\350\257\267\346\261\202", nullptr));

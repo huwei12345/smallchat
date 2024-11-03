@@ -1190,7 +1190,6 @@ bool ResponseJoinGroupProcessor::ResponseJoinGroup(Request &request)
     return false;
 }
 
-
 void StoreFileProcessor::Exec(Connection *conn, Request &request, Response &response)
 {
     FileInfo info;
@@ -1213,11 +1212,25 @@ void StoreFileProcessor::Exec(Connection *conn, Request &request, Response &resp
     }
 }
 
+bool StoreFileProcessor::StoreDir(FileInfo& info) {
+    struct stat st;
+    string path = info.serverPath + info.serverFileName + "/";
+    if (stat(path.c_str(), &st) == -1) {
+        FileTools::createDirectory(path.c_str());
+    }
+    return true;
+}
 
 bool StoreFileProcessor::StoreFile(Request &request, FileInfo& fileObject)
 {
     bool ret = checkDisk(fileObject);
     bool ret2 = checkUserLimit(fileObject);
+    printf("fileObject.fileType = %s\n", fileObject.fileType.c_str());
+    if (fileObject.fileType == "dir") {
+        printf("StoreFile Dir:\n");
+        StoreFileSQL(request, fileObject);
+        StoreDir(fileObject);
+    }
     return ret && ret2; 
 }
 
@@ -1228,17 +1241,32 @@ bool StoreFileProcessor::StoreFileSQL(Request &request, FileInfo &fileInfo)
         std::cerr << "Failed to get database connection." << std::endl;
         return false;
     }
+    sql::PreparedStatement* pstmt = nullptr;
+    if (fileInfo.id != 0) {
     // Prepare SQL statement to insert into user_storage table
-    sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
-        INSERT INTO user_storage(user_id, parent_id, item_name, item_type, file_path, expired_time) 
-        VALUES(?, ?, ?, ?, ?, ?);
-    )");
-    pstmt->setInt(1, fileInfo.send_id);
-    pstmt->setInt(2, fileInfo.parentId);
-    pstmt->setString(3, fileInfo.serverFileName);
-    pstmt->setString(4, fileInfo.fileType);
-    pstmt->setString(5, fileInfo.serverPath);
-    pstmt->setInt(6, fileInfo.expiredTime);
+        pstmt = conn->prepareStatement(R"(
+            INSERT INTO user_storage(user_id, parent_id, item_name, item_type, file_path, expired_time) 
+            VALUES(?, ?, ?, ?, ?, ?);
+        )");
+        pstmt->setInt(1, fileInfo.send_id);
+        pstmt->setInt(2, fileInfo.parentId);
+        pstmt->setString(3, fileInfo.serverFileName);
+        pstmt->setString(4, fileInfo.fileType);
+        pstmt->setString(5, fileInfo.serverPath);
+        pstmt->setInt(6, fileInfo.expiredTime);
+    }
+    else {
+        pstmt = conn->prepareStatement(R"(
+            INSERT INTO user_storage(user_id, parent_id, item_name, item_type, file_path, expired_time) 
+            VALUES(?, ?, ?, ?, ?, ?);
+        )");
+        pstmt->setInt(1, fileInfo.send_id);
+        pstmt->setInt(2, fileInfo.parentId);
+        pstmt->setString(3, fileInfo.serverFileName);
+        pstmt->setString(4, fileInfo.fileType);
+        pstmt->setString(5, fileInfo.serverPath);
+        pstmt->setInt(6, fileInfo.expiredTime);
+    }
     try {
         pstmt->execute();
         pstmt->close();
@@ -2069,13 +2097,18 @@ void ProcessFindAllGroupMemberProcessor::Exec(Connection *conn, Request &request
     vector<UserInfo> friendList;
     bool ret = FindAllGroupMember(request, friendList);
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    std::string mData = request.mData;
+    MyProtocolStream stream(mData);
+    int groupId = 0;
+    stream >> groupId;
+
     if (response.mCode) {
         response.mhasData = true;
         //绑定Cache中好友
         //bindAllFriendState(conn, request, friendList);
         std::string str;
         MyProtocolStream stream(str);
-        stream << (int)friendList.size();
+        stream << groupId << (int)friendList.size();
         for (auto it = friendList.begin(); it != friendList.end(); ++it) {
             stream << it->user_id << it->friendStatus << it->username << it->email << it->avatar_url << it->status << it->role << it->joined_at;
         }
@@ -2160,7 +2193,7 @@ bool ProcessMoveFileProcessor::MoveFile(const Request &request, FileInfo &info)
         std::cerr << "Failed to get database connection." << std::endl;
         return false;
     }
-    //级联删除
+    //更新路径或名字
     sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
         update user_storage set file_path = ?, item_name = ? where storage_id = ?;
     )");
@@ -2211,7 +2244,7 @@ bool ProcessEraseFileProcessor::EraseFile(const Request &request, FileInfo &info
     }
     //级联删除
     sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
-        DELETE FROM user_storage where id = ?
+        DELETE FROM user_storage where storage_id = ?
     )");
     pstmt->setInt(1, info.id);
     try {

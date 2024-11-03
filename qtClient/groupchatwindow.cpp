@@ -4,6 +4,7 @@
 #include "groupchatwindow.h"
 #include "network.h"
 #include "personcache.h"
+#include "personcardcon.h"
 #include "ui_groupchatwindow.h"
 
 #include <QDateTime>
@@ -24,6 +25,7 @@ GroupChatWindow::GroupChatWindow(QWidget *parent) :
     ui->setupUi(this);
     returnWindow = NULL;
     mUserId = 1;
+    mInited = false;
     QIcon windowIcon(QPixmap(":/main/title.jpeg")); // 假设你的图标文件位于资源文件中或者项目目录下
     setWindowIcon(windowIcon);
     setWindowTitle(tr("Qfei"));
@@ -72,14 +74,18 @@ GroupChatWindow::GroupChatWindow(GroupInfo info, QWidget *parent) :
     mInfo = info;
     mUserId = user_id;
 
-//    QString labelText = ui->label->text();
-//    labelText += QString::fromStdString(mInfo.username);
-//    ui->label->setText(labelText);
+    QString labelText = ui->label->text();
+    labelText += QString::fromStdString(mInfo.group_name);
+    ui->label->setText(labelText);
 }
 
 GroupChatWindow::~GroupChatWindow()
 {
     delete ui;
+}
+
+bool GroupChatWindow::hasInited() {
+    return mInited;
 }
 
 bool GroupChatWindow::init()
@@ -93,7 +99,7 @@ bool GroupChatWindow::init()
     //初始化群文件列表
 
     //持久化本地
-
+    mInited = true;
     return true;
 }
 
@@ -103,6 +109,40 @@ bool GroupChatWindow::initGroupMember() {
         QMessageBox::information(this,"提示","网络不可达！");
     }
     return ret;
+}
+
+bool GroupChatWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (event->type() == QEvent::MouseButtonRelease)
+    {
+        QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
+        if (mouseEvent->button() == Qt::LeftButton)
+        {
+            QToolButton *button = qobject_cast<QToolButton *>(obj);
+            if (button)
+            {
+                // 获取按钮在父控件坐标系中的矩形区域
+                QRect buttonRect = button->rect();
+
+                // 获取鼠标事件的位置
+                QPoint mousePos = mouseEvent->pos();
+                // 判断鼠标点击位置是否在按钮的矩形区域内
+                if (buttonRect.contains(mousePos))
+                {
+                    QString type = button->property("type").toString();
+
+                    // 处理点击事件
+                    if (type == "Friend") {
+                        emit showPersonCard(ui->memberListWidget->itemAt(button->pos()));
+                    }
+                    // 标记事件已处理
+                    event->accept();
+                    return true; // 表示事件已处理
+                }
+            }
+        }
+    }
+    return false; // 没有处理该事件，继续传递
 }
 
 void GroupChatWindow::keyPressEvent(QKeyEvent *event)
@@ -123,7 +163,11 @@ void GroupChatWindow::findAllGroupMemberSuccess(Response response)
     std::string mdata = response.mData;
     MyProtocolStream stream2(mdata);
     int size = 0;
-    stream2 >> size;
+    int groupId;
+    stream2 >> groupId >> size;
+    if (groupId != mInfo.id) {
+        return;
+    }
     qDebug() << "lllllllllllll " << size;
     for (int i = 0; i < size; i++) {
         //TODO:ToolButton put in widget
@@ -132,7 +176,9 @@ void GroupChatWindow::findAllGroupMemberSuccess(Response response)
         addGroupMemberToPage(i, info);//
         info.print();
         mGroupMemberMap[info.user_id] = info;
-        PersonCache::GetInstance()->addPerson(info);
+        if (PersonCache::GetInstance()->count(info.user_id) == false) {
+            PersonCache::GetInstance()->addPerson(info, false);
+        }
     }
     initGroupMemberPhoto();
     //initGroupMemberState();
@@ -160,7 +206,7 @@ void GroupChatWindow::addGroupMemberToPage(int index, UserInfo info) {
     ui->memberListWidget->item(index)->setWhatsThis(QString::number(info.user_id));
     //installEventFilter + eventFilter overide可以实现防覆
     button->installEventFilter(this); // 在当前类中实现 eventFilter 方法
-    mFriendButton[info.user_id] =button;
+    mFriendButton[info.user_id] = button;
     button->setProperty("type", "Friend");
     // 连接信号和槽
     connect(ui->memberListWidget, &QListWidget::itemClicked, this, &GroupChatWindow::showPersonCard);
@@ -171,7 +217,21 @@ void GroupChatWindow::addGroupMemberToPage(int index, UserInfo info) {
 }
 
 bool GroupChatWindow::showPersonCard(QListWidgetItem* item) {
+    int id = item->whatsThis().toInt();
 
+    if (mGroupMemberMap.count(id)) {
+        PersonCardCon *card = new PersonCardCon(mGroupMemberMap[id]);
+        card->setAttribute(Qt::WA_DeleteOnClose); // 关闭时自动删除
+        // 获取按钮的几何信息，设置对话框的位置
+        QListWidget *widget = qobject_cast<QListWidget*>(sender());
+        if (widget) {
+            QWidget* buttonWidget = widget->itemWidget(item);
+            QPoint buttonPos = buttonWidget->mapToGlobal(buttonWidget->rect().center());
+            card->move(buttonPos); // 设置对话框的位置
+        }
+        card->show();
+    }
+    return true;
 }
 
 int GroupChatWindow::getFriendPhoto(UserInfo& userinfo) {
@@ -195,7 +255,7 @@ int GroupChatWindow::getFriendPhoto(UserInfo& userinfo) {
             mFriendButton[userinfo.user_id]->setIcon(*icon);
             mPhotoMap[userinfo.user_id] = icon;
             mFriendButton[userinfo.user_id]->setIconSize(QSize(50, 50));
-            PersonCache::GetInstance()->setPersonPhoto(userinfo.user_id, *icon);
+            PersonCache::GetInstance()->setPersonPhoto(userinfo.user_id, *icon, filePath);
         } else {
             // 文件不存在，给用户提示
             QMessageBox::warning(nullptr, "警告", "常规头像文件不存在[客户端错误1]");
@@ -407,7 +467,7 @@ void GroupChatWindow::ChangeGroupUserPic(FileInfo info)
             QIcon *icon = new QIcon(clientPath);
             button->setIcon(*icon);
             button->setIconSize(QSize(25, 25));
-            PersonCache::GetInstance()->setPersonPhoto(info.owner, *icon);
+            PersonCache::GetInstance()->setPersonPhoto(info.owner, *icon, clientPath);
         }
     }
 }

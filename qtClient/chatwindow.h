@@ -56,6 +56,8 @@ private slots:
     void emojiSelected(QString emoji);
     void on_toolButton_7_clicked();
     void sendFiletoPersonSucc(FileInfo info);
+    void on_toolButton_clicked();
+
 signals:
     void confirmMessage(int sender, int reciver, int start, int end);
     void resetFriendNewMessage(int);

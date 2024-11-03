@@ -102,9 +102,9 @@ namespace FunctionCode {
         GetAllGroupRequest                        = 30,
         ProcessGroupJoinReq                       = 31,
 
-        FindAllGroupMember                        = 33,
 
         FindSpaceFileTree                         = 32,
+        FindAllGroupMember                        = 33,
         StoreFile                                 = 16,
 
         DELETESTOREFILE                           = 34,
@@ -140,7 +140,6 @@ namespace FunctionCode {
 //上送文件，头像、图片、文件等
         "StartUpLoadFile     ",
         "UpLoadFileSuccess   ",
-
         "GetFile             ",
         "GetFileSuccess      ",
         "GetFileThird        ",
@@ -210,9 +209,6 @@ public:
     }
 };
 
-
-
-
 class MessageInfo {
 public:
     enum MessageType {Row, Text, Picture, File};
@@ -225,7 +221,7 @@ public:
     std::string message_text;//Text
     std::string path;//Picture File
     std::string timestamp;//发送时间
-    FlagType flag;
+    int flag;
     virtual void print() { }
 };
 

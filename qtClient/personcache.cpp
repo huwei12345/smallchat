@@ -10,9 +10,10 @@ PersonCache *PersonCache::GetInstance()
     return info;
 }
 
-bool PersonCache::addPerson(UserInfo info)
+bool PersonCache::addPerson(UserInfo info, bool isFriend)
 {
     mPersonCacheMap[info.user_id] = info;
+    mPersonCacheMap[info.user_id].isFriend = isFriend;
     return true;
 }
 
@@ -23,11 +24,12 @@ bool PersonCache::addPerson(UserInfo info, QIcon photo)
     return true;
 }
 
-bool PersonCache::setPersonPhoto(int userId, QIcon icon)
+bool PersonCache::setPersonPhoto(int userId, QIcon icon, QString source)
 {
     mPersonCacheMap[userId];
     mPersonCacheMap[userId].user_id = userId;
     mPersonCacheMap[userId].photo = icon;
+    mPersonCacheMap[userId].source = source;
     return true;
 }
 
@@ -55,6 +57,24 @@ QIcon *PersonCache::getPersonPhoto(int userId)
     return nullptr;
 }
 
+QString PersonCache::getPersonPhotoPath(int userId)
+{
+    if (mPersonCacheMap.count(userId)) {
+        return mPersonCacheMap[userId].source;
+    }
+    return "";
+}
+
+bool PersonCache::count(int userId)
+{
+    return mPersonCacheMap.count(userId);
+}
+
+bool PersonCache::isFriend(int userId) {
+    if (!mPersonCacheMap.count(userId))
+        return false;
+    return mPersonCacheMap[userId].isFriend;
+}
 
 UserInfoDetail::UserInfoDetail(const UserInfo &info) : UserInfo(info)
 {
@@ -68,3 +88,4 @@ UserInfoDetail& UserInfoDetail::operator=(const UserInfo &detail)
     }
     return *this;
 }
+

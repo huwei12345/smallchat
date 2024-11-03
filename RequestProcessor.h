@@ -120,6 +120,7 @@ class StoreFileProcessor : public RequestProcessor
 {
     void Exec(Connection* conn, Request& request, Response&);
 public:
+    bool StoreDir(FileInfo & info);
     bool StoreFile(Request &request, FileInfo &fileObject);
     bool StoreFileSQL(Request &request, FileInfo &info);
     bool InitUserSpaceRoot(int user_id);

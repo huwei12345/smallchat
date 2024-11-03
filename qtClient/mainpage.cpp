@@ -203,12 +203,16 @@ void MainPage::on_toolButton_3_clicked()
 void MainPage::on_treeWidget_itemClicked(QTreeWidgetItem *item, int column)
 {
     qDebug() << "Single";
+    Q_UNUSED(item)
+    Q_UNUSED(column)
     //QMessageBox::information(this, "提示", "Single");
 }
 
 
 void MainPage::on_treeWidget_itemDoubleClicked(QTreeWidgetItem *item, int column)
 {
+    Q_UNUSED(item)
+    Q_UNUSED(column)
     QMessageBox::information(this, "提示", "Double");
 }
 
@@ -225,7 +229,7 @@ void MainPage::on_treeWidget_customContextMenuRequested(const QPoint &pos)
         QAction *editAction = contextMenu.addAction("修改");
         QAction *deleteAction = contextMenu.addAction("删除");
         QAction *addAction = contextMenu.addAction("添加");
-        QAction *storeAction = contextMenu.addAction("保存");
+        QAction *createDirAction = contextMenu.addAction("创建目录");
         QAction *renameAction = contextMenu.addAction("重命名");
         QAction *openDirAction = contextMenu.addAction("打开所在目录");
         QAction *updateAction = contextMenu.addAction("更新");
@@ -237,20 +241,14 @@ void MainPage::on_treeWidget_customContextMenuRequested(const QPoint &pos)
         // 执行菜单
         QAction *selectedAction = contextMenu.exec(ui->treeWidget->viewport()->mapToGlobal(pos));
         if (selectedAction == editAction) {
-            QMessageBox::information(this, "Edit Action", QString("Editing: %1").arg(item->text(0)));
             editFile(item);
         } else if (selectedAction == deleteAction) {
-            QMessageBox::information(this, "Delete Action", QString("Deleting: %1").arg(item->text(0)));
             deleteFile(item);
         } else if (selectedAction == addAction) {
-            QMessageBox::information(this, "Add Action", QString("Deleting: %1").arg(item->text(0)));
-            addFile(item);
-        } else if (selectedAction == storeAction) {
-            QMessageBox::information(this, "Store Action", QString("Deleting: %1").arg(item->text(0)));
             storeFile(item);
-        }
-        else if (selectedAction == renameAction) {
-            QMessageBox::information(this, "Rename Action", QString("Deleting: %1").arg(item->text(0)));
+        } else if (selectedAction == createDirAction) {
+            createDir(item);
+        } else if (selectedAction == renameAction) {
             renameFile(item);
         } else if (selectedAction == openAction) {
             openFile(item);
@@ -279,7 +277,6 @@ TreeNode* MainPage::addAllSpaceFileToPage() {
     TreeNode* root = nullptr;
     for (int i = 0; i < (int)mSpaceFileMap.size(); i++) {
         //最多进行size次
-        bool insertFlag = false;
         for (auto& son : mSpaceFileMap) {
             if (idBook.count(son.second.id)) {
                 continue;
@@ -289,7 +286,7 @@ TreeNode* MainPage::addAllSpaceFileToPage() {
                 root = new TreeNode(son.second.id);
                 root->parent = nullptr;
                 idBook[root->fileId] = root;
-                insertFlag = true;
+
                 QTreeWidgetItem* item = new QTreeWidgetItem;
 
                 item->setText(0, QString::fromStdString(son.second.serverFileName));
@@ -304,7 +301,7 @@ TreeNode* MainPage::addAllSpaceFileToPage() {
                 node->parent = idBook[son.second.parentId];
                 idBook[son.second.parentId]->son.push_back(node);
                 idBook[son.second.id] = node;
-                insertFlag = true;
+
                 QTreeWidgetItem* item = new QTreeWidgetItem;
                 item->setText(0, QString::fromStdString(son.second.serverFileName));
                 item->setText(1, QString::fromStdString(son.second.serverPath));
@@ -325,9 +322,32 @@ TreeNode* MainPage::addAllSpaceFileToPage() {
 
 TreeNode *MainPage::addSpaceFileToPage(FileInfo info)
 {
-    return nullptr;
+    int parentId = info.parentId;
+    TreeNode* node = nullptr;
+    if (idBook.count(info.id) && idBook[info.id] != nullptr)
+        return idBook[info.id];
+    if (idBook.count(parentId)) {
+        TreeNode* pNode = idBook[parentId];
+        if (pNode == nullptr)
+            return nullptr;
+        node = new TreeNode(info.id);
+        node->parent = idBook[parentId];
+        idBook[parentId]->son.push_back(node);
+        idBook[info.id] = node;
+        QTreeWidgetItem* item = new QTreeWidgetItem;
+        item->setText(0, QString::fromStdString(info.serverFileName));
+        item->setText(1, QString::fromStdString(info.serverPath));
+        item->setText(2, QString::number(info.filesize));
+        node->item = item;
+        if (node->parent->item) {
+            node->parent->item->addChild(item);
+        }
+        else {
+            qDebug() << "Error parent has no widget";
+        }
+    }
+    return node;
 }
-
 //findAllFile
 void MainPage::findSpaceFileTreeSuccess(Response response) {
     std::string mdata = response.mData;
@@ -364,25 +384,56 @@ bool MainPage::editFile(QTreeWidgetItem* item) {
     int fileId = item->whatsThis(0).toInt();
     FileInfo info = mSpaceFileMap[fileId];
     Processor::SendFile(info);
+    QMessageBox::information(this, "Edit Action", QString("Editing: %1").arg(item->text(0)));
+    return true;
 }
-
-
-//DELETESTOREFILE                           = 34,
 bool MainPage::deleteFile(QTreeWidgetItem* item) {
     int fileId = item->whatsThis(0).toInt();
     FileInfo info = mSpaceFileMap[fileId];
     Processor::DeleteFile(info);
+    QMessageBox::information(this, "Delete Action", QString("Deleting: %1").arg(item->text(0)));
+    item->parent()->removeChild(item);
+    return true;
 }
-
-bool MainPage::addFile(QTreeWidgetItem* item) {
-
-}
-
 bool MainPage::storeFile(QTreeWidgetItem* item) {
-
+    Q_UNUSED(item)
+    QMessageBox::information(this, "Add Action", QString("Deleting: %1").arg(item->text(0)));
+    return true;
 }
+bool MainPage::createDir(QTreeWidgetItem* item) {
+    Q_UNUSED(item)
+    int fileId = item->whatsThis(0).toInt();
+    FileInfo pInfo = mSpaceFileMap[fileId];
+    QString dirName = QInputDialog::getText(this, "提示", "请输入目录名");
+    FileInfo info;
+    //info.Generate();
+    info.ClientPath = pInfo.ClientPath + "/" + dirName.toStdString();
+    qDebug() << "oooooooooooooooooooooo" << QString::fromStdString(pInfo.fileType);
+    if (pInfo.fileType == std::string("rootdir")) {
+        info.serverPath = pInfo.serverPath;
+    }
+    else {
+        info.serverPath = pInfo.serverPath + pInfo.serverFileName + "/";
+    }
 
-//RENAMESTOREFILE                           = 37,
+    // 获取文件名（包括扩展名）
+    info.serverFileName = dirName.toStdString();
+    info.send_id = user_id;
+    info.recv_id = 0;//发送给服务器存储
+    info.expiredTime = 3600 * 24 * 15;
+    info.parentId = pInfo.id;//TODO:
+    info.id = 0;
+    info.serviceType = FileServerType::STOREFILE;
+    info.fileType = "dir";
+    //FtpSender::GetInstance()->addFile(info);
+    bool ret = Processor::StoreFile(info);
+    if (!ret) {
+        QMessageBox::information(this,"提示","网络不可达！");
+    }
+    addSpaceFileToPage(info);
+    QMessageBox::information(this, "createDir Action", QString("createDir: %1").arg(item->text(0)));
+    return true;
+}
 bool MainPage::renameFile(QTreeWidgetItem* item) {
     QString newName = QInputDialog::getText(this, "提示", "请输入要修改的名称");
     int fileId = item->whatsThis(0).toInt();
@@ -391,32 +442,39 @@ bool MainPage::renameFile(QTreeWidgetItem* item) {
         info.serverFileName = newName.toStdString();
         Processor::RenameFile(info);
     }
+    QMessageBox::information(this, "Rename Action", QString("Deleting: %1").arg(item->text(0)));
+    return true;
 }
-
-//GETSTOREFILE                              = 36,
 bool MainPage::openFile(QTreeWidgetItem* item) {
     int fileId = item->whatsThis(0).toInt();
     FileInfo info = mSpaceFileMap[fileId];
-    Processor::GetFile(info);
+    return true;
 }
 bool MainPage::openDir(QTreeWidgetItem* item) {
-
+    Q_UNUSED(item)
+    return true;
 }
 bool MainPage::update(QTreeWidgetItem* item) {
-
+    Q_UNUSED(item)
+    return true;
 }
 bool MainPage::openType(QTreeWidgetItem* item) {
-
+    Q_UNUSED(item)
+    return true;
 }
 bool MainPage::copy(QTreeWidgetItem* item) {
-
+    Q_UNUSED(item)
+    return true;
 }
 bool MainPage::cut(QTreeWidgetItem* item) {
-
+    Q_UNUSED(item)
+    return true;
 }
 bool MainPage::put(QTreeWidgetItem* item) {
-
+    Q_UNUSED(item)
+    return true;
 }
 bool MainPage::close(QTreeWidgetItem* item) {
-
+    Q_UNUSED(item)
+    return true;
 }

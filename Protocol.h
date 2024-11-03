@@ -74,7 +74,7 @@ namespace FunctionCode {
         CreateGroup                           = 13,
         JoinGroup                             = 14,
         ResponseJoinGroup                     = 15,
-
+        
         TransFile                             = 17,
         FindGroup                             = 18,
 
@@ -102,7 +102,7 @@ namespace FunctionCode {
         GetAllGroupRequest                        = 30,
         ProcessGroupJoinReq                       = 31,
 
-
+        
         FindSpaceFileTree                         = 32,
         FindAllGroupMember                        = 33,
         StoreFile                                 = 16,
@@ -153,8 +153,6 @@ namespace FunctionCode {
         "SearchAllGroup      ",
         "GetAllGroupRequest  ",
         "ProcessGroupJoinReq ",
-        "FindSpaceFileTree   ",
-        "FindAllGroupMember  ",
 
         "FindSpaceFileTree   ",
         "FindAllGroupMember  ",

@@ -42,7 +42,9 @@ public:
     void addGroupMemberToPage(int index, UserInfo info);
     bool showPersonCard(QListWidgetItem *item);
     int getFriendPhoto(UserInfo &userinfo);
+    bool hasInited();
 protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
 
 signals:
@@ -66,6 +68,7 @@ private:
     std::map<int, QToolButton*> mFriendButton;
 
     std::map<int, QIcon*> mPhotoMap;
+    bool mInited;
 };
 
 #endif // GROUPCHATWINDOW_H

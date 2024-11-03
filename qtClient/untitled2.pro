@@ -1,5 +1,5 @@
 QT       += core gui network
-
+QT += quickwidgets
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++11
@@ -32,6 +32,7 @@ SOURCES += \
     netthread.cpp \
     network.cpp \
     personcache.cpp \
+    personcardcon.cpp \
     processor.cpp \
     processqueue.cpp \
     registerpage.cpp \
@@ -62,6 +63,7 @@ HEADERS += \
     netthread.h \
     network.h \
     personcache.h \
+    personcardcon.h \
     processor.h \
     processqueue.h \
     registerpage.h \

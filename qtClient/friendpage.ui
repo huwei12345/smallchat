@@ -238,7 +238,7 @@
                 <enum>QTabWidget::Triangular</enum>
                </property>
                <property name="currentIndex">
-                <number>1</number>
+                <number>0</number>
                </property>
                <property name="elideMode">
                 <enum>Qt::ElideRight</enum>
@@ -350,7 +350,7 @@
          <item>
           <widget class="QToolButton" name="toolButton_4">
            <property name="text">
-            <string>...</string>
+            <string>空间</string>
            </property>
           </widget>
          </item>

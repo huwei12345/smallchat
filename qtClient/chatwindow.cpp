@@ -17,6 +17,7 @@
 #include "emojiselector.h"
 #include "clientpersoninfo.h"
 #include "personcache.h"
+#include "personcardcon.h"
 
 ChatWindow::ChatWindow(QWidget *parent) :
     QWidget(parent),
@@ -579,3 +580,17 @@ void ChatWindow::on_toolButton_7_clicked()
 {
     sendMessage("0xa500");
 }
+
+void ChatWindow::on_toolButton_clicked()
+{
+    PersonCardCon *card = new PersonCardCon(mInfo);
+    card->setAttribute(Qt::WA_DeleteOnClose); // 关闭时自动删除
+    // 获取按钮的几何信息，设置对话框的位置
+    QToolButton *button = qobject_cast<QToolButton*>(sender());
+    if (button) {
+        QPoint buttonPos = button->mapToGlobal(button->rect().center());
+        card->move(buttonPos); // 设置对话框的位置
+    }
+    card->show();
+}
+

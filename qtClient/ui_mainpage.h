@@ -137,7 +137,6 @@ public:
         horizontalLayout->setSizeConstraint(QLayout::SetDefaultConstraint);
         horizontalLayout->setContentsMargins(0, 0, 0, 0);
         treeWidget = new QTreeWidget(widget_2);
-        new QTreeWidgetItem(treeWidget);
         treeWidget->setObjectName(QString::fromUtf8("treeWidget"));
         QSizePolicy sizePolicy4(QSizePolicy::Expanding, QSizePolicy::Expanding);
         sizePolicy4.setHorizontalStretch(0);
@@ -199,15 +198,6 @@ public:
         ___qtreewidgetitem->setText(2, QCoreApplication::translate("MainPage", "size", nullptr));
         ___qtreewidgetitem->setText(1, QCoreApplication::translate("MainPage", "path", nullptr));
         ___qtreewidgetitem->setText(0, QCoreApplication::translate("MainPage", "name", nullptr));
-
-        const bool __sortingEnabled = treeWidget->isSortingEnabled();
-        treeWidget->setSortingEnabled(false);
-        QTreeWidgetItem *___qtreewidgetitem1 = treeWidget->topLevelItem(0);
-        ___qtreewidgetitem1->setText(2, QCoreApplication::translate("MainPage", "0", nullptr));
-        ___qtreewidgetitem1->setText(1, QCoreApplication::translate("MainPage", "/", nullptr));
-        ___qtreewidgetitem1->setText(0, QCoreApplication::translate("MainPage", "root", nullptr));
-        treeWidget->setSortingEnabled(__sortingEnabled);
-
     } // retranslateUi
 
 };

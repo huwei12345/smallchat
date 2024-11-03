@@ -67,7 +67,7 @@ bool FriendPage::initPage() {
     //获取 服务器对客户端已经收发完成消息的相应，服务器的响应文件操作成功，非FTP的文件操作成功
     connect(ClientNetWork::GetInstance(), &ClientNetWork::GetFileSuccess, this, &FriendPage::GetFileSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::UpLoadFileSuccess, this, &FriendPage::SendFileSuccess);
-    PersonCache::GetInstance()->setPersonPhoto(0, icon);
+    PersonCache::GetInstance()->setPersonPhoto(0, icon, ":/friend/touxiang.jpeg");
     return true;
 }
 
@@ -137,7 +137,7 @@ bool FriendPage::eventFilter(QObject *obj, QEvent *event)
 
                     // 处理点击事件
                     if (type == "Friend") {
-                        emit chatWithFriend(ui->listWidget->itemAt(button->pos()));
+                        emit chatWithFriend(ui->listWidget_3->itemAt(button->pos()));
                     }
                     else if (type == "Group") {
                         emit chatWithGroup(ui->listWidget_2->itemAt(button->pos()));
@@ -202,7 +202,7 @@ int FriendPage::getFriendPhoto(UserInfo& userinfo) {
             mFriendButton[userinfo.user_id]->setIcon(*icon);
             mPhotoMap[userinfo.user_id] = icon;
             mFriendButton[userinfo.user_id]->setIconSize(QSize(50, 50));
-            PersonCache::GetInstance()->setPersonPhoto(userinfo.user_id, *icon);
+            PersonCache::GetInstance()->setPersonPhoto(userinfo.user_id, *icon, filePath);
             mChatWindowMap[userinfo.user_id]->updateUserPhoto();
         } else {
             // 文件不存在，给用户提示
@@ -331,7 +331,7 @@ void FriendPage::findAllFriendSuccess(Response response)
         addFriendToPage(i, info);//
         info.print();
         mFriendMap[info.user_id] = info;
-        PersonCache::GetInstance()->addPerson(info);
+        PersonCache::GetInstance()->addPerson(info, true);
         ChatWindow* chatWindow = new ChatWindow(info);
         mChatWindowMap[info.user_id] = chatWindow;
         connect(chatWindow, &ChatWindow::resetFriendNewMessage, this, &FriendPage::resetFriendNewMessage);
@@ -568,19 +568,19 @@ void FriendPage::addFriendToPage(int i, UserInfo info) {
     button->setIconSize(QSize(60, 60));
     QString str2("item");
     str2 += QString::number(i);
-    ui->listWidget->addItem(str2);
-    ui->listWidget->setItemWidget(ui->listWidget->item(i), button);
-    ui->listWidget->item(i)->setWhatsThis(QString::number(info.user_id));
+    ui->listWidget_3->addItem(str2);
+    ui->listWidget_3->setItemWidget(ui->listWidget_3->item(i), button);
+    ui->listWidget_3->item(i)->setWhatsThis(QString::number(info.user_id));
     //installEventFilter + eventFilter overide可以实现防覆
     button->installEventFilter(this); // 在当前类中实现 eventFilter 方法
     mFriendButton[info.user_id] =button;
     button->setProperty("type", "Friend");
     // 连接信号和槽
-    connect(ui->listWidget, &QListWidget::itemClicked, this, &FriendPage::chatWithFriend);
+    connect(ui->listWidget_3, &QListWidget::itemClicked, this, &FriendPage::chatWithFriend);
     QSize size;
     size.setHeight(60);
     size.setWidth(60);
-    ui->listWidget->item(i)->setSizeHint(size);
+    ui->listWidget_3->item(i)->setSizeHint(size);
 }
 
 bool FriendPage::addGroupToPage(GroupInfo info)
@@ -635,8 +635,10 @@ void FriendPage::chatWithGroup(QListWidgetItem* item) {
     int groupId = item->whatsThis().toInt();
     qDebug() << "groupId" << groupId;
     GroupChatWindow* chatWindow = mGroupWindowMap[groupId];
-    chatWindow->returnWindow = this;
-    chatWindow->init();
+    if (!chatWindow->hasInited()) {
+        chatWindow->returnWindow = this;
+        chatWindow->init();
+    }
     chatWindow->show();
     //chatWindow->showChatContent();
 }
@@ -837,7 +839,7 @@ void FriendPage::ChangeUserPicBySend(FileInfo info) {
             QIcon *icon = new QIcon(clientPath);
             button->setIcon(*icon);
             button->setIconSize(QSize(60, 60));
-            PersonCache::GetInstance()->setPersonPhoto(info.owner, *icon);
+            PersonCache::GetInstance()->setPersonPhoto(info.owner, *icon, clientPath);
             mChatWindowMap[info.owner]->updateUserPhoto();
         }
     }
@@ -875,7 +877,7 @@ void FriendPage::ChangeUserPic(FileInfo info)
             QIcon *icon = new QIcon(clientPath);
             button->setIcon(*icon);
             button->setIconSize(QSize(60, 60));
-            PersonCache::GetInstance()->setPersonPhoto(info.owner, *icon);
+            PersonCache::GetInstance()->setPersonPhoto(info.owner, *icon, clientPath);
             mChatWindowMap[info.owner]->updateUserPhoto();
         }
     }
