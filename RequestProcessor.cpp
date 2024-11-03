@@ -464,12 +464,12 @@ void SendMessageProcessor::Exec(Connection* conn, Request &request, Response& re
     ret = SendMessage(request, info);
     //在线时，直接通过网络发送消息给客户端，（接收消息和朋友请求的逻辑）
     if (info.flag == MessageInfo::Person) {
-        if (Server::GetInstance()->mUserSessionMap.count(info.receiver_id)) {
+        if (Server::GetInstance()->mUserSessionMap.count(info.recv_id)) {
             //从userId索引到Connection再得到clientSocket
             //思路1：在线，直接发送，入库read=0, 等消息确认相应，再修改read=1
             //思路2：直接入库read=0，不发送，等客户端进行心跳连接时，相应新消息和朋友请求
             //思路3：当在库中新增一项时，触发某任务，向客户发送消息，异步发送
-            Session* session = Server::GetInstance()->mUserSessionMap[info.receiver_id];
+            Session* session = Server::GetInstance()->mUserSessionMap[info.recv_id];
             Connection* friendConn = session->mConn;
             if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
                 bool ret = sendMessageByNet(friendConn, info/*info.receiver_id*/);
@@ -480,9 +480,9 @@ void SendMessageProcessor::Exec(Connection* conn, Request &request, Response& re
         //Group
         //从GroupCache中取出某群组的所有成员，判断在线，然后依次发送, Redis
         //receiver_id = groupId
-        if (Server::GetInstance()->mUserSessionMap.count(info.receiver_id)) {
+        if (Server::GetInstance()->mUserSessionMap.count(info.recv_id)) {
             
-            Session* session = Server::GetInstance()->mUserSessionMap[info.receiver_id];
+            Session* session = Server::GetInstance()->mUserSessionMap[info.recv_id];
             Connection* friendConn = session->mConn;
             if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
                 bool ret = sendMessageByNet(friendConn, info/*info.receiver_id*/);
@@ -645,15 +645,12 @@ bool SearchAllGroupProcessor::SearchAllGroup(const Request& request, std::vector
     return true;
 }
 
-
-
-
 bool SendMessageProcessor::SendMessage(const Request &request, MessageInfo& info)
 {
     std::string mData = request.mData;
     MyProtocolStream stream(mData);
-    stream >> info.receiver_id >> info.message_text >> info.flag;
-    info.sender_id = request.mUserId;
+    stream >> info.recv_id >> info.message_text >> info.flag;
+    info.send_id = request.mUserId;
     
     info.timestamp = SetTime::GetInstance()->getAccurateTime();
     printf("info.time = %s\n", info.timestamp.c_str());
@@ -710,7 +707,7 @@ bool SendMessageProcessor::SendToGroup(const Request &request, MessageInfo &info
         (sender_id, recipient_id, content) 
         values(?,?,?);)");
     state2->setInt(1, request.mUserId);
-    state2->setInt(2, info.receiver_id);
+    state2->setInt(2, info.recv_id);
     state2->setString(3, info.message_text);
     state2->execute();
 
@@ -2134,4 +2131,101 @@ bool ProcessFindAllGroupMemberProcessor::FindAllGroupMember(const Request &reque
     MysqlPool::GetInstance()->releaseConncetion(conn);
 
     return true;
+}
+
+void ProcessMoveFileProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    FileInfo info;
+    MyProtocolStream stream(request.mData);
+    stream >> info.id >>  info.send_id  >> info.recv_id
+           >> info.ClientPath >> info.serviceType  >> info.serverPath  >> info.serverFileName
+           >> info.parentId;
+    bool ret = MoveFile(request, info);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        response.mhasData = true;
+        std::string &data = response.mData;
+        data = request.mData;
+    }
+    else {
+        response.mhasData = false;
+        //some error info add
+    }
+}
+
+bool ProcessMoveFileProcessor::MoveFile(const Request &request, FileInfo &info)
+{
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == nullptr) {
+        std::cerr << "Failed to get database connection." << std::endl;
+        return false;
+    }
+    //级联删除
+    sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
+        update user_storage set file_path = ?, item_name = ? where storage_id = ?;
+    )");
+    pstmt->setInt(1, info.id);
+    try {
+        pstmt->execute();
+        pstmt->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return true;
+    } catch (sql::SQLException& e) {
+        std::cerr << "SQL error: " << e.what() << std::endl;
+        std::cerr << "Error code: " << e.getErrorCode() << std::endl;
+        std::cerr << "SQLState: " << e.getSQLState() << std::endl;
+        pstmt->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    return false;
+
+}
+
+void ProcessEraseFileProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    FileInfo info;
+    MyProtocolStream stream(request.mData);
+    stream >> info.id >>  info.send_id  >> info.recv_id
+           >> info.ClientPath >> info.serviceType  >> info.serverPath  >> info.serverFileName
+           >> info.parentId;
+    bool ret = EraseFile(request, info);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        response.mhasData = true;
+        std::string &data = response.mData;
+        data = request.mData;
+    }
+    else {
+        response.mhasData = false;
+        //some error info add
+    }
+}
+
+bool ProcessEraseFileProcessor::EraseFile(const Request &request, FileInfo &info)
+{
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == nullptr) {
+        std::cerr << "Failed to get database connection." << std::endl;
+        return false;
+    }
+    //级联删除
+    sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
+        DELETE FROM user_storage where id = ?
+    )");
+    pstmt->setInt(1, info.id);
+    try {
+        pstmt->execute();
+        pstmt->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return true;
+    } catch (sql::SQLException& e) {
+        std::cerr << "SQL error: " << e.what() << std::endl;
+        std::cerr << "Error code: " << e.getErrorCode() << std::endl;
+        std::cerr << "SQLState: " << e.getSQLState() << std::endl;
+        pstmt->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    return false;
 }

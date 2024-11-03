@@ -223,7 +223,7 @@ public:
     std::string message_text;//Text
     std::string path;//Picture File
     std::string timestamp;//发送时间
-    FlagType flag;
+    int flag;
     virtual void print() { }
 };
 

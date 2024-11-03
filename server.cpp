@@ -254,7 +254,11 @@ Server::Server(const char *ip, unsigned int port)
     requestProcessor[FunctionCode::FindGroup] = new FindGroupProcessor;
     requestProcessor[FunctionCode::FindSpaceFileTree] = new ProcessFindSpaceFileTreeProcessor;
     
-    requestProcessor[FunctionCode::FindAllGroupMember] = new ProcessFindAllGroupMemberProcessor;
+    requestProcessor[FunctionCode::DELETESTOREFILE] = new ProcessEraseFileProcessor;
+    requestProcessor[FunctionCode::EDITSTOREFILE] = new RequestProcessor;
+    requestProcessor[FunctionCode::GETSTOREFILE] = new RequestProcessor;
+    requestProcessor[FunctionCode::RENAMESTOREFILE] = new ProcessMoveFileProcessor;
+
     for (int i = 50; i < 100; i++) {
         requestProcessor[i] = new RequestProcessor;
     }

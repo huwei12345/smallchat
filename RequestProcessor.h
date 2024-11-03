@@ -202,6 +202,19 @@ class ProcessFindAllGroupMemberProcessor : public RequestProcessor {
 };
 
 
+class ProcessEraseFileProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response& response);
+    bool EraseFile(const Request &request, FileInfo &info);
+};
+
+
+//Move OR Rename
+class ProcessMoveFileProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response& response);
+    bool MoveFile(const Request &request, FileInfo &info);
+};
+
+//获取和修改都可直接替换或者直接获取
 
 #endif
 
