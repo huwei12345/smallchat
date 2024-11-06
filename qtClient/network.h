@@ -17,11 +17,13 @@ public:
     bool process(QByteArray& array);
 
     bool confirmMessage(int sendId, int recvId, int start, int end);
+    bool confirmgroupMessage(int groupId, int mUserId, int lastConfirmId, QVector<int> confirmVec);
 signals:
     void loginSuccessful(UserInfo info);
     void loginFailure();
     void FindFriendSuccess(Response response);
     void ChangeUserPic(FileInfo info);
+    void ChangeGroupUserPic(FileInfo info);
     void ChangeUserPicBySend(FileInfo info);
     void FindGroupSuccess(Response response);
     void findAllFriendSuccess(Response response);
@@ -33,19 +35,23 @@ signals:
     void getAllFriendRequestSuccess(Response response);
     void getAllGroupRequestSuccess(Response response);
     void UpDateUserStateSuccess(Response response);
-void ReciveMessageSuccess(Response response);
+    void ReciveMessageSuccess(Response response);
     void MessageArriveClient(Response response);
 
     void createGroupSuccess(Response response);
     void applyJoinGroupSuccess(Response response);
     void processGroupApplySuccess(Response response);
     void storeFileResponse(Response response);
-    void offlineTransFileSuccess(Response response);
     void StartUpLoadFileSuccess(Response response);
     void UpLoadFileSuccess(Response response);
     void GetFileFirstSuccess(Response response);
     void GetFileSuccess(Response response);
     void NofifyFileComing(Response response);
+
+    void findSpaceFileTreeSuccess(Response response);
+    void findAllGroupMemberSuccess(Response response);
+    void getAllGroupMessageSuccess(Response response);
+    void ProcessGroupMessageSuccess(Response response);
 private:
     ClientNetWork();
     QTcpSocket mSocket;

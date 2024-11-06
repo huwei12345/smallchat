@@ -1,5 +1,5 @@
 QT       += core gui network
-
+QT += quickwidgets
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++11
@@ -16,6 +16,7 @@ SOURCES += \
     chatwindow.cpp \
     clientpersoninfo.cpp \
     creategrouppage.cpp \
+    emojiselector.cpp \
     findfriendpage.cpp \
     framelessWidget.cpp \
     friendpage.cpp \
@@ -30,6 +31,8 @@ SOURCES += \
     mainwindow.cpp \
     netthread.cpp \
     network.cpp \
+    personcache.cpp \
+    personcardcon.cpp \
     processor.cpp \
     processqueue.cpp \
     registerpage.cpp \
@@ -45,6 +48,7 @@ HEADERS += \
     chatwindow.h \
     clientpersoninfo.h \
     creategrouppage.h \
+    emojiselector.h \
     findfriendpage.h \
     framelessWidget.h \
     friendpage.h \
@@ -58,6 +62,8 @@ HEADERS += \
     mainwindow.h \
     netthread.h \
     network.h \
+    personcache.h \
+    personcardcon.h \
     processor.h \
     processqueue.h \
     registerpage.h \
@@ -70,6 +76,7 @@ HEADERS += \
 FORMS += \
     chatwindow.ui \
     creategrouppage.ui \
+    emojiselector.ui \
     findfriendpage.ui \
     framelessWidget.ui \
     friendpage.ui \

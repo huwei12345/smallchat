@@ -51,14 +51,12 @@ bool Processor::Register(string& username, string& password, string& email) {
     return false;
 }
 
-bool Processor::SendMessage(int reciveId, string& content) {
+bool Processor::SendMessage(MessageInfo* message) {
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
-    MessageInfo message;
-    message.receiver_id = reciveId;
-    message.message_text = content;
+
     std::string data;
     MyProtocolStream stream(data);
-    stream << message.receiver_id << message.message_text;
+    stream << message->recv_id << message->flag << message->message_text;
     Request req(1, FunctionCode::SendMessage, 3, 4, 5, data, user_id);
 
     string str = req.serial();
@@ -246,7 +244,6 @@ bool Processor::StoreFile(FileInfo info)
 {
     info.filesize = 100;
     info.fileMode = 777;
-    info.fileType = 1;
     info.md5sum = 10;
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     std::string data;
@@ -376,6 +373,91 @@ bool Processor::processMessageRead(std::vector<int> messageList)
     return false;
 }
 
+bool Processor::findSpaceFileTree(int userId)
+{
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << userId;
+    Request req(1, FunctionCode::FindSpaceFileTree, 3, 4, 5, data, user_id);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
+bool Processor::findAllgroupMember(int groupId)
+{
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << groupId;
+    Request req(1, FunctionCode::FindAllGroupMember, 3, 4, 5, data, user_id);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
+bool Processor::RenameFile(FileInfo info)
+{
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << info.id << info.serverPath  << info.serverFileName;
+    Request req(1, FunctionCode::RENAMESTOREFILE, 3, 4, 5, data, user_id);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
+bool Processor::DeleteFile(FileInfo info)
+{
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << info.id << info.serverPath  << info.serverFileName;
+    Request req(1, FunctionCode::DELETESTOREFILE, 3, 4, 5, data, user_id);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
+bool Processor::getAllGroupMessage(int groupId, int localConfirmId)
+{
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << groupId << localConfirmId;
+    Request req(1, FunctionCode::GetAllGroupMessage, 3, 4, 5, data, user_id);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
 bool Processor::CreateGroup(GroupInfo &info)
 {
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
@@ -469,7 +551,7 @@ bool Processor::GetFileSuccess(FileInfo info)
     MyProtocolStream stream(data);
     stream << info.ftpTaskId << info.id << info.send_id << info.recv_id << info.serverPath << info.serverFileName << info.md5sum;
     Request req(1, FunctionCode::GetFileSuccess, 3, 4, 5, data, user_id);
-
+    qDebug() << "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy " << info.ftpTaskId << " : "<< QString::fromStdString(info.serverFileName);
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());
     int r = clientSocket->SendPacket(array);
@@ -494,7 +576,6 @@ bool Processor::AgreeRecvFile(bool agree, FileInfo info)
     if (r > 0) {
         req.print();
         if (agree) {
-            qDebug() << "LPL";
             FtpSender::GetInstance()->GetFile(info);
         }
         return true;

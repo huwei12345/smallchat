@@ -38,6 +38,8 @@ public:
     QToolButton *toolButton_13;
     QToolButton *toolButton_11;
     QTextEdit *plainTextEdit;
+    QWidget *widget_5;
+    QVBoxLayout *verticalLayout_2;
     QWidget *widget_3;
     QHBoxLayout *horizontalLayout_2;
     QLabel *label_3;
@@ -71,6 +73,11 @@ public:
         verticalLayout->setContentsMargins(0, 0, 0, 0);
         widget = new QWidget(widget_2);
         widget->setObjectName(QString::fromUtf8("widget"));
+        QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        sizePolicy.setHorizontalStretch(0);
+        sizePolicy.setVerticalStretch(0);
+        sizePolicy.setHeightForWidth(widget->sizePolicy().hasHeightForWidth());
+        widget->setSizePolicy(sizePolicy);
         horizontalLayout = new QHBoxLayout(widget);
         horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
         toolButton = new QToolButton(widget);
@@ -113,12 +120,26 @@ public:
 
         plainTextEdit = new QTextEdit(widget_2);
         plainTextEdit->setObjectName(QString::fromUtf8("plainTextEdit"));
-        plainTextEdit->setMinimumSize(QSize(0, 220));
+        plainTextEdit->setMinimumSize(QSize(0, 150));
 
         verticalLayout->addWidget(plainTextEdit);
 
-        widget_3 = new QWidget(widget_2);
+        widget_5 = new QWidget(widget_2);
+        widget_5->setObjectName(QString::fromUtf8("widget_5"));
+        QSizePolicy sizePolicy1(QSizePolicy::Preferred, QSizePolicy::Minimum);
+        sizePolicy1.setHorizontalStretch(0);
+        sizePolicy1.setVerticalStretch(0);
+        sizePolicy1.setHeightForWidth(widget_5->sizePolicy().hasHeightForWidth());
+        widget_5->setSizePolicy(sizePolicy1);
+        widget_5->setMinimumSize(QSize(0, 80));
+        verticalLayout_2 = new QVBoxLayout(widget_5);
+        verticalLayout_2->setSpacing(3);
+        verticalLayout_2->setObjectName(QString::fromUtf8("verticalLayout_2"));
+        verticalLayout_2->setContentsMargins(0, 0, 0, 0);
+        widget_3 = new QWidget(widget_5);
         widget_3->setObjectName(QString::fromUtf8("widget_3"));
+        sizePolicy.setHeightForWidth(widget_3->sizePolicy().hasHeightForWidth());
+        widget_3->setSizePolicy(sizePolicy);
         horizontalLayout_2 = new QHBoxLayout(widget_3);
         horizontalLayout_2->setSpacing(0);
         horizontalLayout_2->setObjectName(QString::fromUtf8("horizontalLayout_2"));
@@ -173,14 +194,15 @@ public:
         horizontalLayout_2->addItem(horizontalSpacer);
 
 
-        verticalLayout->addWidget(widget_3);
+        verticalLayout_2->addWidget(widget_3);
 
-        plainTextEdit_2 = new QTextEdit(widget_2);
+        plainTextEdit_2 = new QTextEdit(widget_5);
         plainTextEdit_2->setObjectName(QString::fromUtf8("plainTextEdit_2"));
+        plainTextEdit_2->setMinimumSize(QSize(0, 40));
 
-        verticalLayout->addWidget(plainTextEdit_2);
+        verticalLayout_2->addWidget(plainTextEdit_2);
 
-        widget_4 = new QWidget(widget_2);
+        widget_4 = new QWidget(widget_5);
         widget_4->setObjectName(QString::fromUtf8("widget_4"));
         horizontalLayout_3 = new QHBoxLayout(widget_4);
         horizontalLayout_3->setSpacing(0);
@@ -196,8 +218,13 @@ public:
         horizontalLayout_3->addWidget(pushButton);
 
 
-        verticalLayout->addWidget(widget_4);
+        verticalLayout_2->addWidget(widget_4);
 
+
+        verticalLayout->addWidget(widget_5);
+
+        verticalLayout->setStretch(1, 20);
+        verticalLayout->setStretch(2, 10);
 
         horizontalLayout_4->addWidget(widget_2);
 

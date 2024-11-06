@@ -9,6 +9,9 @@
 using namespace std;
 
 int main() {
+    for (int i = 0; i < FunctionCode::FunctionCodeString.size(); i++) {
+        cout << i << "  " << FunctionCode::FunctionCodeString[i] << endl;
+    }
     MysqlPool* mysqlPool = MysqlPool::GetInstance();
     mysqlPool->init();
     Server* server = Server::GetInstance();

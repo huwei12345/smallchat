@@ -269,4 +269,5 @@ bool MainWindow::initTrayIcon(QApplication* app) {
             qDebug() << "Unknown reason for tray icon activation";
         }
     });
+    return true;
 }

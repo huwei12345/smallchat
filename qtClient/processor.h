@@ -10,7 +10,7 @@ public:
     Processor();
     static bool Login(std::string& username, std::string& password);
     static bool Register(std::string& username, std::string& password, std::string& email);
-    static bool SendMessage(int reciveId, std::string& content);
+    static bool SendMessage(MessageInfo *info);
     static bool FindFriend(int friendId);
     static bool FindFriendByName(std::string &friendName);
     static bool AddFriend(int friendId);
@@ -41,6 +41,14 @@ public:
 
     bool processMessageRead(std::vector<int> messageList);
     static bool getFriendPhoto(UserInfo& info);
+
+    static bool findSpaceFileTree(int userId);
+
+    static bool findAllgroupMember(int groupId);
+
+    static bool RenameFile(FileInfo info);
+    static bool DeleteFile(FileInfo info);
+    static bool getAllGroupMessage(int groupId, int localConfirmId);
 };
 
 #endif // PROCESSOR_H

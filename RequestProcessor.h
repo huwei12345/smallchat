@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include "Protocol.h"
+#include "MysqlPool.h"
 class Request;
 class Response;
 
@@ -53,7 +54,9 @@ class AddFriendProcessor  : public RequestProcessor  {
 class SendMessageProcessor : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
     bool SendMessage(const Request &request, MessageInfo &info);
-        bool sendMessageByNet(Connection *conn, MessageInfo message);
+    bool SendToPerson(const Request &request, MessageInfo &info);
+    bool SendToGroup(const Request &request, MessageInfo &info);
+    bool sendMessageByNet(Connection *conn, MessageInfo message);
 };
 
 class GetAllMessageProcessor : public RequestProcessor  {
@@ -80,6 +83,7 @@ class GetAllGroupReqProcessor : public RequestProcessor  {
 class ProcessGroupJoinReqProcessor  : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
     bool ProcessGroupJoinRequest(Request &request, GroupJoinRequest info);
+    bool initGroupConfirmId(sql::Connection *conn, int userId, int groupId);
 };
 
 class UpdateUserStateProcessor  : public RequestProcessor  {
@@ -98,6 +102,7 @@ class CreateGroupProcessor : public RequestProcessor
 {
     void Exec(Connection* conn, Request& request, Response&);
     bool CreateGroup(Request &request, GroupInfo& info);
+    bool initGroupConfirmId(sql::Connection *conn, int userId, int groupId);
     bool AddGroupOwner(Request &request);
 };
 
@@ -106,6 +111,7 @@ class JoinGroupProcessor : public RequestProcessor
     void Exec(Connection* conn, Request& request, Response&);
 public:
     bool JoinGroup(int userId, int groupId, int role);
+    bool initGroupConfirmId(int userId, int groupId);
 };
 
 class ResponseJoinGroupProcessor : public RequestProcessor
@@ -118,17 +124,13 @@ class StoreFileProcessor : public RequestProcessor
 {
     void Exec(Connection* conn, Request& request, Response&);
 public:
+    bool StoreDir(FileInfo & info);
     bool StoreFile(Request &request, FileInfo &fileObject);
     bool StoreFileSQL(Request &request, FileInfo &info);
     bool InitUserSpaceRoot(int user_id);
     int GetUserSpaceId(int user_id);
 };
 
-class TransFileProcessor : public RequestProcessor
-{
-    void Exec(Connection* conn, Request& request, Response&);
-    bool TransFile(Request &request, TransObject &object);
-};
 
 int stoiAll(const std::string &str);
 
@@ -191,6 +193,43 @@ class ProcessNotifyStateProcessor : public RequestProcessor {
 public:
     bool Notify(Connection *conn, FriendList &friendList, int mUserId, int state);
     bool Notify(Connection *conn, vector<int> &friendList, int mUserId, int state);
+};
+
+
+class ProcessFindSpaceFileTreeProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response& response);
+    bool FindSpaceFileTree(const Request& request, vector<FileInfo>& fileList);
+};
+
+class ProcessFindAllGroupMemberProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response& response);
+    bool FindAllGroupMember(const Request &request, vector<UserInfo> &userList);
+};
+
+
+class ProcessEraseFileProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response& response);
+    bool EraseFile(const Request &request, FileInfo &info);
+};
+
+
+//Move OR Rename
+class ProcessMoveFileProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response& response);
+    bool MoveFile(const Request &request, FileInfo &info);
+};
+
+//获取和修改都可直接替换或者直接获取
+
+
+class GetAllGroupMessageProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response& response);
+    bool GetAllGroupMessage(const Request &request, vector<TextMessageInfo> &infoList);
+};
+
+class ProcessGroupMessageReadProcessor  : public RequestProcessor  {
+    void Exec(Connection* conn, Request& request, Response&);
+    bool ProcessGroupMessageRead(Request &request, int &endReturn);
 };
 
 #endif

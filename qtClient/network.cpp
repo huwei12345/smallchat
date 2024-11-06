@@ -4,6 +4,7 @@
 #include <QDebug>
 #include <QAbstractSocket>
 #include <QMessageBox>
+#include <QVector>
 #include "Protocol.h"
 #include "globalvaria.h"
 #include "processor.h"
@@ -23,7 +24,6 @@ void ClientNetWork::ftpFileSendOver(FileInfo info)
     std::cout << "ftpFileSendOver      : " << info.serverPath + info.serverFileName << std::endl;
 
     QString fileName = QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName);
-    qDebug() << "zzzzzzzzzzzzzzzzzzzzzzzzzzzzz" << info.serviceType;
     if (info.serviceType == FileServerType::TOUXIANG) {
         emit ChangeUserPicBySend(info);
     }
@@ -42,11 +42,10 @@ void ClientNetWork::ftpFileGetOver(FileInfo info)
     //QString fileName = QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName);
 
     //具体业务，也许可以使用回调函数
-    qDebug() << "zzzzzzzzzzzzzzzzzzzzzzzzzzzzz" << info.serviceType;
     if (info.serviceType == FileServerType::TOUXIANG) {
         emit ChangeUserPic(info);
+        emit ChangeGroupUserPic(info);
     }
-
     bool ret = Processor::GetFileSuccess(info);
     if (!ret) {
         QMessageBox::information(NULL,"提示","网络不可达！");
@@ -126,6 +125,7 @@ break;
     }
     case FunctionCode::ProcessFriendRequest: {
         emit ProcessFriendRequestResult(rsp);
+        break;
     }
     case FunctionCode::SearchAllFriend: {
                 emit findAllFriendSuccess(rsp);
@@ -137,6 +137,7 @@ break;
     }
     case FunctionCode::GetAllOfflineFile: {
         emit getAllOfflineFileSuccess(rsp);
+        break;
     }
     case FunctionCode::GetAllFriendRequest: {
         emit getAllFriendRequestSuccess(rsp);
@@ -171,10 +172,6 @@ break;
         emit storeFileResponse(rsp);
         break;
     }
-    case FunctionCode::TransFile: {
-        emit offlineTransFileSuccess(rsp);
-        break;
-    }
     case FunctionCode::FindGroup: {
         emit FindFriendSuccess(rsp);
         break;
@@ -192,7 +189,7 @@ break;
         break;
     }
     case FunctionCode::GetFileSuccess: {
-        //收到服务器 （服务器已知道客户端发送完成） 服务器可以不发
+        //收到服务器响应（服务器已知道客户端接收完成）
         emit GetFileSuccess(rsp);
         break;
     }
@@ -203,6 +200,21 @@ break;
     case FunctionCode::SearchAllGroup: {
         emit findAllGroupSuccess(rsp);
         break;
+    }
+    case FunctionCode::FindSpaceFileTree: {
+        emit findSpaceFileTreeSuccess(rsp);
+        break;
+    }
+    case FunctionCode::FindAllGroupMember: {
+        emit findAllGroupMemberSuccess(rsp);
+        break;
+    }
+    case FunctionCode::GetAllGroupMessage: {
+        emit getAllGroupMessageSuccess(rsp);
+        break;
+    }
+    case FunctionCode::ProcessGroupMessageRead : {
+        emit ProcessGroupMessageSuccess(rsp);
     }
     default: {
         break;
@@ -228,6 +240,26 @@ bool ClientNetWork::confirmMessage(int sendId, int recvId, int start, int end) {
     return false;
 }
 
+bool ClientNetWork::confirmgroupMessage(int groupId, int mUserId, int lastConfirmId, QVector<int> confirmVec) {
+    //TODO:
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << groupId << mUserId << (int)(confirmVec.size() + 1);
+    qDebug() << "lastConfirmId : " << lastConfirmId;
+    stream << lastConfirmId;
+    foreach(auto x, confirmVec) {
+        stream << x;
+    }
+    Request req(1, FunctionCode::ProcessGroupMessageRead, 3, 4, 5, data, ::user_id, 0);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
 
 int ClientNetWork::Client() {
     //return -1;

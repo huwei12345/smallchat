@@ -1,4 +1,4 @@
-#ifndef MAINPAGE_H
+﻿#ifndef MAINPAGE_H
 #define MAINPAGE_H
 
 #include <QTreeWidgetItem>
@@ -7,6 +7,16 @@
 namespace Ui {
 class MainPage;
 }
+
+class TreeNode {
+public:
+    TreeNode() : parent(nullptr), fileId(-1), item(nullptr) {}
+    TreeNode(int id) : parent(nullptr), fileId(id), item(nullptr) {}
+    TreeNode* parent;
+    std::vector<TreeNode*> son;
+    int fileId;
+    QTreeWidgetItem* item;
+};
 
 class MainPage : public QWidget
 {
@@ -19,9 +29,27 @@ public:
     ~MainPage();
     void StoreFileAllow(Response response);
     void StoreFileSuccess(FileInfo info);
+    bool initSpaceFileTree();
+    int init();
+    TreeNode* addSpaceFileToPage(FileInfo info);
+    TreeNode *addAllSpaceFileToPage();
 
+    bool editFile(QTreeWidgetItem *item);
+    bool deleteFile(QTreeWidgetItem *item);
+    bool storeFile(QTreeWidgetItem *item);
+    bool renameFile(QTreeWidgetItem *item);
+    bool openFile(QTreeWidgetItem *item);
+    bool openDir(QTreeWidgetItem *item);
+    bool update(QTreeWidgetItem *item);
+    bool openType(QTreeWidgetItem *item);
+    bool copy(QTreeWidgetItem *item);
+    bool cut(QTreeWidgetItem *item);
+    bool put(QTreeWidgetItem *item);
+    bool close(QTreeWidgetItem *item);
+    bool createDir(QTreeWidgetItem *item);
 private slots:
     void on_pushButton_clicked();
+    void findSpaceFileTreeSuccess(Response response);
 
     void on_toolButton_clicked();
     void on_toolButton_3_clicked();
@@ -36,6 +64,10 @@ private:
     Ui::MainPage *ui;
     QWidget* returnWindow;
     UserInfo mInfo;
+    int mUserId;
+    std::map<int, FileInfo> mSpaceFileMap;
+    TreeNode* mRoot;
+    std::map<int, TreeNode*> idBook;//暂时这么写，后续肯定是只有TreeNode，每次都查找
 };
 
 #endif // MAINPAGE_H

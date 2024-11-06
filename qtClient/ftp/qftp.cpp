@@ -39,7 +39,7 @@
 **
 ****************************************************************************/
 
-#define QFTPPI_DEBUG
+//#define QFTPPI_DEBUG
 //#define QFTPDTP_DEBUG
 
 #include "qftp.h"

@@ -39,7 +39,7 @@ public:
     bool initFriendPhoto();
     bool initAllOfflineFile();
     bool initPage();
-    void friendPageUpdate(int uid);
+    void resetFriendNewMessage(int uid);
     UserInfo mInfo;
     void GetFileSuccess(Response response);
     void SendFileSuccess(Response response);
@@ -54,6 +54,8 @@ public:
     void addFriendToPage(int index, UserInfo info);
     bool addGroupToPage(GroupInfo info);
 
+    void notifyFriendNewMessage(int userId);
+    void notifyGroupNewMessage(int groupId);
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -62,7 +64,6 @@ protected:
 
 
 signals:
-    void userMessageUnRead();
     void StoreFileSuccess(FileInfo info);
 private slots:
 
@@ -99,7 +100,7 @@ private:
     int mUserId;
 
 
-    std::vector<UserInfo> mFriendList;
+    std::map<int, UserInfo> mFriendMap;
     std::map<int, GroupInfo> mGroupList;
 
     std::map<int, ChatWindow*> mChatWindowMap;
