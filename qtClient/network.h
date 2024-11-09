@@ -36,8 +36,8 @@ signals:
     void getAllGroupRequestSuccess(Response response);
     void UpDateUserStateSuccess(Response response);
     void ReciveMessageSuccess(Response response);
-    void MessageArriveClient(Response response);
-
+    void PersonMessageArriveClient(Response response);
+    void GroupMessageArriveClient(Response response);
     void createGroupSuccess(Response response);
     void applyJoinGroupSuccess(Response response);
     void processGroupApplySuccess(Response response);

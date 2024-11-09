@@ -448,7 +448,7 @@ bool SendMessageProcessor::sendMessageByNet(Connection* conn, MessageInfo messag
     std::string data;
     int clientSocket = conn->clientSocket; 
     MyProtocolStream stream(data);
-    stream << message.id << message.send_id << message.recv_id << message.timestamp << message.message_text;
+    stream << message.flag << message.id << message.send_id << message.recv_id << message.timestamp << message.message_text;
     Response rsp(1, FunctionCode::SendMessage, 3, 4, 5, 1, message.send_id, 1, true, data);
     string str = rsp.serial();
     bool success = conn->sendResponse(clientSocket, &rsp);
@@ -481,12 +481,18 @@ void SendMessageProcessor::Exec(Connection* conn, Request &request, Response& re
         //Group
         //从GroupCache中取出某群组的所有成员，判断在线，然后依次发送, Redis
         //receiver_id = groupId
-        if (Server::GetInstance()->mUserSessionMap.count(info.recv_id)) {
-            
-            Session* session = Server::GetInstance()->mUserSessionMap[info.recv_id];
-            Connection* friendConn = session->mConn;
-            if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
-                bool ret = sendMessageByNet(friendConn, info/*info.receiver_id*/);
+        int groupId = info.recv_id;
+        ProcessFindAllGroupMemberProcessor pro;
+        vector<UserInfo> userList;
+        pro.FindAllGroupMember(groupId, userList);
+        for (auto u : userList) {
+            if (Server::GetInstance()->mUserSessionMap.count(u.user_id)) {
+                
+                Session* session = Server::GetInstance()->mUserSessionMap[u.user_id];
+                Connection* friendConn = session->mConn;
+                if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
+                    bool ret = sendMessageByNet(friendConn, info/*info.receiver_id*/);
+                }
             }
         }
     }
@@ -2157,13 +2163,13 @@ bool ProcessFindSpaceFileTreeProcessor::FindSpaceFileTree(const Request &request
 void ProcessFindAllGroupMemberProcessor::Exec(Connection *conn, Request &request, Response &response)
 {
     vector<UserInfo> friendList;
-    bool ret = FindAllGroupMember(request, friendList);
-    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     std::string mData = request.mData;
     MyProtocolStream stream(mData);
+    
     int groupId = 0;
     stream >> groupId;
-
+    bool ret = FindAllGroupMember(groupId, friendList);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
         response.mhasData = true;
         //绑定Cache中好友
@@ -2181,14 +2187,8 @@ void ProcessFindAllGroupMemberProcessor::Exec(Connection *conn, Request &request
     }
 }
 
-bool ProcessFindAllGroupMemberProcessor::FindAllGroupMember(const Request &request, vector<UserInfo> &userList)
-{
-    std::string mData = request.mData;
-    MyProtocolStream stream(mData);
-    UserInfo info;
-    int groupId = 0;
-    stream >> groupId;
-    
+bool ProcessFindAllGroupMemberProcessor::FindAllGroupMember(int groupId, vector<UserInfo> &userList)
+{   
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
@@ -2202,7 +2202,7 @@ bool ProcessFindAllGroupMemberProcessor::FindAllGroupMember(const Request &reque
         )");
     state2->setInt(1, groupId);
     sql::ResultSet *st = state2->executeQuery();
-
+    UserInfo info;
     int id = -1;
     try {
         while (st->next()) {
@@ -2328,13 +2328,17 @@ bool ProcessEraseFileProcessor::EraseFile(const Request &request, FileInfo &info
 void GetAllGroupMessageProcessor::Exec(Connection *conn, Request &request, Response &response)
 {
     std::vector<TextMessageInfo> message;
+    std::string mData = request.mData;
+    MyProtocolStream stream(mData);
+    int groupId, localConfirmId;
+    stream >> groupId >> localConfirmId;
     bool ret = GetAllGroupMessage(request, message);
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
         response.mhasData = true;
         std::string &data = response.mData;
         MyProtocolStream stream(data);
-        stream << (int)message.size();
+        stream << groupId << (int)message.size();
         for (int i = 0; i < message.size(); i++) {
             stream << message[i].id << message[i].send_id << message[i].message_text << message[i].timestamp;
         }
@@ -2351,6 +2355,7 @@ bool GetAllGroupMessageProcessor::GetAllGroupMessage(const Request &request, vec
     MyProtocolStream stream(mData);
     int groupId, localConfirmId;
     stream >> groupId >> localConfirmId;
+    printf("ggggggggggggggggggggggggg %d %d\n", groupId, localConfirmId);
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
@@ -2438,6 +2443,7 @@ bool ProcessGroupMessageReadProcessor::ProcessGroupMessageRead(Request &request,
     try {
         while (st->next()) {
             id = st->getInt("lastConfirmMessageId");
+            endReturn = id;
         }
     }
     catch(sql::SQLException& e) {

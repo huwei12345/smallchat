@@ -110,8 +110,16 @@ break;
             }
         }
         else {
-            //消息到达
-            emit MessageArriveClient(rsp);
+            MyProtocolStream stream2(mdata);
+            int flag;
+            stream2 >> flag;
+            if (flag == MessageInfo::Person) {
+                //消息到达
+                emit PersonMessageArriveClient(rsp);
+            }
+            else {
+                emit GroupMessageArriveClient(rsp);
+            }
         }
         break;
     }

@@ -203,7 +203,8 @@ class ProcessFindSpaceFileTreeProcessor : public RequestProcessor {
 
 class ProcessFindAllGroupMemberProcessor : public RequestProcessor {
     void Exec(Connection* conn, Request& request, Response& response);
-    bool FindAllGroupMember(const Request &request, vector<UserInfo> &userList);
+public:
+    bool FindAllGroupMember(int groupId, vector<UserInfo> &userList);
 };
 
 

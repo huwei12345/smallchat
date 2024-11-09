@@ -209,10 +209,10 @@ bool AddFriend(int clientSocket, UserInfo& info, int user_id) {
     return false;
 }
 
-bool SendMessage(int clientSocket, UserInfo& info, MessageInfo& message) {
+bool SendMessage2(int clientSocket, UserInfo& info, MessageInfo& message) {
     string data;
     MyProtocolStream stream(data);
-	stream << message.receiver_id << message.message_text;
+	stream << message.recv_id << message.flag<< message.message_text;
     Request req(1, FunctionCode::SendMessage, 3, 4, 5, data, info.user_id);
 
     int r = Trans::send(clientSocket, req);
@@ -354,10 +354,10 @@ std::string Client::sendAndRecv(const char *str, int code)
                 char Message[2000];
                 scanf("%d %s", &user_id, Message);
                 message.message_text = Message;
-                message.receiver_id = user_id;
-                message.sender_id = info.user_id;
-                printf("message %d %d\n", message.sender_id, message.receiver_id);
-                SendMessage(clientSocket, info, message);
+                message.recv_id = user_id;
+                message.send_id = info.user_id;
+                printf("message %d %d\n", message.send_id, message.recv_id);
+                SendMessage2(clientSocket, info, message);
                 break;
             }
             case FunctionCode::StartUpLoadFile: {
@@ -374,6 +374,17 @@ std::string Client::sendAndRecv(const char *str, int code)
 
                 SendFileSuccess(clientSocket, info, infox);
                 break;
+            }
+            case 25: {
+                printf("please input user_id and Message\n");
+                
+                MessageInfo* minfo = new TextMessageInfo;
+                minfo->recv_id = 13;
+                minfo->send_id = 13;
+                minfo->message_text = "content";
+                minfo->flag = MessageInfo::Group;
+                printf("message %d %d\n", message.send_id, message.recv_id);
+                SendMessage2(clientSocket, info, *minfo);
             }
         }
     }

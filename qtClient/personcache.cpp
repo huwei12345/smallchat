@@ -12,21 +12,21 @@ PersonCache *PersonCache::GetInstance()
 
 bool PersonCache::addPerson(UserInfo info, bool isFriend)
 {
-    mPersonCacheMap[info.user_id] = info;
+        mPersonCacheMap[info.user_id] = info;
     mPersonCacheMap[info.user_id].isFriend = isFriend;
     return true;
 }
 
 bool PersonCache::addPerson(UserInfo info, QIcon photo)
 {
-    mPersonCacheMap[info.user_id] = info;
+        mPersonCacheMap[info.user_id] = info;
     mPersonCacheMap[info.user_id].photo = photo;
     return true;
 }
 
 bool PersonCache::setPersonPhoto(int userId, QIcon icon, QString source)
 {
-    mPersonCacheMap[userId];
+        mPersonCacheMap[userId];
     mPersonCacheMap[userId].user_id = userId;
     mPersonCacheMap[userId].photo = icon;
     mPersonCacheMap[userId].source = source;

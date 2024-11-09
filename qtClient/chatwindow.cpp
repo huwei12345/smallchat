@@ -86,6 +86,7 @@ ChatWindow::~ChatWindow()
 //调用了两次
 void ChatWindow::updateUserPhoto() {
     QIcon *icon = PersonCache::GetInstance()->getPersonPhoto(mUserId);
+    qDebug() << "zzzzzzzzzzzzzzzzzzzzzzzzzzzz: "<< icon;
     if (icon != nullptr && !icon->isNull()) {
         qDebug() << "friend " << mInfo.user_id << " " << QString::fromStdString(mInfo.username) << "has photo";
         QIcon copy = *icon;

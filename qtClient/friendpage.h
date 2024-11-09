@@ -56,6 +56,7 @@ public:
 
     void notifyFriendNewMessage(int userId);
     void notifyGroupNewMessage(int groupId);
+    void resetGroupNewMessage(int groupId);
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 

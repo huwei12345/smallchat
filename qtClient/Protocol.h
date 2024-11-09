@@ -226,6 +226,8 @@ public:
     std::string timestamp;//发送时间
     int flag;
     virtual void print() { }
+
+    virtual ~MessageInfo() { }
 };
 
 class TextMessageInfo : public MessageInfo {
