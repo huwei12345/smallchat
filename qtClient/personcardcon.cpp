@@ -7,6 +7,7 @@
 #include <QQmlContext>
 #include "personcache.h"
 PersonCardCon::PersonCardCon(QWidget *parent)
+    : QDialog{parent}
 {
 }
 

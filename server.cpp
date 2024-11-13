@@ -259,6 +259,8 @@ Server::Server(const char *ip, unsigned int port)
     requestProcessor[FunctionCode::EDITSTOREFILE] = new RequestProcessor;
     requestProcessor[FunctionCode::GETSTOREFILE] = new RequestProcessor;
     requestProcessor[FunctionCode::RENAMESTOREFILE] = new ProcessMoveFileProcessor;
+    requestProcessor[FunctionCode::GetAllGroupMessage] = new GetAllGroupMessageProcessor;
+    requestProcessor[FunctionCode::ProcessGroupMessageRead] = new ProcessGroupMessageReadProcessor;
     for (int i = 50; i < 100; i++) {
         requestProcessor[i] = new RequestProcessor;
     }

@@ -4,6 +4,7 @@
 #include <QDebug>
 #include <QAbstractSocket>
 #include <QMessageBox>
+#include <QVector>
 #include "Protocol.h"
 #include "globalvaria.h"
 #include "processor.h"
@@ -44,6 +45,9 @@ void ClientNetWork::ftpFileGetOver(FileInfo info)
     if (info.serviceType == FileServerType::TOUXIANG) {
         emit ChangeUserPic(info);
         emit ChangeGroupUserPic(info);
+    }
+    else if (info.serviceType == FileServerType::GETSTOREFILE) {
+        emit SpaceFileGetSuccess(info);
     }
     bool ret = Processor::GetFileSuccess(info);
     if (!ret) {
@@ -87,6 +91,10 @@ bool ClientNetWork::process(QByteArray& array) {
         return false;
 break;
     }
+    case FunctionCode::LOGOUT : {
+        emit LogoutSuccess(rsp);
+        break;
+    }
     case FunctionCode::Register: {
         if (rsp.mCode == 1) {
             printf("Register Success\n");
@@ -109,8 +117,16 @@ break;
             }
         }
         else {
-            //消息到达
-            emit MessageArriveClient(rsp);
+            MyProtocolStream stream2(mdata);
+            int flag;
+            stream2 >> flag;
+            if (flag == MessageInfo::Person) {
+                //消息到达
+                emit PersonMessageArriveClient(rsp);
+            }
+            else {
+                emit GroupMessageArriveClient(rsp);
+            }
         }
         break;
     }
@@ -208,10 +224,25 @@ break;
         emit findAllGroupMemberSuccess(rsp);
         break;
     }
+    case FunctionCode::GetAllGroupMessage: {
+        emit getAllGroupMessageSuccess(rsp);
+        break;
+    }
+    case FunctionCode::ProcessGroupMessageRead : {
+        emit ProcessGroupMessageSuccess(rsp);
+        break;
+    }
+    case FunctionCode::DELETESTOREFILE : {
+        emit ProcessDeleteFileSuccess(rsp);
+        break;
+    }
+    case FunctionCode::RENAMESTOREFILE : {
+        emit ProcessRenameFileSuccess(rsp);
+        break;
+    }
     default: {
         break;
     }
-
     }
     return true;
 }
@@ -232,6 +263,26 @@ bool ClientNetWork::confirmMessage(int sendId, int recvId, int start, int end) {
     return false;
 }
 
+bool ClientNetWork::confirmgroupMessage(int groupId, int mUserId, int lastConfirmId, QVector<int> confirmVec) {
+    //TODO:
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << groupId << mUserId << (int)(confirmVec.size() + 1);
+    qDebug() << "lastConfirmId : " << lastConfirmId;
+    stream << lastConfirmId;
+    foreach(auto x, confirmVec) {
+        stream << x;
+    }
+    Request req(1, FunctionCode::ProcessGroupMessageRead, 3, 4, 5, data, ::user_id, 0);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
 
 int ClientNetWork::Client() {
     //return -1;

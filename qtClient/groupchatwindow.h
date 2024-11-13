@@ -6,7 +6,6 @@
 #include <QWidget>
 #include "Protocol.h"
 #include "emojiselector.h"
-
 namespace Ui {
 class GroupChatWindow;
 }
@@ -43,21 +42,31 @@ public:
     bool showPersonCard(QListWidgetItem *item);
     int getFriendPhoto(UserInfo &userinfo);
     bool hasInited();
+
+    bool initGroupMessage();
+    void messageUpdate();
+    void messageUpdate(MessageInfo *info);
+    int getGroupLocalConfirmId();
+    void ProcessGroupMessageSuccess(Response response);
+    int setGroupLocalConfirmId();
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
 
 signals:
     void resetGroupNewMessage(int);
-
+    void notifyGroupNewMessage(int);
+    void confirmMessage(int, int, int, QVector<int>);
 private slots:
     void findAllGroupMemberSuccess(Response response);
+    void getAllGroupMessageSuccess(Response response);
     void on_sendMsgBtn_clicked();
 
     void on_imageBtn_clicked();
 
     void on_fileBtn_clicked();
     void ChangeGroupUserPic(FileInfo info);
+    void GroupMessageArriveClient(Response response);
 private:
     GroupInfo mInfo;
     int mUserId;
@@ -69,6 +78,9 @@ private:
 
     std::map<int, QIcon*> mPhotoMap;
     bool mInited;
+    //记录在配置文件
+    int mLocalConfirmId;//[localConfirmId, remoteConfirmId]之间需要获取，但不需要为未读，是已读的，但当前设备需要显示，并且显示为已读。
+    int mRemoteConfirmId;//[remoteConfirmId, nowMaxId]之间为未读消息，需要提醒用户。
 };
 
 #endif // GROUPCHATWINDOW_H

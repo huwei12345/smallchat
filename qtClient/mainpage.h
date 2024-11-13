@@ -1,6 +1,7 @@
 ﻿#ifndef MAINPAGE_H
 #define MAINPAGE_H
 
+#include <QFile>
 #include <QTreeWidgetItem>
 #include <QWidget>
 #include "Protocol.h"
@@ -28,37 +29,51 @@ public:
     void setReturn(QWidget* widget);
     ~MainPage();
     void StoreFileAllow(Response response);
-    void StoreFileSuccess(FileInfo info);
+    void StoreFileSuccess(Response response);
     bool initSpaceFileTree();
     int init();
-    TreeNode* addSpaceFileToPage(FileInfo info);
-    TreeNode *addAllSpaceFileToPage();
 
-    bool editFile(QTreeWidgetItem *item);
+    TreeNode* addAllSpaceFileToPage();
+    TreeNode* addSpaceFileToPage(FileInfo info);
+    bool deleteSpaceFileFromPage(FileInfo info);
+
     bool deleteFile(QTreeWidgetItem *item);
-    bool storeFile(QTreeWidgetItem *item);
+    bool addFile(QTreeWidgetItem *item);
     bool renameFile(QTreeWidgetItem *item);
     bool openFile(QTreeWidgetItem *item);
     bool openDir(QTreeWidgetItem *item);
-    bool update(QTreeWidgetItem *item);
+    bool push(QTreeWidgetItem *item);
+    bool pull(QTreeWidgetItem *item);
     bool openType(QTreeWidgetItem *item);
     bool copy(QTreeWidgetItem *item);
     bool cut(QTreeWidgetItem *item);
     bool put(QTreeWidgetItem *item);
     bool close(QTreeWidgetItem *item);
     bool createDir(QTreeWidgetItem *item);
+
+    bool spaceHasFile(QString ClientPath);
+    bool spaceHasFile(FileInfo* info);
+    bool showInEdit(FileInfo* info);
+
+    bool createDirectoryIfNotExist(const QString &dirPath);
+    bool addLoaclFile(const QString &filePath);
+    bool deleteLocalSpaceFile(FileInfo info);
+    bool setClientDir(FileInfo &info);
+    bool moveClientLocalDir(FileInfo &info);
+
 private slots:
-    void on_pushButton_clicked();
+    void on_returnBtn_clicked();
+    void on_updateBtn_clicked();
+    void on_testBtn_clicked();
+    void on_diffBtn_clicked();
+
     void findSpaceFileTreeSuccess(Response response);
-
-    void on_toolButton_clicked();
-    void on_toolButton_3_clicked();
-
     void on_treeWidget_itemClicked(QTreeWidgetItem *item, int column);
-
     void on_treeWidget_itemDoubleClicked(QTreeWidgetItem *item, int column);
-
     void on_treeWidget_customContextMenuRequested(const QPoint &pos);
+    void SpaceFileGetSuccess(FileInfo info);
+    void ProcessDeleteFileSuccess(Response response);
+    void ProcessRenameFileSuccess(Response response);
 
 private:
     Ui::MainPage *ui;
@@ -68,6 +83,17 @@ private:
     std::map<int, FileInfo> mSpaceFileMap;
     TreeNode* mRoot;
     std::map<int, TreeNode*> idBook;//暂时这么写，后续肯定是只有TreeNode，每次都查找
+
+
+    QString mSpaceRootDir;
+
+    QFile* mCurrentFile;
+    QTreeWidgetItem* mCurrentItem;
+
+    QTreeWidgetItem* mCurrentCopyItem;
+    QTreeWidgetItem* mCurrentCutItem;
+    vector<QTreeWidgetItem*> mCurrentCopyItemList;
+    vector<QTreeWidgetItem*> mCurrentCutItemList;
 };
 
 #endif // MAINPAGE_H

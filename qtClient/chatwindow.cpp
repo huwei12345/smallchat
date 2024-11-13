@@ -18,6 +18,8 @@
 #include "clientpersoninfo.h"
 #include "personcache.h"
 #include "personcardcon.h"
+#include "chateditimage.h"
+#include "chateditfile.h"
 
 ChatWindow::ChatWindow(QWidget *parent) :
     QWidget(parent),
@@ -29,15 +31,27 @@ ChatWindow::ChatWindow(QWidget *parent) :
     QIcon windowIcon(QPixmap(":/main/title.jpeg")); // 假设你的图标文件位于资源文件中或者项目目录下
     setWindowIcon(windowIcon);
     setWindowTitle(tr("Qfei"));
+    mChatListModel = new QStandardItemModel(this);
+    mChatViewDelegate = new ChatViewDelegate();
+    ui->listView->setItemDelegate(mChatViewDelegate);
+    ui->listView->setModel(mChatListModel);
+    //ui->listView->setMinimumSize(400, 200); // 确保视图有足够的显示空间
+    //禁止编辑
+    ui->listView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    //启用多选
+    //ui->listView->setSelectionMode(QAbstractItemView::MultiSelection);
+    ui->listView->setSelectionMode(QAbstractItemView::ExtendedSelection);//全局可多选
+    ui->listView->viewport()->installEventFilter(ui->listView);
+    ui->listView->setDragEnabled(true); //启用拖拽操作，允许用户拖拽选中的项。
+    ui->listView->setDropIndicatorShown(true); //启用拖放指示器，提供视觉提示。
+    ui->listView->setDefaultDropAction(Qt::CopyAction); //设置默认的拖放操作为复制操作。
 
-    ui->plainTextEdit->setReadOnly(true); // 设置为只读，防止用户编辑内容
     connect(this, &ChatWindow::confirmMessage, ClientNetWork::GetInstance(), &ClientNetWork::confirmMessage);
     connect(this, &ChatWindow::resetFriendNewMessage, (FriendPage*)this->parent(), &FriendPage::resetFriendNewMessage);
 
     //这两个应该放在网络线程（通用 通信确认业务），但同时，发送完文件也应该通知聊天框，看具体业务。
     //connect(FtpSender::GetInstance(), &FtpSender::ftpFileSendOver, this, &ChatWindow::ftpSendFileSuccess);
     mEmojiSelector = new EmojiSelector;
-    QObject::connect(ui->plainTextEdit, &QTextEdit::cursorPositionChanged, this, &ChatWindow::handleCursorPositionChange);
 
     connect(mEmojiSelector, &EmojiSelector::emojiSelected, this, &ChatWindow::emojiSelected);
     connect(this, &ChatWindow::sendFiletoPersonSuccess, this, &ChatWindow::sendFiletoPersonSucc);
@@ -50,7 +64,7 @@ ChatWindow::ChatWindow(QWidget *parent) :
     QSplitter *splitter = new QSplitter(Qt::Vertical);
 
     // 添加左侧和右侧的部件
-    QWidget *upWidget = ui->plainTextEdit;
+    QWidget *upWidget = ui->listView;
     QWidget *downWidget = ui->widget_5;
     ui->widget_5->setMinimumWidth(80); // 设置最小宽度
     // 将部件添加到分隔器
@@ -86,6 +100,7 @@ ChatWindow::~ChatWindow()
 //调用了两次
 void ChatWindow::updateUserPhoto() {
     QIcon *icon = PersonCache::GetInstance()->getPersonPhoto(mUserId);
+    qDebug() << "zzzzzzzzzzzzzzzzzzzzzzzzzzzz: "<< icon;
     if (icon != nullptr && !icon->isNull()) {
         qDebug() << "friend " << mInfo.user_id << " " << QString::fromStdString(mInfo.username) << "has photo";
         QIcon copy = *icon;
@@ -118,6 +133,12 @@ void ChatWindow::messageUpdate() {
     }
 }
 
+void ChatWindow::messageUpdate(MessageInfo* info) {
+    if (info->type != MessageInfo::Text) {
+        return;
+    }
+    emit confirmMessage(mUserId, ::user_id, info->id, info->id);//网络发送给服务器确认收到【start，end】的消息
+}
 
 void ChatWindow::addMessage(MessageInfo* info)
 {
@@ -125,6 +146,7 @@ void ChatWindow::addMessage(MessageInfo* info)
     if (this->isVisible()) {
         showMessage(info);
         emit resetFriendNewMessage(mUserId);
+        messageUpdate(info);
     }
     else {
         mUnReadMessageList.push_back(info);
@@ -135,27 +157,47 @@ void ChatWindow::addMessage(MessageInfo* info)
 void ChatWindow::showMessage(MessageInfo* messageInfo) {
     if (messageInfo == nullptr)
         return;
+    ChatViewItemProperty property;
     qDebug() << "oooooooooooooooooooo" << QString::fromStdString(messageInfo->path) << " : " << messageInfo->type;
-    QTextCharFormat defaultFormat;
-    ui->plainTextEdit->setCurrentCharFormat(defaultFormat); // 恢复默认格式
-    QTextCursor cursor = ui->plainTextEdit->textCursor();
-    cursor.movePosition(QTextCursor::End); // 移动到末尾
+    QWidget* widget = nullptr;
     if (messageInfo->send_id == user_id) {
-        cursor.insertText(QString::fromStdString(ClientPersonInfo::GetInstance()->username) + "           " + QString::fromStdString(messageInfo->timestamp), defaultFormat);
+        property.messageTip = QString::fromStdString(ClientPersonInfo::GetInstance()->username) + "           " + QString::fromStdString(messageInfo->timestamp);
     }
     else {
-        cursor.insertText(QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(messageInfo->timestamp), defaultFormat);
+        property.messageTip = QString::fromStdString(mInfo.username) + "           " + QString::fromStdString(messageInfo->timestamp);
     }
-    ui->plainTextEdit->setTextCursor(cursor);
+
     if (messageInfo->type == MessageInfo::Text) {
-        showContentWithEmoji(QString::fromStdString(messageInfo->message_text));
+        ChatEditText *textEdit = new ChatEditText();
+        textEdit->build(messageInfo);
+        widget = textEdit;
+        property.type = ChatViewItemProperty::Text;
     }
     else if (messageInfo->type == MessageInfo::Picture) {
-        showPictureInEdit(ui->plainTextEdit, messageInfo);
+        ChatEditImage* chatEditImage = new ChatEditImage();
+        chatEditImage->build(messageInfo);
+        widget = chatEditImage;
+        property.type = ChatViewItemProperty::Image;
+        //listItems[listRow].widget = button;
     }
     else if (messageInfo->type == MessageInfo::File) {
-        showFileMessageInEdit(ui->plainTextEdit, messageInfo);
+        ChatEditFile* chatEditFile = new ChatEditFile;
+        chatEditFile->build(messageInfo);
+        widget = chatEditFile;
+        property.type = ChatViewItemProperty::File;
     }
+    if (widget == nullptr) {
+        return;
+    }
+    int listRow = mChatListModel->rowCount() - 1;
+    widget->setProperty("BtnID", QString("%1").arg(listRow));
+    //设置父级
+    widget->setParent(ui->listView);
+    property.widget = widget;
+    QStandardItem *pItem = new QStandardItem;
+    pItem->setData(QVariant::fromValue(property), Qt::UserRole + 1);
+    mChatListModel->appendRow(pItem);
+
     mCurrentMessageList.push_back(messageInfo);
 }
 
@@ -171,17 +213,6 @@ void ChatWindow::showChatContent()
     mUnReadMessageList.clear();
 }
 
-//显示文字消息，解析表情
-void ChatWindow::showContentWithEmoji(QString s) {
-    ui->plainTextEdit->append("");
-    if (s == "0xa500") {
-        ui->plainTextEdit->insertPlainText("抖动窗口！");
-        sharkWindow();
-        return;
-    }
-    mEmojiSelector->showContentWithEmoji(ui->plainTextEdit, s);
-    ui->plainTextEdit->append("");
-}
 
 //图片显示，但考虑窗口是否打开
 void ChatWindow::showPictureInEdit(QTextEdit* textEdit, MessageInfo* info) {
@@ -224,7 +255,7 @@ void ChatWindow::showFileMessageInEdit(QTextEdit* textEdit, MessageInfo* message
             linkFormat.setFontUnderline(true); // 设置字体为下划线
             // 插入可点击的文件名
             QTextCharFormat defaultFormat;
-            ui->plainTextEdit->setCurrentCharFormat(defaultFormat); // 恢复默认格式
+            textEdit->setCurrentCharFormat(defaultFormat); // 恢复默认格式
             cursor.insertText(filePath, linkFormat);
             cursor.insertText("\n", defaultFormat); // 插入换行
             textEdit->setTextCursor(cursor); // 更新光标位置
@@ -410,7 +441,7 @@ bool ChatWindow::sendMessage(const QString &content) {
         info->timestamp = currentDateTimeStr.toStdString();
         info->message_text = content.toStdString();
         //此处应优化为以info为参数
-        bool ret = Processor::SendMessage(mUserId, content.toStdString());
+        bool ret = Processor::SendMessage(info);
         if (!ret) {
             addMessage(info);
             QMessageBox::information(this,"提示","网络不可达！");
@@ -430,20 +461,7 @@ void ChatWindow::on_pushButton_clicked()
 
 
 
-//抖动窗口
-void ChatWindow::sharkWindow() {
-    QPropertyAnimation *animation = new QPropertyAnimation(this, "geometry");
-    animation->setDuration(200);
-    animation->setLoopCount(3);
-    animation->setKeyValueAt(0, this->geometry());
-    int x = this->x();
-    int y = this->y();
-    for (int i = 1; i <= 4; ++i) {
-        animation->setKeyValueAt(0.25 * i, QRect(x + 2 * pow(-1, i), y + 10 * i, this->width(), this->height()));
-        //animation->setKeyValueAt(0.5 * i + 0.25, QRect(button->x() + 5 * i, button->y(), button->width(), button->height()));
-    }
-    animation->start();
-}
+
 
 
 
@@ -533,35 +551,7 @@ bool openFileDirectory(const QString &filePath) {
     return false;
 }
 
-//TODO:实现超链接功能
-void ChatWindow::handleCursorPositionChange() {
-    // 处理文本框中的点击事件
-    QTextCursor cursor = ui->plainTextEdit->textCursor();
-    if (cursor.hasSelection()) {
-        return; // 如果有选中内容，不处理
-    }
-    QTextCharFormat format = cursor.charFormat();
-    if (format.foreground().color() == Qt::blue && format.fontUnderline()) {
-        QString str = cursor.block().text();
-        QString completeTip = "Complete Trans Coming in ";
-        int index = str.indexOf(completeTip);
-        QString filePath;
-        if (index != -1) {
-            filePath = str.mid(index + completeTip.size());
-        }
-        qDebug() << filePath;
-        if (!filePath.isEmpty()) {
-            // 在这里可以处理打开文件的逻辑
-            // 例如，打开文件或执行其他操作
-            // QFile file(filePath);
-            // 进行读取或其他操作
-            bool ret = openFileDirectory(filePath);
-            if (ret) {
-                qDebug() << "Open " << filePath << " Success";
-            }
-        }
-    }
-}
+
 
 
 //从edit里读取出QString,然后在位置中加入表情的代号如#0xa301，然后清空edit，重新绘制，

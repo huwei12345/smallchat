@@ -8,7 +8,9 @@
 #include "soft.h"
 #define BUF_SIZE 1024
 #define MAX_EVENTS 1024
-
+#define QS(x) QString::fromStdString(x)
+#define QN(x) QString::number(x)
+#define LOG qDebug()
 #ifndef SERVER
 #include <QMutex>
 #endif
@@ -111,7 +113,9 @@ namespace FunctionCode {
         EDITSTOREFILE                             = 35,
         GETSTOREFILE                              = 36,
         RENAMESTOREFILE                           = 37,
-
+        GetAllGroupMessage                        = 38,
+        ProcessGroupMessageRead                   = 39,
+        LOGOUT                                    = 40,
         //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
     };
 
@@ -160,6 +164,9 @@ namespace FunctionCode {
         "EDITSTOREFILE       ",
         "GETSTOREFILE        ",
         "RENAMESTOREFILE     ",
+        "GetAllGroupMessage  ",
+        "ProcessGMessageRead ",
+        "LOGOUT              ",
     };
 };
 
@@ -223,6 +230,8 @@ public:
     std::string timestamp;//发送时间
     int flag;
     virtual void print() { }
+
+    virtual ~MessageInfo() { }
 };
 
 class TextMessageInfo : public MessageInfo {
@@ -276,6 +285,7 @@ enum FileServerType {
     STOREFILE,
     STORETIMEFILE,
     ARRIVEFROMPOG,//从他人或者群来的文件
+    GETSTOREFILE,
 };
 
 class FileInfo {
@@ -369,6 +379,7 @@ public:
     std::string tips;
     std::string role;
     std::string timestamp;
+    int confirmId;
     void print() const {
         std::cout << "id: " << id
                   << "\tadmin_id: " << admin_id

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include "Protocol.h"
+#include "MysqlPool.h"
 class Request;
 class Response;
 
@@ -82,6 +83,7 @@ class GetAllGroupReqProcessor : public RequestProcessor  {
 class ProcessGroupJoinReqProcessor  : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
     bool ProcessGroupJoinRequest(Request &request, GroupJoinRequest info);
+    bool initGroupConfirmId(sql::Connection *conn, int userId, int groupId);
 };
 
 class UpdateUserStateProcessor  : public RequestProcessor  {
@@ -100,6 +102,7 @@ class CreateGroupProcessor : public RequestProcessor
 {
     void Exec(Connection* conn, Request& request, Response&);
     bool CreateGroup(Request &request, GroupInfo& info);
+    bool initGroupConfirmId(sql::Connection *conn, int userId, int groupId);
     bool AddGroupOwner(Request &request);
 };
 
@@ -108,6 +111,7 @@ class JoinGroupProcessor : public RequestProcessor
     void Exec(Connection* conn, Request& request, Response&);
 public:
     bool JoinGroup(int userId, int groupId, int role);
+    bool initGroupConfirmId(int userId, int groupId);
 };
 
 class ResponseJoinGroupProcessor : public RequestProcessor
@@ -199,13 +203,15 @@ class ProcessFindSpaceFileTreeProcessor : public RequestProcessor {
 
 class ProcessFindAllGroupMemberProcessor : public RequestProcessor {
     void Exec(Connection* conn, Request& request, Response& response);
-    bool FindAllGroupMember(const Request &request, vector<UserInfo> &userList);
+public:
+    bool FindAllGroupMember(int groupId, vector<UserInfo> &userList);
 };
 
 
 class ProcessEraseFileProcessor : public RequestProcessor {
     void Exec(Connection* conn, Request& request, Response& response);
     bool EraseFile(const Request &request, FileInfo &info);
+    bool EraseFileLocal(FileInfo& info);
 };
 
 
@@ -216,6 +222,17 @@ class ProcessMoveFileProcessor : public RequestProcessor {
 };
 
 //获取和修改都可直接替换或者直接获取
+
+
+class GetAllGroupMessageProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response& response);
+    bool GetAllGroupMessage(const Request &request, vector<TextMessageInfo> &infoList);
+};
+
+class ProcessGroupMessageReadProcessor  : public RequestProcessor  {
+    void Exec(Connection* conn, Request& request, Response&);
+    bool ProcessGroupMessageRead(Request &request, int &endReturn);
+};
 
 #endif
 

@@ -17,9 +17,11 @@ public:
     bool process(QByteArray& array);
 
     bool confirmMessage(int sendId, int recvId, int start, int end);
+    bool confirmgroupMessage(int groupId, int mUserId, int lastConfirmId, QVector<int> confirmVec);
 signals:
     void loginSuccessful(UserInfo info);
     void loginFailure();
+    void LogoutSuccess(Response response);
     void FindFriendSuccess(Response response);
     void ChangeUserPic(FileInfo info);
     void ChangeGroupUserPic(FileInfo info);
@@ -35,8 +37,8 @@ signals:
     void getAllGroupRequestSuccess(Response response);
     void UpDateUserStateSuccess(Response response);
     void ReciveMessageSuccess(Response response);
-    void MessageArriveClient(Response response);
-
+    void PersonMessageArriveClient(Response response);
+    void GroupMessageArriveClient(Response response);
     void createGroupSuccess(Response response);
     void applyJoinGroupSuccess(Response response);
     void processGroupApplySuccess(Response response);
@@ -49,6 +51,12 @@ signals:
 
     void findSpaceFileTreeSuccess(Response response);
     void findAllGroupMemberSuccess(Response response);
+    void getAllGroupMessageSuccess(Response response);
+    void ProcessGroupMessageSuccess(Response response);
+
+    void SpaceFileGetSuccess(FileInfo info);
+    void ProcessDeleteFileSuccess(Response response);
+    void ProcessRenameFileSuccess(Response response);
 private:
     ClientNetWork();
     QTcpSocket mSocket;

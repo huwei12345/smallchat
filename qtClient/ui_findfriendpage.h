@@ -35,7 +35,7 @@ public:
     QRadioButton *groupButton;
     QWidget *widget;
     QHBoxLayout *horizontalLayout;
-    QLabel *label_2;
+    QLabel *tipLabel;
     QLineEdit *lineEdit;
     QPushButton *pushButton;
     QListWidget *listWidget;
@@ -58,7 +58,6 @@ public:
         QFont font;
         font.setPointSize(18);
         font.setBold(false);
-        font.setWeight(50);
         label->setFont(font);
         label->setAlignment(Qt::AlignCenter);
 
@@ -86,10 +85,10 @@ public:
         widget->setObjectName(QString::fromUtf8("widget"));
         horizontalLayout = new QHBoxLayout(widget);
         horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
-        label_2 = new QLabel(widget);
-        label_2->setObjectName(QString::fromUtf8("label_2"));
+        tipLabel = new QLabel(widget);
+        tipLabel->setObjectName(QString::fromUtf8("tipLabel"));
 
-        horizontalLayout->addWidget(label_2);
+        horizontalLayout->addWidget(tipLabel);
 
         lineEdit = new QLineEdit(widget);
         lineEdit->setObjectName(QString::fromUtf8("lineEdit"));
@@ -148,7 +147,7 @@ public:
         groupBox->setTitle(QString());
         friendButton->setText(QCoreApplication::translate("FindFriendPage", "\346\237\245\346\211\276\344\272\272", nullptr));
         groupButton->setText(QCoreApplication::translate("FindFriendPage", "\346\237\245\346\211\276\347\276\244", nullptr));
-        label_2->setText(QCoreApplication::translate("FindFriendPage", "\347\224\250\346\210\267", nullptr));
+        tipLabel->setText(QCoreApplication::translate("FindFriendPage", "\347\224\250\346\210\267", nullptr));
         lineEdit->setText(QString());
         lineEdit->setPlaceholderText(QCoreApplication::translate("FindFriendPage", "\350\276\223\345\205\245\347\224\250\346\210\267\345\220\215/\350\264\246\345\217\267", nullptr));
         pushButton->setText(QCoreApplication::translate("FindFriendPage", "\346\237\245\346\211\276", nullptr));

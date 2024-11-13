@@ -59,7 +59,7 @@ vector<std::string> tableCreateStringMap = {
     content TEXT,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (sender_id) REFERENCES users(user_id),
-    FOREIGN KEY (recipient_id) REFERENCES users(user_id)
+    FOREIGN KEY (recipient_id) REFERENCES group_t(group_id)
 	);
 )",
 	//FriendShips

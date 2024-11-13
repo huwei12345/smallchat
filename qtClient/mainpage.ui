@@ -67,7 +67,7 @@
        </spacer>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton">
+       <widget class="QPushButton" name="returnBtn">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -107,30 +107,37 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="QToolButton" name="toolButton">
+       <widget class="QToolButton" name="updateBtn">
         <property name="text">
          <string>上传</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QToolButton" name="toolButton_4">
+       <widget class="QToolButton" name="syncBtn">
         <property name="text">
          <string>同步</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QToolButton" name="toolButton_2">
+       <widget class="QToolButton" name="pushBtn">
         <property name="text">
          <string>推送</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QToolButton" name="toolButton_3">
+       <widget class="QToolButton" name="testBtn">
         <property name="text">
          <string>Test</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QToolButton" name="diffBtn">
+        <property name="text">
+         <string>差异</string>
         </property>
        </widget>
       </item>
@@ -184,19 +191,15 @@
           <height>16777215</height>
          </size>
         </property>
+        <property name="rootIsDecorated">
+         <bool>true</bool>
+        </property>
+        <attribute name="headerVisible">
+         <bool>false</bool>
+        </attribute>
         <column>
          <property name="text">
           <string>name</string>
-         </property>
-        </column>
-        <column>
-         <property name="text">
-          <string>path</string>
-         </property>
-        </column>
-        <column>
-         <property name="text">
-          <string>size</string>
          </property>
         </column>
        </widget>

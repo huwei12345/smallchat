@@ -51,7 +51,7 @@ bool FriendPage::initPage() {
     connect(ClientNetWork::GetInstance(), &ClientNetWork::getAllGroupRequestSuccess, this, &FriendPage::getAllGroupRequestSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::ProcessFriendRequestResult, this, &FriendPage::ProcessFriendRequestResult);
 
-    connect(ClientNetWork::GetInstance(), &ClientNetWork::MessageArriveClient, this, &FriendPage::MessageArriveClient);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::PersonMessageArriveClient, this, &FriendPage::MessageArriveClient);
     //被动离线文件到来，转为主动获取
     connect(ClientNetWork::GetInstance(), &ClientNetWork::NofifyFileComing, this, &FriendPage::NofifyFileComing);
 
@@ -67,6 +67,7 @@ bool FriendPage::initPage() {
     //获取 服务器对客户端已经收发完成消息的相应，服务器的响应文件操作成功，非FTP的文件操作成功
     connect(ClientNetWork::GetInstance(), &ClientNetWork::GetFileSuccess, this, &FriendPage::GetFileSuccess);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::UpLoadFileSuccess, this, &FriendPage::SendFileSuccess);
+
     PersonCache::GetInstance()->setPersonPhoto(0, icon, ":/friend/touxiang.jpeg");
     return true;
 }
@@ -76,6 +77,7 @@ FriendPage::FriendPage(QWidget *parent) :
     ui(new Ui::FriendPage)
 {
     ui->setupUi(this);
+    returnWindow = NULL;
     initPage();
 }
 
@@ -105,8 +107,8 @@ void FriendPage::keyPressEvent(QKeyEvent *event)
 {
     if(event->key() == Qt::Key_Escape) // 当按下Return/Enter键时
     {
-        hide();
-        returnWindow->show();
+        LOG << "logout2";
+        emit logoutUser();
     }
     else
     {
@@ -165,8 +167,54 @@ int FriendPage::init() {
     //TODO:最好在打开chatWindow时再初始化。
     ret &= initAllOfflineFile();
 
-    ret &= initGroupList();
+    //ret &= initGroupList();
     return ret;
+}
+
+bool FriendPage::reset()
+{
+    PersonCache::GetInstance()->reset();
+    if (m_FindFriendPage)
+        delete m_FindFriendPage;
+    if (m_CreateGroupPage)
+        delete m_CreateGroupPage;
+    mFriendMap.clear();
+    mGroupList.clear();
+    for (auto& chatWindow : mChatWindowMap) {
+        delete chatWindow.second;
+    }
+    mChatWindowMap.clear();
+    for (auto& gchatWindow : mGroupWindowMap) {
+        delete gchatWindow.second;
+    }
+    mGroupWindowMap.clear();
+    for (auto &button : mFriendButton) {
+        delete button.second;
+    }
+    mFriendButton.clear();
+    for (auto &button : mGroupButton) {
+        delete button.second;
+    }
+    mGroupButton.clear();
+    for (auto icon : mPhotoMap) {
+        delete icon.second;
+    }
+    for (auto icon : mGroupPhotoMap) {
+        delete icon.second;
+    }
+    mFriendRequestSet.clear();
+    mGroupRequestSet.clear();
+    if (mFriendRequestTimer) {
+        delete mFriendRequestTimer;
+    }
+    for (auto timer : mUnReadMessageTimerMap) {
+        delete timer.second;
+    }
+    if (mSpacePage)
+        delete mSpacePage;
+
+    Processor::Logout();
+    //重置网络，或者使用logout命令准备在连接上切换session
 }
 
 
@@ -334,7 +382,7 @@ void FriendPage::findAllFriendSuccess(Response response)
         PersonCache::GetInstance()->addPerson(info, true);
         ChatWindow* chatWindow = new ChatWindow(info);
         mChatWindowMap[info.user_id] = chatWindow;
-        connect(chatWindow, &ChatWindow::resetFriendNewMessage, this, &FriendPage::resetFriendNewMessage);
+        //connect(chatWindow, &ChatWindow::resetFriendNewMessage, this, &FriendPage::resetFriendNewMessage);
     }
     initFriendPhoto();
     initFriendState();
@@ -349,7 +397,7 @@ void FriendPage::findAllGroupSuccess(Response response)
     for (int i = 0; i < size; i++) {
         //TODO:ToolButton put in widget
         GroupInfo info;
-        stream2 >> info.id >> info.group_name >> info.role >> info.admin_id >> info.gtype >> info.description >> info.tips;
+        stream2 >> info.id >> info.group_name >> info.role >> info.admin_id >> info.gtype >> info.description >> info.tips >> info.confirmId;
         info.print();
         addGroupToPage(info);
     }
@@ -408,22 +456,43 @@ void FriendPage::getAllMessageSuccess(Response response) {
 //显示
 void FriendPage::notifyFriendNewMessage(int userId) {
     QString str = mFriendButton[userId]->text();
-    int index = str.indexOf("[New");
+    int index = str.indexOf("  [New");
     if (index != -1)
         str = str.remove(index, str.length() - index);
     //有新消息来时添加text,点击后，出现新消息后，删除text
     mFriendButton[userId]->setText(str + "  [New Message]");
 }
 
+//显示
+void FriendPage::notifyGroupNewMessage(int groupId) {
+    QString str = mGroupButton[groupId]->text();
+    int index = str.indexOf("  [New");
+    if (index != -1)
+        str = str.remove(index, str.length() - index);
+    //有新消息来时添加text,点击后，出现新消息后，删除text
+    mGroupButton[groupId]->setText(str + "  [New Message]");
+}
+
 //消除
 void FriendPage::resetFriendNewMessage(int uid) {
     fflush(stdout);
     QString str = mFriendButton[uid]->text();
-    int index = str.indexOf("[New");
+    int index = str.indexOf("  [New");
     if (index != -1)
         str = str.remove(index, str.length() - index);
     //有新消息来时添加text,点击后，出现新消息后，删除text
     mFriendButton[uid]->setText(str);
+}
+
+//消除
+void FriendPage::resetGroupNewMessage(int groupId) {
+    fflush(stdout);
+    QString str = mGroupButton[groupId]->text();
+    int index = str.indexOf("  [New");
+    if (index != -1)
+        str = str.remove(index, str.length() - index);
+    //有新消息来时添加text,点击后，出现新消息后，删除text
+    mGroupButton[groupId]->setText(str);
 }
 
 void FriendPage::getAllOfflineFileSuccess(Response response)
@@ -544,7 +613,7 @@ void FriendPage::MessageArriveClient(Response response)
     std::string &mData = response.mData;
     MyProtocolStream stream(mData);
     MessageInfo* info = new TextMessageInfo;
-    stream >> info->id >> info->send_id >> info->recv_id >> info->timestamp >> info->message_text;
+    stream >> info->flag >> info->id >> info->send_id >> info->recv_id >> info->timestamp >> info->message_text;
     QString str = mFriendButton[info->send_id]->text();
 
     notifyFriendNewMessage(info->send_id);
@@ -583,8 +652,13 @@ void FriendPage::addFriendToPage(int i, UserInfo info) {
     ui->listWidget_3->item(i)->setSizeHint(size);
 }
 
+
+
 bool FriendPage::addGroupToPage(GroupInfo info)
 {
+    if (mGroupWindowMap.count(info.id)) {
+        return false;
+    }
     info.print();
     QListWidget* groupWidget = ui->listWidget_2;
     QToolButton* button = new QToolButton();
@@ -617,6 +691,10 @@ bool FriendPage::addGroupToPage(GroupInfo info)
     mGroupList[info.id] = info;
     GroupChatWindow* chatWindow = new GroupChatWindow(info);
     mGroupWindowMap[info.id] = chatWindow;
+    if (!chatWindow->hasInited()) {
+        chatWindow->returnWindow = this;
+        chatWindow->init();
+    }
     //        connect(chatWindow, &ChatWindow::friendPageUpdate, this, &GroupChatWindow::friendPageUpdate);
     return true;
 }
@@ -635,12 +713,8 @@ void FriendPage::chatWithGroup(QListWidgetItem* item) {
     int groupId = item->whatsThis().toInt();
     qDebug() << "groupId" << groupId;
     GroupChatWindow* chatWindow = mGroupWindowMap[groupId];
-    if (!chatWindow->hasInited()) {
-        chatWindow->returnWindow = this;
-        chatWindow->init();
-    }
     chatWindow->show();
-    //chatWindow->showChatContent();
+    chatWindow->showChatContent();
 }
 
 void FriendPage::on_toolButton_clicked()
@@ -789,7 +863,7 @@ void FriendPage::NofifyFileComing(Response response)
     }
 }
 
-
+//主动修改
 void FriendPage::ChangeUserPicBySend(FileInfo info) {
     QFileInfo fileInfo(QString::fromStdString(info.ClientPath));
    // 获取文件扩展名
@@ -832,6 +906,9 @@ void FriendPage::ChangeUserPicBySend(FileInfo info) {
         if (regular != std::string::npos) {
             return;
         }
+        if (!mFriendButton.count(info.owner)) {
+            return;
+        }
         //修改其他用户头像
         QToolButton* button = mFriendButton[info.owner];
         if (QFile::exists(clientPath)) {
@@ -868,6 +945,9 @@ void FriendPage::ChangeUserPic(FileInfo info)
     }
     else {
         if (regular != std::string::npos) {
+            return;
+        }
+        if (!mFriendButton.count(info.owner)) {
             return;
         }
         //修改其他用户头像
@@ -948,8 +1028,9 @@ void FriendPage::SendFileSuccess(Response response)
         int ftptaskId = 0;
         stream >> ftptaskId;
         FileInfo info = FtpSender::GetInstance()->file(ftptaskId);
+        stream >> info.id;
         if (info.serviceType == STOREFILE) {
-            emit StoreFileSuccess(info);
+            emit StoreFileSuccess(response);
         }
         else if (info.serviceType == SENDTOPERSON) {
             mChatWindowMap[info.recv_id]->emitSendFiletoPerson(info);

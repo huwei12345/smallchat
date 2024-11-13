@@ -33,6 +33,10 @@ private slots:
 
     void FindFriend();
     void FindGroup();
+    void on_friendButton_clicked();
+
+    void on_groupButton_clicked();
+
 private:
     Ui::FindFriendPage *ui;
     QListWidgetItem *mSelectItem;

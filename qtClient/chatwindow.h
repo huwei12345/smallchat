@@ -1,9 +1,12 @@
 ﻿#ifndef CHATWINDOW_H
 #define CHATWINDOW_H
 
+#include <QStandardItem>
 #include <QTextEdit>
 #include <QWidget>
 #include "Protocol.h"
+#include "chatviewdelegate.h"
+#include "chatedittext.h"
 class EmojiCoder;
 class EmojiSelector;
 namespace Ui {
@@ -36,9 +39,9 @@ public:
     void showMessage(MessageInfo *messageInfo);
 
     void showChatContent();
-    void showContentWithEmoji(QString s);
     void showFileMessageInEdit(QTextEdit *textEdit, MessageInfo *messageInfo);
 
+    void messageUpdate(MessageInfo *info);
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -49,7 +52,6 @@ private slots:
     void on_toolButton_8_clicked();
 
     void on_toolButton_9_clicked();
-    void handleCursorPositionChange();
 
     void on_toolButton_4_clicked();
 
@@ -69,6 +71,8 @@ private:
     EmojiCoder* mEmojiCoder;
     UserInfo* clientInfo;
     EmojiSelector *mEmojiSelector;
+    ChatViewDelegate* mChatViewDelegate;
+    QStandardItemModel *mChatListModel;
 };
 
 #endif // CHATWINDOW_H

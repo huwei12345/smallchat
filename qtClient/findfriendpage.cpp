@@ -233,3 +233,17 @@ void FindFriendPage::FindGroup()
         QMessageBox::information(this,"提示","输入错误！");
     }
 }
+
+void FindFriendPage::on_friendButton_clicked()
+{
+    LOG << "Find Friend";
+    ui->tipLabel->setText("用户");
+}
+
+
+void FindFriendPage::on_groupButton_clicked()
+{
+    LOG << "Find Group";
+    ui->tipLabel->setText("群组");
+}
+

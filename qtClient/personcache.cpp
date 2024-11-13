@@ -12,6 +12,7 @@ PersonCache *PersonCache::GetInstance()
 
 bool PersonCache::addPerson(UserInfo info, bool isFriend)
 {
+    qDebug() << "2222222222222222222222 " << info.user_id;
     mPersonCacheMap[info.user_id] = info;
     mPersonCacheMap[info.user_id].isFriend = isFriend;
     return true;
@@ -19,6 +20,7 @@ bool PersonCache::addPerson(UserInfo info, bool isFriend)
 
 bool PersonCache::addPerson(UserInfo info, QIcon photo)
 {
+    qDebug() << "11111111111111111111111 " << info.user_id;
     mPersonCacheMap[info.user_id] = info;
     mPersonCacheMap[info.user_id].photo = photo;
     return true;
@@ -26,6 +28,7 @@ bool PersonCache::addPerson(UserInfo info, QIcon photo)
 
 bool PersonCache::setPersonPhoto(int userId, QIcon icon, QString source)
 {
+    qDebug() << "333333333333333333333333 " << userId;
     mPersonCacheMap[userId];
     mPersonCacheMap[userId].user_id = userId;
     mPersonCacheMap[userId].photo = icon;
@@ -74,6 +77,11 @@ bool PersonCache::isFriend(int userId) {
     if (!mPersonCacheMap.count(userId))
         return false;
     return mPersonCacheMap[userId].isFriend;
+}
+
+bool PersonCache::reset()
+{
+    mPersonCacheMap.clear();
 }
 
 UserInfoDetail::UserInfoDetail(const UserInfo &info) : UserInfo(info)

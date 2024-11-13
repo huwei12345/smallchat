@@ -78,6 +78,11 @@ void FtpSender::close()
     ftpUtil->disconnectFtp();
 }
 
+void FtpSender::start()
+{
+    ftpUtil->connectFtp();
+}
+
 void FtpSender::addFile(FileInfo &info)
 {
     if (mCurrentFileMap.count(info.ftpTaskId) == 0) {
@@ -87,6 +92,8 @@ void FtpSender::addFile(FileInfo &info)
         qDebug() << "Error Push Ftp File Id : " << info.ftpTaskId;
     }
 }
+
+
 
 void FtpSender::removeFile(FileInfo &info)
 {

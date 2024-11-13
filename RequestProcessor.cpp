@@ -1,6 +1,7 @@
 #include "RequestProcessor.h"
 #include <regex>
 #include <sys/stat.h>
+#include <limits.h>
 #include "Protocol.h"
 #include "MyProtocolStream.h"
 #include "MysqlPool.h"
@@ -447,7 +448,7 @@ bool SendMessageProcessor::sendMessageByNet(Connection* conn, MessageInfo messag
     std::string data;
     int clientSocket = conn->clientSocket; 
     MyProtocolStream stream(data);
-    stream << message.id << message.send_id << message.recv_id << message.timestamp << message.message_text;
+    stream << message.flag << message.id << message.send_id << message.recv_id << message.timestamp << message.message_text;
     Response rsp(1, FunctionCode::SendMessage, 3, 4, 5, 1, message.send_id, 1, true, data);
     string str = rsp.serial();
     bool success = conn->sendResponse(clientSocket, &rsp);
@@ -480,12 +481,18 @@ void SendMessageProcessor::Exec(Connection* conn, Request &request, Response& re
         //Group
         //从GroupCache中取出某群组的所有成员，判断在线，然后依次发送, Redis
         //receiver_id = groupId
-        if (Server::GetInstance()->mUserSessionMap.count(info.recv_id)) {
-            
-            Session* session = Server::GetInstance()->mUserSessionMap[info.recv_id];
-            Connection* friendConn = session->mConn;
-            if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
-                bool ret = sendMessageByNet(friendConn, info/*info.receiver_id*/);
+        int groupId = info.recv_id;
+        ProcessFindAllGroupMemberProcessor pro;
+        vector<UserInfo> userList;
+        pro.FindAllGroupMember(groupId, userList);
+        for (auto u : userList) {
+            if (Server::GetInstance()->mUserSessionMap.count(u.user_id)) {
+                
+                Session* session = Server::GetInstance()->mUserSessionMap[u.user_id];
+                Connection* friendConn = session->mConn;
+                if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
+                    bool ret = sendMessageByNet(friendConn, info/*info.receiver_id*/);
+                }
             }
         }
     }
@@ -588,7 +595,7 @@ void SearchAllGroupProcessor::Exec(Connection* conn, Request &request, Response&
         MyProtocolStream stream(response.mData);
         stream << (int)groupList.size();
         for (auto &info : groupList) {
-            stream << info.id << info.group_name << info.role << info.admin_id << info.gtype << info.description << info.tips;
+            stream << info.id << info.group_name << info.role << info.admin_id << info.gtype << info.description << info.tips << info.confirmId;
             info.print();
         }
     }
@@ -596,7 +603,6 @@ void SearchAllGroupProcessor::Exec(Connection* conn, Request &request, Response&
         //some error info add
     }
 }
-
 
 bool SearchAllGroupProcessor::SearchAllGroup(const Request& request, std::vector<GroupInfo>& groupList) {
     std::string mData = request.mData;
@@ -610,11 +616,18 @@ bool SearchAllGroupProcessor::SearchAllGroup(const Request& request, std::vector
         return false;
     }
     //TODO: 联合查询，用户的名字、email等返回
+    //在联合group_confirm_t
 	sql::PreparedStatement* state2 = conn->prepareStatement(R"(
-        SELECT g.group_id, gm.role, g.group_name, g.admin_id, g.gtype, g.description, g.Tips
-        FROM group_members gm
-        JOIN group_t g ON gm.user_id = ?
-        WHERE gm.group_id = g.group_id and role <= 3;
+        SELECT g.group_id, gm.role, g.group_name, g.admin_id, g.gtype, 
+        g.description, g.Tips,gc.lastConfirmMessageId
+        FROM 
+            group_members gm
+        JOIN 
+            group_t g ON gm.group_id = g.group_id
+        LEFT JOIN 
+            group_confirm_t gc ON gm.user_id = gc.user_id AND gm.group_id = gc.group_id
+        WHERE 
+            gm.user_id = ? AND gm.role <= 3;
         )");
     state2->setInt(1, user_id);
     sql::ResultSet *st = state2->executeQuery();
@@ -629,6 +642,7 @@ bool SearchAllGroupProcessor::SearchAllGroup(const Request& request, std::vector
             info.gtype = st->getString("gtype");
             info.description = st->getString("description");
             info.tips = st->getString("Tips");
+            info.confirmId = st->getInt("lastConfirmMessageId");
             //cout << "id:" << info.id << " name:" << info.role << " email:" << info.group_name << "status:" << info.admin_id << std::endl;
             groupList.push_back(info);
         }
@@ -649,7 +663,7 @@ bool SendMessageProcessor::SendMessage(const Request &request, MessageInfo& info
 {
     std::string mData = request.mData;
     MyProtocolStream stream(mData);
-    stream >> info.recv_id >> info.message_text >> info.flag;
+    stream >> info.recv_id >> info.flag >> info.message_text;
     info.send_id = request.mUserId;
     
     info.timestamp = SetTime::GetInstance()->getAccurateTime();
@@ -1118,13 +1132,38 @@ bool CreateGroupProcessor::CreateGroup(Request &request, GroupInfo& info)
         }
         //作为拥有者
         JoinGroupProcessor proc;
-        return proc.JoinGroup(info.admin_id, info.id, 3);
+        bool ret = proc.JoinGroup(info.admin_id, info.id, 3);
+        ret = initGroupConfirmId(conn, info.admin_id, info.id);
     } catch (sql::SQLException& e) {
         std::cerr << "SQL error: " << e.what() << std::endl;
         std::cerr << "Error code: " << e.getErrorCode() << std::endl;
         std::cerr << "SQLState: " << e.getSQLState() << std::endl;
         pstmt->close();
         MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    return true;
+}
+
+bool CreateGroupProcessor::initGroupConfirmId(sql::Connection* conn, int userId, int groupId)
+{
+if (conn == NULL) {
+        return false;
+    }
+    sql::PreparedStatement* state2 = conn->prepareStatement(R"(insert into group_confirm_t(user_id, group_id, lastConfirmMessageId) 
+        values(?, ?, ?);)");
+    state2->setInt(1, userId);
+    state2->setInt(2, groupId);
+    state2->setInt(3, 0);
+    try {
+        state2->executeUpdate();
+    }
+    catch(sql::SQLException& e) {
+        //rollback
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        throw e;
         return false;
     }
     return true;
@@ -1179,6 +1218,7 @@ bool JoinGroupProcessor::JoinGroup(int userId, int groupId, int role)
     return true;
 }
 
+
 //相应加群
 void ResponseJoinGroupProcessor::Exec(Connection *conn, Request &request, Response &)
 {
@@ -1229,6 +1269,7 @@ bool StoreFileProcessor::StoreFile(Request &request, FileInfo& fileObject)
     if (fileObject.fileType == "dir") {
         printf("StoreFile Dir:\n");
         StoreFileSQL(request, fileObject);
+        //需要返回添加目录项的id
         StoreDir(fileObject);
     }
     return ret && ret2; 
@@ -1270,7 +1311,22 @@ bool StoreFileProcessor::StoreFileSQL(Request &request, FileInfo &fileInfo)
     try {
         pstmt->execute();
         pstmt->close();
+        sql::PreparedStatement* state3 = conn->prepareStatement("SELECT LAST_INSERT_ID();");
+        sql::ResultSet* rs = state3->executeQuery();
+        int autoIncKeyFromFunc = -1;
+        if (rs->next()) {
+            autoIncKeyFromFunc = rs->getInt(1);
+        } else {
+            // throw an exception from here
+        }
+        fileInfo.id = autoIncKeyFromFunc;
+        printf("id = %d\n", fileInfo.id);
+        rs->close();
+        state3->close();
         MysqlPool::GetInstance()->releaseConncetion(conn);
+        if (fileInfo.id <= 0) {
+            return false;
+        }
         return true;
     } catch (sql::SQLException& e) {
         std::cerr << "SQL error: " << e.what() << std::endl;
@@ -1441,7 +1497,7 @@ void ProcessUpLoadFileSuccessProcessor::Exec(Connection* conn, Request &request,
     if (response.mCode) {
         response.mhasData = true;
         MyProtocolStream stream(response.mData);
-        stream << info.ftpTaskId;
+        stream << info.ftpTaskId << info.id;
     }
     else {
         //some error info add
@@ -1980,6 +2036,10 @@ bool ProcessGroupJoinReqProcessor::ProcessGroupJoinRequest(Request &request, Gro
     //如果已经被其他管理员处理了要提示
     try {
         state2->executeUpdate();
+        if (groupJoinRequest.mAccept) {
+            //TODO: 此处考虑事务
+            initGroupConfirmId(conn, groupJoinRequest.user_id, groupJoinRequest.groupId);
+        }
     }
     catch(sql::SQLException& e) {
         //rollback
@@ -1995,6 +2055,30 @@ bool ProcessGroupJoinReqProcessor::ProcessGroupJoinRequest(Request &request, Gro
     return true;
 }
 
+
+bool ProcessGroupJoinReqProcessor::initGroupConfirmId(sql::Connection* conn, int userId, int groupId)
+{
+if (conn == NULL) {
+        return false;
+    }
+    sql::PreparedStatement* state2 = conn->prepareStatement(R"(insert into group_confirm_t(user_id, group_id, lastConfirmMessageId) 
+        values(?, ?, ?);)");
+    state2->setInt(1, userId);
+    state2->setInt(2, groupId);
+    state2->setInt(3, 0);
+    try {
+        state2->executeUpdate();
+    }
+    catch(sql::SQLException& e) {
+        //rollback
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        throw e;
+        return false;
+    }
+    return true;
+}
 
 /*
 2024年10月10日21:23:22
@@ -2095,13 +2179,13 @@ bool ProcessFindSpaceFileTreeProcessor::FindSpaceFileTree(const Request &request
 void ProcessFindAllGroupMemberProcessor::Exec(Connection *conn, Request &request, Response &response)
 {
     vector<UserInfo> friendList;
-    bool ret = FindAllGroupMember(request, friendList);
-    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     std::string mData = request.mData;
     MyProtocolStream stream(mData);
+    
     int groupId = 0;
     stream >> groupId;
-
+    bool ret = FindAllGroupMember(groupId, friendList);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
         response.mhasData = true;
         //绑定Cache中好友
@@ -2119,14 +2203,8 @@ void ProcessFindAllGroupMemberProcessor::Exec(Connection *conn, Request &request
     }
 }
 
-bool ProcessFindAllGroupMemberProcessor::FindAllGroupMember(const Request &request, vector<UserInfo> &userList)
-{
-    std::string mData = request.mData;
-    MyProtocolStream stream(mData);
-    UserInfo info;
-    int groupId = 0;
-    stream >> groupId;
-    
+bool ProcessFindAllGroupMemberProcessor::FindAllGroupMember(int groupId, vector<UserInfo> &userList)
+{   
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
         return false;
@@ -2140,7 +2218,7 @@ bool ProcessFindAllGroupMemberProcessor::FindAllGroupMember(const Request &reque
         )");
     state2->setInt(1, groupId);
     sql::ResultSet *st = state2->executeQuery();
-
+    UserInfo info;
     int id = -1;
     try {
         while (st->next()) {
@@ -2219,10 +2297,10 @@ void ProcessEraseFileProcessor::Exec(Connection *conn, Request &request, Respons
 {
     FileInfo info;
     MyProtocolStream stream(request.mData);
-    stream >> info.id >>  info.send_id  >> info.recv_id
-           >> info.ClientPath >> info.serviceType  >> info.serverPath  >> info.serverFileName
-           >> info.parentId;
+    stream >> info.id >> info.serverPath >> info.serverFileName;
     bool ret = EraseFile(request, info);
+    if (ret)
+        ret &= EraseFileLocal(info);
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
         response.mhasData = true;
@@ -2261,4 +2339,177 @@ bool ProcessEraseFileProcessor::EraseFile(const Request &request, FileInfo &info
         return false;
     }
     return false;
+}
+
+bool ProcessEraseFileProcessor::EraseFileLocal(FileInfo &info)
+{
+    int ret = FileTools::eraseFile((info.serverPath + info.serverFileName).c_str());
+    if (ret < 0)
+        return false;
+    else
+        return true;
+}
+
+void GetAllGroupMessageProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    std::vector<TextMessageInfo> message;
+    std::string mData = request.mData;
+    MyProtocolStream stream(mData);
+    int groupId, localConfirmId;
+    stream >> groupId >> localConfirmId;
+    bool ret = GetAllGroupMessage(request, message);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    if (response.mCode) {
+        response.mhasData = true;
+        std::string &data = response.mData;
+        MyProtocolStream stream(data);
+        stream << groupId << (int)message.size();
+        for (int i = 0; i < message.size(); i++) {
+            stream << message[i].id << message[i].send_id << message[i].message_text << message[i].timestamp;
+        }
+    }
+    else {
+        response.mhasData = false;
+        //some error info add
+    }
+}
+
+bool GetAllGroupMessageProcessor::GetAllGroupMessage(const Request &request, vector<TextMessageInfo> &infoList)
+{
+    std::string mData = request.mData;
+    MyProtocolStream stream(mData);
+    int groupId, localConfirmId;
+    stream >> groupId >> localConfirmId;
+    printf("ggggggggggggggggggggggggg %d %d\n", groupId, localConfirmId);
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == NULL) {
+        return false;
+    }
+
+	sql::PreparedStatement* state2 = conn->prepareStatement(R"(select message_id, sender_id, recipient_id, content, timestamp from group_messages
+        where recipient_id = ? and message_id > ?;)");
+    state2->setInt(1, groupId);
+    state2->setInt(2, localConfirmId);
+    sql::ResultSet *st = state2->executeQuery();
+    int id = -1;
+    try {
+        while (st->next()) {
+            TextMessageInfo info;
+            info.id = st->getInt("message_id");
+            info.send_id = st->getInt("sender_id");
+            info.message_text = st->getString("content");
+            info.timestamp = st->getString("timestamp");
+            cout << "sender_id:" << info.send_id << " message:" << info.message_text << std::endl;
+            infoList.push_back(info);
+        }
+    }
+    catch(sql::SQLException& e) {
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    st->close();
+    state2->close();
+    MysqlPool::GetInstance()->releaseConncetion(conn);
+    return true;
+}
+
+void ProcessGroupMessageReadProcessor::Exec(Connection *conn, Request &request, Response &response)
+{
+    int end = -1;
+    string data = request.mData;
+    bool ret = ProcessGroupMessageRead(request, end);
+    response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
+    MyProtocolStream stream(data);
+    int groupId = 0, userId = 0, size = 0;
+    stream >> groupId >> userId >> size;
+    printf("xxxxxxxxxxxxxxxxxxxx = %d  %d %d\n", groupId, userId, end);
+    if (response.mCode && end != -1) {
+        response.mhasData = true;
+        std::string &data = response.mData;
+        MyProtocolStream stream(data);
+        stream << groupId << userId << end;
+    }
+    else {
+        response.mhasData = false;
+        //some error info add
+    }
+}
+
+bool ProcessGroupMessageReadProcessor::ProcessGroupMessageRead(Request &request, int& endReturn)
+{
+    //范围确认 start-end
+    //后续可以优化为根据协议如何确认，如type = byte[0] type1:范围确认 type2:单条确认 type3:时间确认 type4:位图确认
+    string& data = request.mData;
+    MyProtocolStream stream(data);
+    int groupId = 0, userId = 0, size = 0;
+    stream >> groupId >> userId >> size;
+    vector<int> confirmVec(size, 0);
+    int start = INT_MAX;
+    int end = 0;
+    //一定是连续确认的
+    for (int i = 0; i < size; i++) {
+        stream >> confirmVec[i];
+        start = min(start, confirmVec[i]);
+        end = max(end, confirmVec[i]);
+    }
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == NULL) {
+        return false;
+    }
+    sql::PreparedStatement* state2 = conn->prepareStatement(R"(select lastConfirmMessageId from group_confirm_t
+        where group_id = ? and user_id = ?;)");
+    state2->setInt(1, groupId);
+    state2->setInt(2, userId);
+    sql::ResultSet *st = state2->executeQuery();
+    int id = -1;
+    try {
+        while (st->next()) {
+            id = st->getInt("lastConfirmMessageId");
+            endReturn = id;
+        }
+    }
+    catch(sql::SQLException& e) {
+        cout << "# ProcessGroupMessageReadProcessor ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        state2->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    //非当前确认，中间有漏
+    printf("size = %ld id = %d [0] = %d\n", confirmVec.size(), id, confirmVec[0]);
+    if (confirmVec.size() == 0 || confirmVec[0] > id) {
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    else {
+        //可以发消息给客户端，重发确认【confirmId, now】
+    }
+    st->close();
+    state2->close();
+    state2 = conn->prepareStatement(R"(update group_confirm_t set lastConfirmMessageId = ? 
+        where group_id = ? and user_id = ?;)");
+    //TODO:此处不应该直接用end,而应该根据是否[start, end]续接到正好是群下一条应认证的消息，若不是需要缓存当前确认范围，以待中间认证范围被补全，或者这部分在客户端做也可以。
+    state2->setInt(1, end);
+    state2->setInt(2, groupId);
+    state2->setInt(3, userId);
+    try {
+        state2->executeUpdate();
+        endReturn = end;
+    }
+    catch(sql::SQLException& e) {
+        //rollback
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        state2->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    state2->close();
+    MysqlPool::GetInstance()->releaseConncetion(conn);    
+    return true;
 }

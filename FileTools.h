@@ -9,5 +9,7 @@ class FileTools {
 public:
     static int createDirectory(const char *path);
     static int checkFile(const char* path);
+    static void deleteDirectory(const char *dirPath);
+    static int eraseFile(const char *path);
 };
 #endif

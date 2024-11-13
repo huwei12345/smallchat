@@ -13,6 +13,7 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
+#include <QtWidgets/QListView>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpacerItem>
 #include <QtWidgets/QTextEdit>
@@ -37,7 +38,7 @@ public:
     QToolButton *toolButton_10;
     QToolButton *toolButton_13;
     QToolButton *toolButton_11;
-    QTextEdit *plainTextEdit;
+    QListView *listView;
     QWidget *widget_5;
     QVBoxLayout *verticalLayout_2;
     QWidget *widget_3;
@@ -118,11 +119,11 @@ public:
 
         verticalLayout->addWidget(widget);
 
-        plainTextEdit = new QTextEdit(widget_2);
-        plainTextEdit->setObjectName(QString::fromUtf8("plainTextEdit"));
-        plainTextEdit->setMinimumSize(QSize(0, 150));
+        listView = new QListView(widget_2);
+        listView->setObjectName(QString::fromUtf8("listView"));
+        listView->setMinimumSize(QSize(0, 150));
 
-        verticalLayout->addWidget(plainTextEdit);
+        verticalLayout->addWidget(listView);
 
         widget_5 = new QWidget(widget_2);
         widget_5->setObjectName(QString::fromUtf8("widget_5"));
@@ -223,7 +224,6 @@ public:
 
         verticalLayout->addWidget(widget_5);
 
-        verticalLayout->setStretch(1, 20);
         verticalLayout->setStretch(2, 10);
 
         horizontalLayout_4->addWidget(widget_2);

@@ -37,6 +37,7 @@ public:
     QString getPersonPhotoPath(int userId);
     bool count(int userId);
     bool isFriend(int userId);
+    bool reset();
 private:
     PersonCache() = default;
     std::unordered_map<int, UserInfoDetail> mPersonCacheMap;

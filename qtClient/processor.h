@@ -9,8 +9,9 @@ class Processor {
 public:
     Processor();
     static bool Login(std::string& username, std::string& password);
+    static bool Logout();
     static bool Register(std::string& username, std::string& password, std::string& email);
-    static bool SendMessage(int reciveId, const string &content);
+    static bool SendMessage(MessageInfo *info);
     static bool FindFriend(int friendId);
     static bool FindFriendByName(std::string &friendName);
     static bool AddFriend(int friendId);
@@ -48,6 +49,7 @@ public:
 
     static bool RenameFile(FileInfo info);
     static bool DeleteFile(FileInfo info);
+    static bool getAllGroupMessage(int groupId, int localConfirmId);
 };
 
 #endif // PROCESSOR_H

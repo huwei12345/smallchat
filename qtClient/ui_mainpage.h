@@ -32,13 +32,14 @@ public:
     QHBoxLayout *horizontalLayout_2;
     QLabel *label;
     QSpacerItem *horizontalSpacer_2;
-    QPushButton *pushButton;
+    QPushButton *returnBtn;
     QWidget *widget_4;
     QHBoxLayout *horizontalLayout_3;
-    QToolButton *toolButton;
-    QToolButton *toolButton_4;
-    QToolButton *toolButton_2;
-    QToolButton *toolButton_3;
+    QToolButton *updateBtn;
+    QToolButton *syncBtn;
+    QToolButton *pushBtn;
+    QToolButton *testBtn;
+    QToolButton *diffBtn;
     QWidget *widget_2;
     QHBoxLayout *horizontalLayout;
     QTreeWidget *treeWidget;
@@ -77,15 +78,15 @@ public:
 
         horizontalLayout_2->addItem(horizontalSpacer_2);
 
-        pushButton = new QPushButton(widget_3);
-        pushButton->setObjectName(QString::fromUtf8("pushButton"));
+        returnBtn = new QPushButton(widget_3);
+        returnBtn->setObjectName(QString::fromUtf8("returnBtn"));
         QSizePolicy sizePolicy1(QSizePolicy::Fixed, QSizePolicy::Fixed);
         sizePolicy1.setHorizontalStretch(0);
         sizePolicy1.setVerticalStretch(0);
-        sizePolicy1.setHeightForWidth(pushButton->sizePolicy().hasHeightForWidth());
-        pushButton->setSizePolicy(sizePolicy1);
+        sizePolicy1.setHeightForWidth(returnBtn->sizePolicy().hasHeightForWidth());
+        returnBtn->setSizePolicy(sizePolicy1);
 
-        horizontalLayout_2->addWidget(pushButton);
+        horizontalLayout_2->addWidget(returnBtn);
 
 
         verticalLayout_2->addWidget(widget_3);
@@ -101,25 +102,30 @@ public:
         horizontalLayout_3->setSpacing(0);
         horizontalLayout_3->setObjectName(QString::fromUtf8("horizontalLayout_3"));
         horizontalLayout_3->setContentsMargins(0, 0, 0, 0);
-        toolButton = new QToolButton(widget_4);
-        toolButton->setObjectName(QString::fromUtf8("toolButton"));
+        updateBtn = new QToolButton(widget_4);
+        updateBtn->setObjectName(QString::fromUtf8("updateBtn"));
 
-        horizontalLayout_3->addWidget(toolButton);
+        horizontalLayout_3->addWidget(updateBtn);
 
-        toolButton_4 = new QToolButton(widget_4);
-        toolButton_4->setObjectName(QString::fromUtf8("toolButton_4"));
+        syncBtn = new QToolButton(widget_4);
+        syncBtn->setObjectName(QString::fromUtf8("syncBtn"));
 
-        horizontalLayout_3->addWidget(toolButton_4);
+        horizontalLayout_3->addWidget(syncBtn);
 
-        toolButton_2 = new QToolButton(widget_4);
-        toolButton_2->setObjectName(QString::fromUtf8("toolButton_2"));
+        pushBtn = new QToolButton(widget_4);
+        pushBtn->setObjectName(QString::fromUtf8("pushBtn"));
 
-        horizontalLayout_3->addWidget(toolButton_2);
+        horizontalLayout_3->addWidget(pushBtn);
 
-        toolButton_3 = new QToolButton(widget_4);
-        toolButton_3->setObjectName(QString::fromUtf8("toolButton_3"));
+        testBtn = new QToolButton(widget_4);
+        testBtn->setObjectName(QString::fromUtf8("testBtn"));
 
-        horizontalLayout_3->addWidget(toolButton_3);
+        horizontalLayout_3->addWidget(testBtn);
+
+        diffBtn = new QToolButton(widget_4);
+        diffBtn->setObjectName(QString::fromUtf8("diffBtn"));
+
+        horizontalLayout_3->addWidget(diffBtn);
 
 
         verticalLayout_2->addWidget(widget_4);
@@ -145,6 +151,8 @@ public:
         treeWidget->setSizePolicy(sizePolicy4);
         treeWidget->setMinimumSize(QSize(180, 0));
         treeWidget->setMaximumSize(QSize(1000, 16777215));
+        treeWidget->setRootIsDecorated(true);
+        treeWidget->header()->setVisible(false);
 
         horizontalLayout->addWidget(treeWidget);
 
@@ -189,14 +197,13 @@ public:
     {
         MainPage->setWindowTitle(QCoreApplication::translate("MainPage", "Form", nullptr));
         label->setText(QCoreApplication::translate("MainPage", "\344\270\252\344\272\272\347\251\272\351\227\264", nullptr));
-        pushButton->setText(QCoreApplication::translate("MainPage", "\350\277\224\345\233\236", nullptr));
-        toolButton->setText(QCoreApplication::translate("MainPage", "\344\270\212\344\274\240", nullptr));
-        toolButton_4->setText(QCoreApplication::translate("MainPage", "\345\220\214\346\255\245", nullptr));
-        toolButton_2->setText(QCoreApplication::translate("MainPage", "\346\216\250\351\200\201", nullptr));
-        toolButton_3->setText(QCoreApplication::translate("MainPage", "Test", nullptr));
+        returnBtn->setText(QCoreApplication::translate("MainPage", "\350\277\224\345\233\236", nullptr));
+        updateBtn->setText(QCoreApplication::translate("MainPage", "\344\270\212\344\274\240", nullptr));
+        syncBtn->setText(QCoreApplication::translate("MainPage", "\345\220\214\346\255\245", nullptr));
+        pushBtn->setText(QCoreApplication::translate("MainPage", "\346\216\250\351\200\201", nullptr));
+        testBtn->setText(QCoreApplication::translate("MainPage", "Test", nullptr));
+        diffBtn->setText(QCoreApplication::translate("MainPage", "\345\267\256\345\274\202", nullptr));
         QTreeWidgetItem *___qtreewidgetitem = treeWidget->headerItem();
-        ___qtreewidgetitem->setText(2, QCoreApplication::translate("MainPage", "size", nullptr));
-        ___qtreewidgetitem->setText(1, QCoreApplication::translate("MainPage", "path", nullptr));
         ___qtreewidgetitem->setText(0, QCoreApplication::translate("MainPage", "name", nullptr));
     } // retranslateUi
 

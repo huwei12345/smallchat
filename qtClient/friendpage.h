@@ -30,6 +30,7 @@ public:
     ~FriendPage();
 
     int init();
+    bool reset();
     bool initFriendList();
     bool initGroupList();
     bool initMessageList();
@@ -55,6 +56,8 @@ public:
     bool addGroupToPage(GroupInfo info);
 
     void notifyFriendNewMessage(int userId);
+    void notifyGroupNewMessage(int groupId);
+    void resetGroupNewMessage(int groupId);
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -63,7 +66,8 @@ protected:
 
 
 signals:
-    void StoreFileSuccess(FileInfo info);
+    void StoreFileSuccess(Response response);
+    void logoutUser();
 private slots:
 
     void on_toolButton_clicked();

@@ -8,6 +8,7 @@ class ClientPersonInfo
 public:
     static ClientPersonInfo* GetInstance();
     void init(UserInfo info);
+    void reset();
     int user_id;
     std::string username;
     std::string email;

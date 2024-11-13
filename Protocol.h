@@ -74,7 +74,7 @@ namespace FunctionCode {
         CreateGroup                           = 13,
         JoinGroup                             = 14,
         ResponseJoinGroup                     = 15,
-        
+
         TransFile                             = 17,
         FindGroup                             = 18,
 
@@ -102,7 +102,7 @@ namespace FunctionCode {
         GetAllGroupRequest                        = 30,
         ProcessGroupJoinReq                       = 31,
 
-        
+
         FindSpaceFileTree                         = 32,
         FindAllGroupMember                        = 33,
         StoreFile                                 = 16,
@@ -111,7 +111,8 @@ namespace FunctionCode {
         EDITSTOREFILE                             = 35,
         GETSTOREFILE                              = 36,
         RENAMESTOREFILE                           = 37,
-
+        GetAllGroupMessage                        = 38,
+        ProcessGroupMessageRead                   = 39,
         //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
     };
 
@@ -160,6 +161,8 @@ namespace FunctionCode {
         "EDITSTOREFILE       ",
         "GETSTOREFILE        ",
         "RENAMESTOREFILE     ",
+        "GetAllGroupMessage  ",
+        "ProcessGMessageRead "
     };
 };
 
@@ -369,6 +372,7 @@ public:
     std::string tips;
     std::string role;
     std::string timestamp;
+    int confirmId;
     void print() const {
         std::cout << "id: " << id
                   << "\tadmin_id: " << admin_id

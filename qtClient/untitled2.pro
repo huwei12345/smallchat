@@ -13,6 +13,10 @@ INCLUDEPATH += $$PWD/libs/include/
 
 SOURCES += \
     MyProtocolStream.cpp \
+    chateditfile.cpp \
+    chateditimage.cpp \
+    chatedittext.cpp \
+    chatviewdelegate.cpp \
     chatwindow.cpp \
     clientpersoninfo.cpp \
     creategrouppage.cpp \
@@ -26,9 +30,9 @@ SOURCES += \
     ftpsender.cpp \
     globalvaria.cpp \
     groupchatwindow.cpp \
+    loginwindow.cpp \
     main.cpp \
     mainpage.cpp \
-    mainwindow.cpp \
     netthread.cpp \
     network.cpp \
     personcache.cpp \
@@ -45,6 +49,10 @@ HEADERS += \
     MyProtocolStream.h \
     Protocol.h \
     Trans.h \
+    chateditfile.h \
+    chateditimage.h \
+    chatedittext.h \
+    chatviewdelegate.h \
     chatwindow.h \
     clientpersoninfo.h \
     creategrouppage.h \
@@ -58,8 +66,8 @@ HEADERS += \
     ftpsender.h \
     globalvaria.h \
     groupchatwindow.h \
+    loginwindow.h \
     mainpage.h \
-    mainwindow.h \
     netthread.h \
     network.h \
     personcache.h \
@@ -81,8 +89,8 @@ FORMS += \
     framelessWidget.ui \
     friendpage.ui \
     groupchatwindow.ui \
+    loginwindow.ui \
     mainpage.ui \
-    mainwindow.ui \
     registerpage.ui
 
 # Default rules for deployment.

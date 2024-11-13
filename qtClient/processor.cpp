@@ -8,7 +8,7 @@
 #include "MyProtocolStream.h"
 #include "Protocol.h"
 #include "ftpsender.h"
-int user_id;
+int user_id = 0;
 
 Processor::Processor()
 {
@@ -34,6 +34,25 @@ bool Processor::Login(string& username, string& password) {
     return false;
 }
 
+bool Processor::Logout()
+{
+    //Login
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    Request req(1, FunctionCode::LOGOUT, 3, 4, 5, data, 0, 0);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+
+        return true;
+    }
+    return false;
+    user_id = 0;
+}
+
 bool Processor::Register(string& username, string& password, string& email) {
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     std::string data;
@@ -51,14 +70,12 @@ bool Processor::Register(string& username, string& password, string& email) {
     return false;
 }
 
-bool Processor::SendMessage(int reciveId, const string& content) {
+bool Processor::SendMessage(MessageInfo* message) {
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
-    TextMessageInfo message;
-    message.recv_id = reciveId;
-    message.message_text = content;
+
     std::string data;
     MyProtocolStream stream(data);
-    stream << message.recv_id << message.message_text << message.flag;
+    stream << message->recv_id << message->flag << message->message_text;
     Request req(1, FunctionCode::SendMessage, 3, 4, 5, data, user_id);
 
     string str = req.serial();
@@ -433,6 +450,23 @@ bool Processor::DeleteFile(FileInfo info)
     MyProtocolStream stream(data);
     stream << info.id << info.serverPath  << info.serverFileName;
     Request req(1, FunctionCode::DELETESTOREFILE, 3, 4, 5, data, user_id);
+    string str = req.serial();
+    QByteArray array(str.c_str(),str.size());
+    int r = clientSocket->SendPacket(array);
+    if (r > 0) {
+        req.print();
+        return true;
+    }
+    return false;
+}
+
+bool Processor::getAllGroupMessage(int groupId, int localConfirmId)
+{
+    ClientNetWork* clientSocket = ClientNetWork::GetInstance();
+    std::string data;
+    MyProtocolStream stream(data);
+    stream << groupId << localConfirmId;
+    Request req(1, FunctionCode::GetAllGroupMessage, 3, 4, 5, data, user_id);
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());
     int r = clientSocket->SendPacket(array);

@@ -1,4 +1,4 @@
-﻿#include "mainwindow.h"
+﻿#include "loginwindow.h"
 #include "framelessWidget.h"
 #include "netthread.h"
 #include "processqueue.h"
@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     ClientNetWork *client = ClientNetWork::GetInstance();
     client->Client();
     qDebug() << "Show Window";
-    MainWindow w1;
+    LoginWindow w1;
     w1.show();
 
 

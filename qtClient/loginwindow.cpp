@@ -1,4 +1,4 @@
-﻿#include "mainwindow.h"
+﻿#include "loginwindow.h".h"
 #include "ui_mainwindow.h"
 #include "mainpage.h"
 #include "registerpage.h"
@@ -13,9 +13,9 @@
 #include "processor.h"
 #include "network.h"
 #include "globalvaria.h"
+#include "ftpsender.h"
 
-
-MainWindow::MainWindow(QWidget *parent)
+LoginWindow::LoginWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
@@ -28,7 +28,7 @@ MainWindow::MainWindow(QWidget *parent)
     mCurWidget = this;
     mainPage = NULL;
     registerPage = NULL;
-    friendPage = NULL;
+    mFriendPage = NULL;
     ui->pushButton_4->setShortcut(tr("return"));
 
     QShortcut *keyEnter = new QShortcut(QKeySequence("Enter"),ui->pushButton);
@@ -49,17 +49,19 @@ MainWindow::MainWindow(QWidget *parent)
 
     // 连接登录页面的登录成功信号到主页窗口的槽函数
 
-    connect(ClientNetWork::GetInstance(), &ClientNetWork::loginSuccessful, this, &MainWindow::onLoginSuccessful);
-    connect(ClientNetWork::GetInstance(), &ClientNetWork::loginFailure, this, &MainWindow::onLoginFailure);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::loginSuccessful, this, &LoginWindow::onLoginSuccessful);
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::loginFailure, this, &LoginWindow::onLoginFailure);
+
+    connect(ClientNetWork::GetInstance(), &ClientNetWork::LogoutSuccess, this, &LoginWindow::LogoutSuccess);
 }
 
-MainWindow::~MainWindow()
+LoginWindow::~LoginWindow()
 {
     delete ui;
     ClientNetWork::GetInstance()->close();
 }
 
-void MainWindow::on_pushButton_clicked()
+void LoginWindow::on_pushButton_clicked()
 {
     QString name = ui->lineEdit->text();
     QString password = ui->lineEdit_2->text();
@@ -97,7 +99,7 @@ void MainWindow::on_pushButton_clicked()
 }
 
 
-void MainWindow::on_pushButton_2_clicked()
+void LoginWindow::on_pushButton_2_clicked()
 {
     if (registerPage == NULL) {
         registerPage = new RegisterPage();
@@ -108,13 +110,13 @@ void MainWindow::on_pushButton_2_clicked()
 }
 
 
-void MainWindow::on_pushButton_3_clicked()
+void LoginWindow::on_pushButton_3_clicked()
 {
     close();
 }
 
 
-void MainWindow::keyPressEvent(QKeyEvent *event)
+void LoginWindow::keyPressEvent(QKeyEvent *event)
 {
     if(event->key() == Qt::Key_Insert) // 当按下Return/Enter键时
     {
@@ -132,7 +134,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     }
 }
 
-void MainWindow::on_pushButton_4_clicked()
+void LoginWindow::on_pushButton_4_clicked()
 {
     std::string name = ui->lineEdit->text().toStdString();
     std::string password = ui->lineEdit_2->text().toStdString();
@@ -146,11 +148,12 @@ void MainWindow::on_pushButton_4_clicked()
         //测试账号
         else if (name.compare("admin") == 0 && password.compare("123456") == 0 )
         {
-            if (friendPage == NULL) {
-                friendPage = new FriendPage();
-                friendPage->setReturn(this);
+            if (mFriendPage == NULL) {
+                mFriendPage = new FriendPage();
+                mFriendPage->setReturn(this);
+                connect(mFriendPage, &FriendPage::logoutUser, this, &LoginWindow::logoutUser);
             }
-            friendPage->show();
+            mFriendPage->show();
             //        for (int i = 0; i < 4; i++) {
             //            friendPage->addFriendToPage(i);
             //        }
@@ -180,29 +183,73 @@ void MainWindow::on_pushButton_4_clicked()
     }
 }
 
-void MainWindow::onLoginSuccessful(UserInfo info)
+void LoginWindow::onLoginSuccessful(UserInfo info)
 {
-    if (friendPage == NULL) {
+    if (mFriendPage == NULL) {
         ::user_id = info.user_id;
-        friendPage = new FriendPage(info);
+        mFriendPage = new FriendPage(info);
         ClientPersonInfo* ci = ClientPersonInfo::GetInstance();
         ci->init(info);
-        friendPage->init();
-        friendPage->setReturn(this);
+        mFriendPage->init();
+        mFriendPage->setReturn(this);
+        connect(mFriendPage, &FriendPage::logoutUser, this, &LoginWindow::logoutUser);
     }
-    mCurWidget = friendPage;
-    friendPage->show();
+    mCurWidget = mFriendPage;
+    mFriendPage->show();
     this->hide();
 }
 
-void MainWindow::onLoginFailure()
+void LoginWindow::onLoginFailure()
 {
     QMessageBox::warning(this,"错误提示","用户名或密码错误");
     ui->lineEdit->setFocus();
 }
 
+void LoginWindow::LogoutSuccess(Response response)
+{
+    mFriendPage->hide();
+    show();
+    mFriendPage->reset();
+    delete mFriendPage;
+    mFriendPage = NULL;
+    ClientPersonInfo::GetInstance()->reset();
+    mCurWidget = this;
 
-bool MainWindow::initTrayIcon(QApplication* app) {
+    if (response.mCode) {
+    }
+    else {
+        logoutByNetClose();
+    }
+}
+
+void LoginWindow::logoutUser()
+{
+    qDebug() << "logout";
+    if (mFriendPage != NULL) {
+        bool ret = Processor::Logout();
+        if (!ret) {
+            logoutByNetClose();
+        }
+    }
+    else {
+        show();
+        ClientPersonInfo::GetInstance()->reset();
+        mCurWidget = this;
+    }
+}
+
+//服务器退出session失败,无法复用连接。
+//通过重启网络来退出用户，撤销服务器session，重置连接
+void LoginWindow::logoutByNetClose() {
+    //重启网络连接
+    ClientNetWork::GetInstance()->close();
+    ClientNetWork::GetInstance()->Client();
+
+    FtpSender::GetInstance()->close();
+    FtpSender::GetInstance()->start();
+}
+
+bool LoginWindow::initTrayIcon(QApplication* app) {
     // 创建系统托盘图标
     QSystemTrayIcon *trayIcon = new QSystemTrayIcon(QIcon(":/main/icon.jpeg"), app);
     mTrayIcon = trayIcon;
