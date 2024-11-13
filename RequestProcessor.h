@@ -219,6 +219,7 @@ class ProcessEraseFileProcessor : public RequestProcessor {
 class ProcessMoveFileProcessor : public RequestProcessor {
     void Exec(Connection* conn, Request& request, Response& response);
     bool MoveFile(const Request &request, FileInfo &info);
+    bool MoveFileLocal(FileInfo& info);
 };
 
 //获取和修改都可直接替换或者直接获取

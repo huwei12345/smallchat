@@ -2252,11 +2252,16 @@ void ProcessMoveFileProcessor::Exec(Connection *conn, Request &request, Response
            >> info.ClientPath >> info.serviceType  >> info.serverPath  >> info.serverFileName
            >> info.parentId;
     bool ret = MoveFile(request, info);
+    if (ret) {
+        MoveFileLocal(info);
+    }
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
         response.mhasData = true;
-        std::string &data = response.mData;
-        data = request.mData;
+        std::string str;
+        MyProtocolStream stream(str);
+        stream << info.id << info.serverPath << info.serverFileName;
+        response.mData = str;
     }
     else {
         response.mhasData = false;
@@ -2275,7 +2280,9 @@ bool ProcessMoveFileProcessor::MoveFile(const Request &request, FileInfo &info)
     sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
         update user_storage set file_path = ?, item_name = ? where storage_id = ?;
     )");
-    pstmt->setInt(1, info.id);
+    pstmt->setString(1, info.serverPath);
+    pstmt->setString(2, info.serverFileName);
+    pstmt->setInt(3, info.id);
     try {
         pstmt->execute();
         pstmt->close();
@@ -2291,6 +2298,11 @@ bool ProcessMoveFileProcessor::MoveFile(const Request &request, FileInfo &info)
     }
     return false;
 
+}
+
+bool ProcessMoveFileProcessor::MoveFileLocal(FileInfo &info)
+{
+    return false;
 }
 
 void ProcessEraseFileProcessor::Exec(Connection *conn, Request &request, Response &response)

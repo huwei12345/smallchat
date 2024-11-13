@@ -36,6 +36,7 @@ public:
     TreeNode* addAllSpaceFileToPage();
     TreeNode* addSpaceFileToPage(FileInfo info);
     bool deleteSpaceFileFromPage(FileInfo info);
+    bool updateSpaceFileInPage(FileInfo info, bool moved = false);
 
     bool deleteFile(QTreeWidgetItem *item);
     bool addFile(QTreeWidgetItem *item);

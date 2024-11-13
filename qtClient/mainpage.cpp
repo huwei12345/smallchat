@@ -344,9 +344,9 @@ void MainPage::ProcessRenameFileSuccess(Response response)
     stream >> info.serverPath >> info.serverFileName;
     setClientDir(info);
     moveClientLocalDir(info);
-    info.serverFileName =
     qDebug() << "rename file" << id;
-    deleteSpaceFileFromPage(info);
+    //deleteSpaceFileFromPage(info);
+    updateSpaceFileInPage(info);
 }
 
 TreeNode* MainPage::addAllSpaceFileToPage() {
@@ -473,6 +473,25 @@ bool MainPage::deleteSpaceFileFromPage(FileInfo info) {
     idBook.erase(info.id);
     delete node;
     return true;
+}
+
+//moved true 已移动
+//moved false 未移动 仅改名
+bool MainPage::updateSpaceFileInPage(FileInfo info, bool moved) {
+    TreeNode* node = nullptr;
+    if (info.id <= 0 || !idBook.count(info.id) || idBook[info.id] == nullptr)
+        return false;
+    node = idBook[info.id];
+    node->item->setText(0, QS(info.serverFileName));
+    if (moved == true) {
+        //TODO:
+//        TreeNode* parentNode = node->parent;
+//        auto iter = std::find(parentNode->son.begin(), parentNode->son.end(), node);
+//        if (iter != parentNode->son.end()) {
+//            parentNode->son.erase(iter);
+//        }
+//        parentNode->item->removeChild(node->item);
+    }
 }
 
 bool MainPage::deleteLocalSpaceFile(FileInfo info) {

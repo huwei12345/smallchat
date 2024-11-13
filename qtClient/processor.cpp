@@ -431,7 +431,9 @@ bool Processor::RenameFile(FileInfo info)
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     std::string data;
     MyProtocolStream stream(data);
-    stream << info.id << info.serverPath  << info.serverFileName;
+    stream << info.id <<  info.send_id << info.recv_id
+           << info.ClientPath << info.serviceType  << info.serverPath  << info.serverFileName
+           << info.parentId;
     Request req(1, FunctionCode::RENAMESTOREFILE, 3, 4, 5, data, user_id);
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());
