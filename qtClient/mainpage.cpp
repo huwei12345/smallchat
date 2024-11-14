@@ -341,9 +341,10 @@ void MainPage::ProcessRenameFileSuccess(Response response)
         return;
     }
     FileInfo &info = mSpaceFileMap[id];
+    FileInfo oldInfo = info;
     stream >> info.serverPath >> info.serverFileName;
     setClientDir(info);
-    moveClientLocalDir(info);
+    moveClientLocalDir(oldInfo, info);
     qDebug() << "rename file" << id;
     //deleteSpaceFileFromPage(info);
     updateSpaceFileInPage(info);
@@ -839,8 +840,25 @@ bool MainPage::setClientDir(FileInfo &info) {
     }
 }
 
-bool MainPage::moveClientLocalDir(FileInfo &info) {
+bool MainPage::moveClientLocalDir(FileInfo& oldInfo, FileInfo &info) {
     //将本地文件重命名，或者移动
+    if (info.fileType == std::string("dir") && info.fileType == std::string("rootdir")) {
+        QString sourceDir = QS(oldInfo.serverPath + oldInfo.serverFileName);  // 源文件夹路径
+        QString destDir = QS(info.serverPath + info.serverFileName);  // 目标文件夹路径
+        QDir dir;
+        if (dir.rename(sourceDir, destDir)) {
+            qDebug() << "文件夹移动成功!";
+            return true;
+        } else {
+            qDebug() << "文件夹移动失败!";
+            return false;
+        }
+    }
+    else {
+        QFile file(QS(oldInfo.serverPath + oldInfo.serverFileName));
+        return file.rename(QS(info.serverPath + info.serverFileName));
+    }
+    return true;
 }
 
 

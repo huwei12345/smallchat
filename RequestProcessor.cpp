@@ -2251,9 +2251,13 @@ void ProcessMoveFileProcessor::Exec(Connection *conn, Request &request, Response
     stream >> info.id >>  info.send_id  >> info.recv_id
            >> info.ClientPath >> info.serviceType  >> info.serverPath  >> info.serverFileName
            >> info.parentId;
-    bool ret = MoveFile(request, info);
+    
+    FileInfo oldInfo;
+    oldInfo.id = info.id;
+    bool ret = SearchFileInfo(oldInfo);
+    ret = MoveFile(request, info);
     if (ret) {
-        MoveFileLocal(info);
+        MoveFileLocal(oldInfo, info);
     }
     response.init(ret, request.mType, request.mFunctionCode, request.mFlag, !request.mDirection, request.mTimeStamp + 10, request.mUserId);
     if (response.mCode) {
@@ -2267,6 +2271,40 @@ void ProcessMoveFileProcessor::Exec(Connection *conn, Request &request, Response
         response.mhasData = false;
         //some error info add
     }
+}
+
+bool ProcessMoveFileProcessor::SearchFileInfo(FileInfo &info)
+{
+    sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
+    if (conn == NULL) {
+        return false;
+    }
+	sql::PreparedStatement* state2 = conn->prepareStatement(R"(select file_path, item_name from user_storage
+        where storage_id = ?;
+    )");
+    state2->setInt(1, info.id);
+    sql::ResultSet *st = state2->executeQuery();
+    try {
+        while (st->next()) {
+            info.serverFileName = st->getString("item_name");
+            info.serverPath = st->getString("file_path");
+        }
+        st->close();
+        state2->close();
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return true;
+    }
+    catch(sql::SQLException& e) {
+        cout << "# ERR " << e.what();
+        cout << " Err Code: " << e.getErrorCode();
+        cout << " SQLState: " << e.getSQLState() << std::endl;
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
+    st->close();
+    state2->close();
+    MysqlPool::GetInstance()->releaseConncetion(conn);
+    return false;
 }
 
 bool ProcessMoveFileProcessor::MoveFile(const Request &request, FileInfo &info)
@@ -2300,9 +2338,9 @@ bool ProcessMoveFileProcessor::MoveFile(const Request &request, FileInfo &info)
 
 }
 
-bool ProcessMoveFileProcessor::MoveFileLocal(FileInfo &info)
+bool ProcessMoveFileProcessor::MoveFileLocal(FileInfo& oldInfo, FileInfo &info)
 {
-    return false;
+    return FileTools::moveFile((oldInfo.serverPath + oldInfo.serverFileName).c_str(), (info.serverPath + info.serverFileName).c_str());
 }
 
 void ProcessEraseFileProcessor::Exec(Connection *conn, Request &request, Response &response)

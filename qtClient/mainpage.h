@@ -60,7 +60,7 @@ public:
     bool addLoaclFile(const QString &filePath);
     bool deleteLocalSpaceFile(FileInfo info);
     bool setClientDir(FileInfo &info);
-    bool moveClientLocalDir(FileInfo &info);
+    bool moveClientLocalDir(FileInfo& oldInfo, FileInfo &info);
 
 private slots:
     void on_returnBtn_clicked();

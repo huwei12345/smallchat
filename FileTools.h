@@ -11,5 +11,6 @@ public:
     static int checkFile(const char* path);
     static void deleteDirectory(const char *dirPath);
     static int eraseFile(const char *path);
+    static bool moveFile(const char* src, const char* dst);
 };
 #endif

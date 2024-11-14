@@ -144,6 +144,28 @@ int FileTools::eraseFile(const char *path) {
     }
     return 0;
 }
+bool FileTools::moveFile(const char *src, const char *dst)
+{
+    char realSrc[500];
+    char realDst[500];
+    strcpy(realSrc, src);
+    if (src[0] != '/' && src[0] != '.') {
+        sprintf(realSrc, "/home/huwei/ftp/%s", src);
+        printf("realSrc = %s\n", realSrc);
+    }
+    if (dst[0] != '/' && dst[0] != '.') {
+        sprintf(realDst, "/home/huwei/ftp/%s", dst);
+        printf("realDst = %s\n", realDst);
+    }
+    // 使用rename函数移动文件
+    if (rename(realSrc, realDst) == 0) {
+        printf("File moved successfully %s\n", realDst);
+    } else {
+        printf("Error moving file %s\n", realDst);
+    }
+    return false;
+}
+
 // int main() {
 //     char str[] = "a,b,c,d";
 //     char *token;
