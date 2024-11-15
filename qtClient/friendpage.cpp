@@ -39,6 +39,12 @@ bool FriendPage::initPage() {
     m_FindFriendPage = NULL;
     m_CreateGroupPage = NULL;
     mSpacePage = NULL;
+
+    QIcon icon2(":/loginSetting.jpeg");
+    ui->settingBtn->setIcon(icon2);
+    ui->settingBtn->setIconSize(QSize(20,20));
+    ui->settingBtn->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    mSettingPage = NULL;
     //更新头像
     connect(ClientNetWork::GetInstance(), &ClientNetWork::ChangeUserPic, this, &FriendPage::ChangeUserPic);
     connect(ClientNetWork::GetInstance(), &ClientNetWork::ChangeUserPicBySend, this, &FriendPage::ChangeUserPicBySend);
@@ -1134,3 +1140,13 @@ void FriendPage::on_toolButton_4_clicked()
     this->hide();
 }
 
+
+void FriendPage::on_settingBtn_clicked()
+{
+    if (mSettingPage == NULL) {
+        mSettingPage = new SettingPage();
+        mSettingPage->setReturn(this);
+    }
+    mSettingPage->show();
+    this->hide();
+}

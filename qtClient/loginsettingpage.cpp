@@ -1,6 +1,8 @@
 #include "loginsettingpage.h"
+#include "loginwindow.h"
 #include "ui_loginsettingpage.h"
 
+#include <QSettings>
 #include <QShortcut>
 
 LoginSettingPage::LoginSettingPage(QWidget *parent) :
@@ -29,7 +31,19 @@ LoginSettingPage::~LoginSettingPage()
 }
 
 void LoginSettingPage::getLocalSetting() {
-
+    QSettings settings("config.ini", QSettings::IniFormat);
+    // 打印读取的值
+    QString mServerIp = settings.value("global/SERVERIP").toString();
+    ui->serverIpEdit->setText(mServerIp);
+    QString mFtpIp = settings.value("global/FTPIP").toString();
+    ui->ftpIpEdit->setText(mFtpIp);
+    int mFtpPort = settings.value("global/FTPPORT").toUInt();
+    ui->ftpPortEdit->setText(QString::number(mFtpPort));
+    QString mFtpUser = settings.value("global/FTPUSER").toString();
+    ui->ftpUserEdit->setText(mFtpUser);
+    QString mFtpPassword = settings.value("global/FTPPASSWORD").toString();
+    ui->ftpPasswdEdit->setText(mFtpPassword);
+    QString mFtpType = settings.value("global/FTPTYPE").toString();
 }
 
 void LoginSettingPage::resetLocalSetting() {
@@ -41,7 +55,14 @@ void LoginSettingPage::clearEditing() {
 }
 
 void LoginSettingPage::storeSettingLocal() {
-
+    QSettings settings("config.ini", QSettings::IniFormat);
+    settings.setValue("global/SERVERIP", ui->serverIpEdit->text());
+    settings.setValue("global/FTPIP", ui->ftpIpEdit->text());
+    settings.setValue("global/FTPPORT", ui->ftpPortEdit->text());
+    settings.setValue("global/FTPUSER", ui->ftpUserEdit->text());
+    settings.setValue("global/FTPPASSWORD", ui->ftpPasswdEdit->text());
+    //TODO:其实应该在点击登录后再进行网络连接，或者在进行注册时，或者在应用修改后重启网络连接
+    //网络连接，应尽量简单
 }
 
 void LoginSettingPage::setReturn(QWidget *widget)
@@ -59,12 +80,40 @@ void LoginSettingPage::on_returnBtn_clicked()
 
 void LoginSettingPage::on_restoreBtn_clicked()
 {
-
+    QSettings settings("config.ini", QSettings::IniFormat);
+    settings.setValue("global/SERVERIP", "192.168.58.132");
+    settings.setValue("global/FTPIP", "192.168.58.132");
+    settings.setValue("global/FTPPORT", 21);
+    settings.setValue("global/FTPUSER", "huwei");
+    settings.setValue("global/FTPPASSWORD", "123456");
+    getLocalSetting();
+    ((LoginWindow*)returnWindow)->loadSetting();
 }
 
 
 void LoginSettingPage::on_applyBtn_clicked()
 {
+    QSettings settings("config.ini", QSettings::IniFormat);
+    settings.setValue("global/SERVERIP", ui->serverIpEdit->text());
+    settings.setValue("global/FTPIP", ui->ftpIpEdit->text());
+    settings.setValue("global/FTPPORT", ui->ftpPortEdit->text());
+    settings.setValue("global/FTPUSER", ui->ftpUserEdit->text());
+    settings.setValue("global/FTPPASSWORD", ui->ftpPasswdEdit->text());
 
+    ((LoginWindow*)returnWindow)->loadSetting();
+}
+
+
+void LoginSettingPage::on_openProxyBtn_clicked()
+{
+    ui->proxyTypeEdit->setEnabled(true);
+    ui->proxyIPEdit->setEnabled(true);
+}
+
+
+void LoginSettingPage::on_closeProxyBtn_clicked()
+{
+    ui->proxyTypeEdit->setEnabled(false);
+    ui->proxyIPEdit->setEnabled(false);
 }
 

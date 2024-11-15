@@ -378,6 +378,13 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QToolButton" name="settingBtn">
+           <property name="text">
+            <string>设置</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </widget>
       </item>

@@ -27,6 +27,10 @@ private slots:
 
     void on_applyBtn_clicked();
 
+    void on_openProxyBtn_clicked();
+
+    void on_closeProxyBtn_clicked();
+
 private:
     Ui::LoginSettingPage *ui;
     QWidget* returnWindow;

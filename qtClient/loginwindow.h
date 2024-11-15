@@ -23,6 +23,7 @@ public:
     QSystemTrayIcon *mTrayIcon;
 
     void logoutByNetClose();
+    void loadSetting();
 protected:
     // 在你的QApplication或者QWidget子类中重载keyPressEvent
     void keyPressEvent(QKeyEvent *event) override;

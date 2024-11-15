@@ -42,6 +42,7 @@ SOURCES += \
     processqueue.cpp \
     registerpage.cpp \
     request.cpp \
+    settingpage.cpp \
     threadtest.cpp \
     tiplabel.cpp \
     userbutton.cpp
@@ -78,6 +79,7 @@ HEADERS += \
     processqueue.h \
     registerpage.h \
     request.h \
+    settingpage.h \
     soft.h \
     threadtest.h \
     tiplabel.h \
@@ -94,7 +96,8 @@ FORMS += \
     loginsettingpage.ui \
     loginwindow.ui \
     mainpage.ui \
-    registerpage.ui
+    registerpage.ui \
+    settingpage.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

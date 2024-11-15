@@ -9,6 +9,7 @@
 #include <set>
 #include <unordered_set>
 #include "groupchatwindow.h"
+#include "settingpage.h"
 
 class FindFriendPage;
 class CreateGroupPage;
@@ -95,6 +96,8 @@ private slots:
 
     void on_toolButton_4_clicked();
 
+    void on_settingBtn_clicked();
+
 private:
     Ui::FriendPage *ui;
     QWidget* returnWindow;
@@ -121,6 +124,7 @@ private:
 
     std::map<int, QTimer*> mUnReadMessageTimerMap;
     MainPage* mSpacePage;
+    SettingPage* mSettingPage;
 };
 
 #endif // FRIENDPAGE_H

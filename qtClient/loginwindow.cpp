@@ -1,4 +1,4 @@
-﻿#include "loginwindow.h".h"
+﻿#include "loginwindow.h"
 #include "ui_loginwindow.h"
 #include "mainpage.h"
 #include "registerpage.h"
@@ -41,7 +41,7 @@ LoginWindow::LoginWindow(QWidget *parent)
     ui->pushButton_2->setShortcut(tr("Ctrl+r"));
     QIcon icon(":/loginSetting.jpeg");
     ui->setBtn->setIcon(icon);
-    ui->setBtn->setIconSize(QSize(30,30));
+    ui->setBtn->setIconSize(QSize(25,25));
     ui->setBtn->setToolButtonStyle(Qt::ToolButtonIconOnly);
     QPalette palette;
     palette.setBrush(QPalette::Window, QBrush(QPixmap(":/main/back.jpeg").scaled(size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation)));
@@ -329,8 +329,13 @@ void LoginWindow::on_setBtn_clicked()
     if (mLoginSettingPage == NULL) {
         mLoginSettingPage = new LoginSettingPage();
         mLoginSettingPage->setReturn(this);
+        mLoginSettingPage->getLocalSetting();
     }
     mLoginSettingPage->show();
     this->hide();
 }
 
+
+void LoginWindow::loadSetting() {
+
+}

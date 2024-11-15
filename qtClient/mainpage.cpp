@@ -327,29 +327,6 @@ void MainPage::ProcessDeleteFileSuccess(Response response)
     deleteSpaceFileFromPage(info);
 }
 
-void MainPage::ProcessRenameFileSuccess(Response response)
-{
-    std::string mdata = response.mData;
-    MyProtocolStream stream(mdata);
-    bool ret = response.mCode;
-    if (!ret) {
-        return;
-    }
-    int id = 0;
-    stream >> id;
-    if (!mSpaceFileMap.count(id)) {
-        return;
-    }
-    FileInfo &info = mSpaceFileMap[id];
-    FileInfo oldInfo = info;
-    stream >> info.serverPath >> info.serverFileName;
-    setClientDir(info);
-    moveClientLocalDir(oldInfo, info);
-    qDebug() << "rename file" << id;
-    //deleteSpaceFileFromPage(info);
-    updateSpaceFileInPage(info);
-}
-
 TreeNode* MainPage::addAllSpaceFileToPage() {
     //O(n^2)遍历建树，层次
 
@@ -660,7 +637,29 @@ bool MainPage::renameFile(QTreeWidgetItem* item) {
     QMessageBox::information(this, "Rename Action", QString("Deleting: %1").arg(item->text(0)));
     return true;
 }
-
+void MainPage::ProcessRenameFileSuccess(Response response)
+{
+    std::string mdata = response.mData;
+    MyProtocolStream stream(mdata);
+    bool ret = response.mCode;
+    if (!ret) {
+        return;
+    }
+    int id = 0;
+    stream >> id;
+    if (!mSpaceFileMap.count(id)) {
+        return;
+    }
+    FileInfo &info = mSpaceFileMap[id];
+    FileInfo oldInfo = info;
+    stream >> info.serverPath >> info.serverFileName;
+    setClientDir(info);
+    moveClientLocalDir(oldInfo, info);
+    qDebug() << "rename file" << id;
+    //deleteSpaceFileFromPage(info);
+    //TODO:严重问题： mysql 目录要改，其中子项都要改filePath,除非每个路径都现组
+    updateSpaceFileInPage(info);
+}
 
 bool MainPage::openFile(QTreeWidgetItem* item) {
     int fileId = item->whatsThis(0).toInt();
@@ -843,20 +842,27 @@ bool MainPage::setClientDir(FileInfo &info) {
 bool MainPage::moveClientLocalDir(FileInfo& oldInfo, FileInfo &info) {
     //将本地文件重命名，或者移动
     if (info.fileType == std::string("dir") && info.fileType == std::string("rootdir")) {
-        QString sourceDir = QS(oldInfo.serverPath + oldInfo.serverFileName);  // 源文件夹路径
-        QString destDir = QS(info.serverPath + info.serverFileName);  // 目标文件夹路径
+        QString sourceDir = QS(oldInfo.ClientPath);  // 源文件夹路径
+        QString destDir = QS(info.ClientPath);  // 目标文件夹路径
         QDir dir;
         if (dir.rename(sourceDir, destDir)) {
-            qDebug() << "文件夹移动成功!";
+            qDebug() << "文件夹移动成功! from " << QS(oldInfo.ClientPath) << "TO: " << QS(info.ClientPath);
             return true;
         } else {
-            qDebug() << "文件夹移动失败!";
+            qDebug() << "文件夹移动失败! from " << QS(oldInfo.ClientPath) << "TO: " << QS(info.ClientPath);
             return false;
         }
     }
     else {
-        QFile file(QS(oldInfo.serverPath + oldInfo.serverFileName));
-        return file.rename(QS(info.serverPath + info.serverFileName));
+        QFile file(QS(oldInfo.ClientPath));
+        if (file.rename(QS(info.ClientPath))) {
+            qDebug() << "文件移动成功! from " << QS(oldInfo.ClientPath) << "TO: " << QS(info.ClientPath);
+            return true;
+        }
+        else {
+            qDebug() << "文件移动失败! from " << QS(oldInfo.ClientPath) << "TO: " << QS(info.ClientPath);
+            return false;
+        }
     }
     return true;
 }

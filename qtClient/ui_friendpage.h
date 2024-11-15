@@ -55,6 +55,7 @@ public:
     QToolButton *toolButton;
     QToolButton *toolButton_3;
     QToolButton *toolButton_2;
+    QToolButton *settingBtn;
 
     void setupUi(QWidget *FriendPage)
     {
@@ -211,6 +212,11 @@ public:
 
         horizontalLayout_3->addWidget(toolButton_2);
 
+        settingBtn = new QToolButton(widget_3);
+        settingBtn->setObjectName(QString::fromUtf8("settingBtn"));
+
+        horizontalLayout_3->addWidget(settingBtn);
+
 
         verticalLayout->addWidget(widget_3);
 
@@ -245,6 +251,7 @@ public:
         toolButton->setText(QCoreApplication::translate("FriendPage", "\346\237\245\346\211\276", nullptr));
         toolButton_3->setText(QCoreApplication::translate("FriendPage", "\345\210\233\345\273\272\347\276\244", nullptr));
         toolButton_2->setText(QCoreApplication::translate("FriendPage", "\345\245\275\345\217\213\350\257\267\346\261\202", nullptr));
+        settingBtn->setText(QCoreApplication::translate("FriendPage", "\350\256\276\347\275\256", nullptr));
     } // retranslateUi
 
 };
