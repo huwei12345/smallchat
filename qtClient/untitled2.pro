@@ -30,6 +30,7 @@ SOURCES += \
     ftpsender.cpp \
     globalvaria.cpp \
     groupchatwindow.cpp \
+    loginsettingpage.cpp \
     loginwindow.cpp \
     main.cpp \
     mainpage.cpp \
@@ -66,6 +67,7 @@ HEADERS += \
     ftpsender.h \
     globalvaria.h \
     groupchatwindow.h \
+    loginsettingpage.h \
     loginwindow.h \
     mainpage.h \
     netthread.h \
@@ -89,6 +91,7 @@ FORMS += \
     framelessWidget.ui \
     friendpage.ui \
     groupchatwindow.ui \
+    loginsettingpage.ui \
     loginwindow.ui \
     mainpage.ui \
     registerpage.ui

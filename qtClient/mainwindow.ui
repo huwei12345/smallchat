@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>LoginWindow</class>
- <widget class="QMainWindow" name="LoginWindow">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -284,13 +284,6 @@ QPushButton:hover { background-color: red; }</string>
           </property>
          </widget>
         </item>
-        <item>
-         <widget class="QToolButton" name="setBtn">
-          <property name="text">
-           <string>设置</string>
-          </property>
-         </widget>
-        </item>
        </layout>
       </widget>
      </item>
@@ -303,7 +296,7 @@ QPushButton:hover { background-color: red; }</string>
      <x>0</x>
      <y>0</y>
      <width>499</width>
-     <height>25</height>
+     <height>26</height>
     </rect>
    </property>
   </widget>

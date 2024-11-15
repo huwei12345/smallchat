@@ -108,7 +108,9 @@ void FriendPage::keyPressEvent(QKeyEvent *event)
     if(event->key() == Qt::Key_Escape) // 当按下Return/Enter键时
     {
         LOG << "logout2";
-        emit logoutUser();
+        //emit logoutUser();
+        this->hide();
+        returnWindow->show();
     }
     else
     {

@@ -193,5 +193,6 @@
     </qresource>
     <qresource prefix="/">
         <file>PersonCard.qml</file>
+        <file>loginSetting.jpeg</file>
     </qresource>
 </RCC>

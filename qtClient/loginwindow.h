@@ -4,11 +4,12 @@
 #include <QMainWindow>
 #include <QSystemTrayIcon>
 #include "Protocol.h"
+#include "loginsettingpage.h"
 class MainPage;
 class RegisterPage;
 class FriendPage;
 QT_BEGIN_NAMESPACE
-namespace Ui { class MainWindow; }
+namespace Ui { class LoginWindow; }
 QT_END_NAMESPACE
 
 class LoginWindow : public QMainWindow
@@ -41,14 +42,17 @@ private slots:
     void LogoutSuccess(Response response);
     void logoutUser();
 
+    void on_setBtn_clicked();
+
 public slots:
 
 
 private:
-    Ui::MainWindow *ui;
+    Ui::LoginWindow *ui;
     MainPage* mainPage;
     FriendPage* mFriendPage;
     RegisterPage* registerPage;
     QWidget* mCurWidget;
+    LoginSettingPage *mLoginSettingPage;
 };
 #endif // LOGINWINDOW_H

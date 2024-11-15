@@ -18,13 +18,14 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpacerItem>
 #include <QtWidgets/QStatusBar>
+#include <QtWidgets/QToolButton>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
 #include <qtmaterialautocomplete.h>
 
 QT_BEGIN_NAMESPACE
 
-class Ui_MainWindow
+class Ui_LoginWindow
 {
 public:
     QWidget *centralwidget;
@@ -56,15 +57,16 @@ public:
     QPushButton *pushButton_2;
     QSpacerItem *horizontalSpacer_3;
     QPushButton *pushButton_3;
+    QToolButton *setBtn;
     QMenuBar *menubar;
     QStatusBar *statusbar;
 
-    void setupUi(QMainWindow *MainWindow)
+    void setupUi(QMainWindow *LoginWindow)
     {
-        if (MainWindow->objectName().isEmpty())
-            MainWindow->setObjectName(QString::fromUtf8("MainWindow"));
-        MainWindow->resize(499, 411);
-        centralwidget = new QWidget(MainWindow);
+        if (LoginWindow->objectName().isEmpty())
+            LoginWindow->setObjectName(QString::fromUtf8("LoginWindow"));
+        LoginWindow->resize(499, 411);
+        centralwidget = new QWidget(LoginWindow);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         widget = new QWidget(centralwidget);
         widget->setObjectName(QString::fromUtf8("widget"));
@@ -207,45 +209,51 @@ public:
 
         horizontalLayout_3->addWidget(pushButton_3);
 
+        setBtn = new QToolButton(widget_4);
+        setBtn->setObjectName(QString::fromUtf8("setBtn"));
+
+        horizontalLayout_3->addWidget(setBtn);
+
 
         verticalLayout->addWidget(widget_4);
 
-        MainWindow->setCentralWidget(centralwidget);
-        menubar = new QMenuBar(MainWindow);
+        LoginWindow->setCentralWidget(centralwidget);
+        menubar = new QMenuBar(LoginWindow);
         menubar->setObjectName(QString::fromUtf8("menubar"));
         menubar->setGeometry(QRect(0, 0, 499, 25));
-        MainWindow->setMenuBar(menubar);
-        statusbar = new QStatusBar(MainWindow);
+        LoginWindow->setMenuBar(menubar);
+        statusbar = new QStatusBar(LoginWindow);
         statusbar->setObjectName(QString::fromUtf8("statusbar"));
-        MainWindow->setStatusBar(statusbar);
+        LoginWindow->setStatusBar(statusbar);
 #if QT_CONFIG(shortcut)
         label_2->setBuddy(lineEdit);
         label_3->setBuddy(lineEdit_2);
 #endif // QT_CONFIG(shortcut)
 
-        retranslateUi(MainWindow);
+        retranslateUi(LoginWindow);
 
-        QMetaObject::connectSlotsByName(MainWindow);
+        QMetaObject::connectSlotsByName(LoginWindow);
     } // setupUi
 
-    void retranslateUi(QMainWindow *MainWindow)
+    void retranslateUi(QMainWindow *LoginWindow)
     {
-        MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
-        label->setText(QCoreApplication::translate("MainWindow", "QFei", nullptr));
-        label_2->setText(QCoreApplication::translate("MainWindow", "\350\264\246\345\217\267(&Z)", nullptr));
-        lineEdit->setText(QCoreApplication::translate("MainWindow", "huwei", nullptr));
-        label_3->setText(QCoreApplication::translate("MainWindow", "\345\257\206\347\240\201(&M)", nullptr));
-        lineEdit_2->setText(QCoreApplication::translate("MainWindow", "123456", nullptr));
-        pushButton_4->setText(QCoreApplication::translate("MainWindow", "\347\231\273\345\275\2252", nullptr));
-        pushButton->setText(QCoreApplication::translate("MainWindow", "\347\231\273\345\275\225", nullptr));
-        pushButton_2->setText(QCoreApplication::translate("MainWindow", "\346\263\250\345\206\214", nullptr));
-        pushButton_3->setText(QCoreApplication::translate("MainWindow", "\345\205\263\351\227\255", nullptr));
+        LoginWindow->setWindowTitle(QCoreApplication::translate("LoginWindow", "MainWindow", nullptr));
+        label->setText(QCoreApplication::translate("LoginWindow", "QFei", nullptr));
+        label_2->setText(QCoreApplication::translate("LoginWindow", "\350\264\246\345\217\267(&Z)", nullptr));
+        lineEdit->setText(QCoreApplication::translate("LoginWindow", "huwei", nullptr));
+        label_3->setText(QCoreApplication::translate("LoginWindow", "\345\257\206\347\240\201(&M)", nullptr));
+        lineEdit_2->setText(QCoreApplication::translate("LoginWindow", "123456", nullptr));
+        pushButton_4->setText(QCoreApplication::translate("LoginWindow", "\347\231\273\345\275\2252", nullptr));
+        pushButton->setText(QCoreApplication::translate("LoginWindow", "\347\231\273\345\275\225", nullptr));
+        pushButton_2->setText(QCoreApplication::translate("LoginWindow", "\346\263\250\345\206\214", nullptr));
+        pushButton_3->setText(QCoreApplication::translate("LoginWindow", "\345\205\263\351\227\255", nullptr));
+        setBtn->setText(QCoreApplication::translate("LoginWindow", "\350\256\276\347\275\256", nullptr));
     } // retranslateUi
 
 };
 
 namespace Ui {
-    class MainWindow: public Ui_MainWindow {};
+    class LoginWindow: public Ui_LoginWindow {};
 } // namespace Ui
 
 QT_END_NAMESPACE

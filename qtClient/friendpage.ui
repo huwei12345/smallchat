@@ -176,9 +176,9 @@
             <enum>Qt::LeftToRight</enum>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>1</number>
            </property>
-           <widget class="QWidget" name="tab">
+           <widget class="QWidget" name="taba">
             <attribute name="title">
              <string>消息</string>
             </attribute>
@@ -203,7 +203,7 @@
              </item>
             </layout>
            </widget>
-           <widget class="QWidget" name="tab">
+           <widget class="QWidget" name="tabb">
             <attribute name="title">
              <string>关系</string>
             </attribute>
