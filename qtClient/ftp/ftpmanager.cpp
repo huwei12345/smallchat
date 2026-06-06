@@ -8,8 +8,6 @@
 #include <QTime>
 #include "globalvaria.h"
 
-FtpManager *FtpManager::mFtpManager = nullptr;
-
 FtpManager::FtpManager(QObject *parent) : QObject(parent)
 {
 }
@@ -30,15 +28,8 @@ FtpManager::~FtpManager()
 
 FtpManager *FtpManager::getInstance()
 {
-    if(mFtpManager == nullptr)
-    {
-        static QMutex mutex;
-        mutex.lock();
-        mFtpManager = new FtpManager;
-        mutex.unlock();
-    }
-
-    return mFtpManager;
+    static FtpManager instance;
+    return &instance;
 }
 
 //TODO:使用id串联整个文件传输流程
