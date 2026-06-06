@@ -62,6 +62,7 @@ void FtpManager::uploadFile(FileInfo& info)
     }
     else {
         printf("upload open %s error\n", data.uploadFile->fileName().toStdString().c_str());
+        delete data.uploadFile;
     }
 }
 
@@ -83,6 +84,7 @@ void FtpManager::downloadFile(FileInfo& info)
     }
     else {
         printf("download open %s error\n", data.downloadFile->fileName().toStdString().c_str());
+        delete data.downloadFile;
     }
 }
 
