@@ -53,14 +53,10 @@ void GlobalVaria::setFtpPort(unsigned short ftpPort)
     mFtpPort = ftpPort;
 }
 
-GlobalVaria* GlobalVaria::globalVaria = NULL;
-
 GlobalVaria *GlobalVaria::GetInstance()
 {
-    if (globalVaria == NULL) {
-        globalVaria = new GlobalVaria;
-    }
-    return globalVaria;
+    static GlobalVaria instance;
+    return &instance;
 }
 
 QString GlobalVaria::serverIp() const

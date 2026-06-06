@@ -33,7 +33,6 @@ private:
     QString mFtpUser;
     QString mFtpPassword;
     QString mFtpType;
-    static GlobalVaria* globalVaria;
 };
 
 #endif // GLOBALVARIA_H
