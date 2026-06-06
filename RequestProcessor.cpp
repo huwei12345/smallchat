@@ -208,10 +208,7 @@ int RegisterProcessor::Register(const Request& request, UserInfo& info) {
 
     info.user_id = autoIncKeyFromFunc;
     info.print();
-    if (1) {
-        return 1;
-    }
-    return 0;
+    return 1;
 }
 
 void RegisterProcessor::Exec(Connection* conn, Request &request, Response& response)
