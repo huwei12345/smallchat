@@ -348,11 +348,11 @@ int Server::run()
 
 int Server::createListener()
 {
-        // 创建socket并绑定端口
+    // 创建socket并绑定端口
     mServerSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (mServerSocket < 0) {
         perror("socket");
-        ::exit(EXIT_FAILURE);
+        return -1;
     }
 
     memset(&server_addr, 0, sizeof(server_addr));
@@ -365,20 +365,24 @@ int Server::createListener()
     int opt = 1;
     if (setsockopt(mServerSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
         perror("Error: setsockopt failed SO_REUSEADDR ");
-        exit(EXIT_FAILURE);
+        close(mServerSocket);
+        return -1;
     }
     // 将socket设置为非阻塞模式
     if (fcntl(mServerSocket, F_SETFL, O_NONBLOCK) < 0) {
         perror("fcntl");
-        exit(EXIT_FAILURE);
+        close(mServerSocket);
+        return -1;
     }
     if (bind(mServerSocket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         perror("bind");
-        ::exit(EXIT_FAILURE);
+        close(mServerSocket);
+        return -1;
     }
     if (listen(mServerSocket, 5) < 0) {
         perror("listen");
-        exit(EXIT_FAILURE);
+        close(mServerSocket);
+        return -1;
     }
     return mServerSocket;
 }

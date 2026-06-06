@@ -15,6 +15,9 @@ EventLoop::EventLoop(Server *server, int serverFd, int index)
     mServer = server;
     mIndex = index;
     mEpollFd = createEpoll();
+    if (mEpollFd < 0) {
+        printf("EventLoop: createEpoll failed\n");
+    }
     mServerSocket = serverFd;
 }
 int EventLoop::createEpoll()
@@ -22,19 +25,24 @@ int EventLoop::createEpoll()
     mEpollFd = epoll_create1(0);
     if (mEpollFd < 0) {
         perror("epoll_create1");
-        exit(EXIT_FAILURE);
+        return -1;
     }
     return mEpollFd;
 }
 
 void EventLoop::Run()
 {
+    if (mEpollFd < 0) {
+        printf("EventLoop::Run: invalid epoll fd\n");
+        return;
+    }
     while (mRunning) {
         //-1 不主动返回
         int nfds = epoll_wait(mEpollFd, events, MAX_EVENTS, 100);
         if (nfds < 0) {
+            if (errno == EINTR) continue;
             perror("epoll_wait");
-            exit(EXIT_FAILURE);
+            break;
         }
         for (int i = 0; i < nfds; i++) {
             if (events[i].data.fd == mWakeupSocket[1]) {
@@ -89,6 +97,10 @@ void EventLoop::Run()
 
 void EventLoop::RunMain()
 {
+    if (mEpollFd < 0) {
+        printf("EventLoop::RunMain: invalid epoll fd\n");
+        return;
+    }
     struct epoll_event ev;
     memset(&ev, 0, sizeof(ev));
     //TODO:ServerSocket设置成EPOLLET需要一些适配
@@ -97,15 +109,16 @@ void EventLoop::RunMain()
     if (epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mServerSocket, &ev) < 0) {
         printf("xxxxxxxxxxx %d %d\n", mEpollFd, mServerSocket);
         perror("epoll_ctl");
-        exit(EXIT_FAILURE);
+        return;
     }
 
     // 当有事件发生时，处理事件并将socket重新添加到epoll中
     while (mRunning) {
         int nfds = epoll_wait(mEpollFd, events, MAX_EVENTS, -1);
         if (nfds < 0) {
+            if (errno == EINTR) continue;
             perror("epoll_wait");
-            exit(EXIT_FAILURE);
+            break;
         }
         struct sockaddr_in client_addr;
         memset(&client_addr, 0, sizeof(client_addr));
@@ -147,24 +160,25 @@ void EventLoop::addSocket()
     if (client_fd < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             return;
-        } else {
-            printf("%d %d %d\n", mServerSocket, client_fd, errno);
-            perror("accept");
-            exit(EXIT_FAILURE);
         }
+        printf("accept error: fd=%d errno=%d\n", mServerSocket, errno);
+        perror("accept");
+        return;
     }
     std::cout << "EventLoop" << mIndex << " : get connect " << client_fd << std::endl;
     // 将client socket设置为非阻塞模式
     if (fcntl(client_fd, F_SETFL, O_NONBLOCK) < 0) {
         perror("fcntl");
-        exit(EXIT_FAILURE);
+        close(client_fd);
+        return;
     }
     struct epoll_event ev;
     ev.events = EPOLLIN/* | EPOLLET*/;
     ev.data.fd = client_fd;
     if (epoll_ctl(mEpollFd, EPOLL_CTL_ADD, client_fd, &ev) < 0) {
         perror("epoll_ctl");
-        exit(EXIT_FAILURE);
+        close(client_fd);
+        return;
     }
     Connection* conn = new Connection(client_fd, this);
     {
