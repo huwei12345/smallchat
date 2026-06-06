@@ -8,6 +8,7 @@
 #include <memory.h>
 #include <fcntl.h>
 #include <iostream>
+#include <mutex>
 #include <thread>
 #include <functional>
 #include "Trans.h"
@@ -428,34 +429,48 @@ bool Connection::sendResponse(int clientSocket, Response* response)
 //flag = 0,默认关闭  flag = 1,强行关闭
 bool Connection::closeConnection(int flag)
 {
-    //删除顺序有待确认，这是IO线程，某些对象在业务线程可能还在用
-    //这一步是异步的
     mEvLoop->eraseSocket(clientSocket);
-    //TODO：后续删除是在此处删除，还是在移除从Epoll中移除时再删除？
-    
-    //先关掉接收，再删除session,再关掉发送
-    close(clientSocket);
-    Connection* conn = Server::GetInstance()->mConnectionMap[clientSocket];
-    if (conn == NULL) {
+
+    Connection* conn = nullptr;
+    Session* session = nullptr;
+    int userId = -1;
+
+    // 从 map 中移除并获取 session 信息
+    {
+        std::lock_guard<std::mutex> lock(Server::GetInstance()->mConnectionMapMutex);
+        auto it = Server::GetInstance()->mConnectionMap.find(clientSocket);
+        if (it == Server::GetInstance()->mConnectionMap.end()) {
+            return true;
+        }
+        conn = it->second;
+        Server::GetInstance()->mConnectionMap.erase(it);
+    }
+
+    if (conn == nullptr) {
         return true;
     }
-    Session* session = conn->session;
-    int userId = -1;
+
+    session = conn->session;
     if (session != NULL) {
         userId = session->mUserId;
+        std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
         Server::GetInstance()->mUserSessionMap.erase(userId);
-        delete session;
     }
+
+    // 通知好友下线（在关闭 socket 之前）
     if (userId != -1) {
-        //通知其他朋友用户离线
         ProcessNotifyStateProcessor processor;
         vector<int> friendList = FriendCache::GetInstance()->getFriendList(userId);
         processor.Notify(conn, friendList, userId, OFFLINE);
     }
-    Server::GetInstance()->mConnectionMap.erase(clientSocket);
+
+    // 关闭 socket 并释放资源
+    close(clientSocket);
     clientSocket = -1;
+    if (session != NULL) {
+        delete session;
+    }
     delete conn;
-    printf("size : %d %d\n", (int)Server::GetInstance()->mUserSessionMap.size(), (int)Server::GetInstance()->mConnectionMap.size());
     return true;
 }
 

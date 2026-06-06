@@ -1,4 +1,5 @@
 #include "RequestProcessor.h"
+#include <mutex>
 #include <regex>
 #include <sys/stat.h>
 #include <limits.h>
@@ -121,9 +122,11 @@ void LoginProcessor::Exec(Connection* conn, Request &request, Response& response
         Session* session = new Session;
         session->mConn = conn;
         conn->session = session;
-        //互相指可能有问题
         session->mUserId = info.user_id;
-        Server::GetInstance()->mUserSessionMap[info.user_id] = session;
+        {
+            std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
+            Server::GetInstance()->mUserSessionMap[info.user_id] = session;
+        }
         //session->mLoginState = info.status; 登陆状态
     }
     else {
@@ -465,34 +468,35 @@ void SendMessageProcessor::Exec(Connection* conn, Request &request, Response& re
     ret = SendMessage(request, info);
     //在线时，直接通过网络发送消息给客户端，（接收消息和朋友请求的逻辑）
     if (info.flag == MessageInfo::Person) {
-        if (Server::GetInstance()->mUserSessionMap.count(info.recv_id)) {
-            //从userId索引到Connection再得到clientSocket
-            //思路1：在线，直接发送，入库read=0, 等消息确认相应，再修改read=1
-            //思路2：直接入库read=0，不发送，等客户端进行心跳连接时，相应新消息和朋友请求
-            //思路3：当在库中新增一项时，触发某任务，向客户发送消息，异步发送
-            Session* session = Server::GetInstance()->mUserSessionMap[info.recv_id];
-            Connection* friendConn = session->mConn;
-            if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
-                bool ret = sendMessageByNet(friendConn, info/*info.receiver_id*/);
+        Connection* friendConn = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
+            auto it = Server::GetInstance()->mUserSessionMap.find(info.recv_id);
+            if (it != Server::GetInstance()->mUserSessionMap.end()) {
+                friendConn = it->second->mConn;
             }
+        }
+        if (friendConn != NULL) {
+            sendMessageByNet(friendConn, info);
         }
     }
     else {
         //Group
-        //从GroupCache中取出某群组的所有成员，判断在线，然后依次发送, Redis
-        //receiver_id = groupId
         int groupId = info.recv_id;
         ProcessFindAllGroupMemberProcessor pro;
         vector<UserInfo> userList;
         pro.FindAllGroupMember(groupId, userList);
         for (auto u : userList) {
-            if (Server::GetInstance()->mUserSessionMap.count(u.user_id)) {
-                
-                Session* session = Server::GetInstance()->mUserSessionMap[u.user_id];
-                Connection* friendConn = session->mConn;
-                if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
-                    bool ret = sendMessageByNet(friendConn, info/*info.receiver_id*/);
+            Connection* friendConn = nullptr;
+            {
+                std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
+                auto it = Server::GetInstance()->mUserSessionMap.find(u.user_id);
+                if (it != Server::GetInstance()->mUserSessionMap.end()) {
+                    friendConn = it->second->mConn;
                 }
+            }
+            if (friendConn != NULL) {
+                sendMessageByNet(friendConn, info);
             }
         }
     }
@@ -573,9 +577,12 @@ bool SearchAllFriendProcessor::bindAllFriendState(Connection *conn, Request &req
         //那种一会上线一会下线，上了又下，下了又上这种。总之它在服务器的队列里是一致的。
         //每隔2分钟，客户端发送一次同步请求好友列表。
 
-        if (Server::GetInstance()->mUserSessionMap.count(u.user_id)) {
-            printf("mUserSessionMap %d online\n", u.user_id);
-            u.status = ONLINE;
+        {
+            std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
+            if (Server::GetInstance()->mUserSessionMap.count(u.user_id)) {
+                printf("mUserSessionMap %d online\n", u.user_id);
+                u.status = ONLINE;
+            }
         }
         else {
             u.status = OFFLINE;
@@ -924,11 +931,17 @@ bool UpdateUserStateProcessor::UpdateUserState(const Request &request)
     int state = 0;
     stream >> state;
     //不用修改数据库了，默认上线，然后直接修改内存中的登录状态
-    if (Server::GetInstance()->mUserSessionMap[request.mUserId]->mLoginState == state) {
-        //不可能存在，在客户端避免
-        return false;
+    {
+        std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
+        auto it = Server::GetInstance()->mUserSessionMap.find(request.mUserId);
+        if (it == Server::GetInstance()->mUserSessionMap.end()) {
+            return false;
+        }
+        if (it->second->mLoginState == state) {
+            return false;
+        }
+        it->second->mLoginState = state;
     }
-    Server::GetInstance()->mUserSessionMap[request.mUserId]->mLoginState = state;
     notifyStateToFriend(request.mUserId, state);
     //通知本人各个好友，通知这种行为可能需要进一步设计为异步任务，如上下线、消息、好友请求等。
 
@@ -1752,13 +1765,16 @@ void ProcessNofifyFileComingProcessor::Exec(Connection *conn, Request &request, 
 bool ProcessNofifyFileComingProcessor::NofifyFileComing(Connection *conn, Request &request, FileInfo &info)
 {
     bool ret = true;
-    //在线时，直接通过网络发送文件给客户端，（接收消息和朋友请求的逻辑）
-    if (Server::GetInstance()->mUserSessionMap.count(info.recv_id)) {
-        Session* session = Server::GetInstance()->mUserSessionMap[info.recv_id];
-        Connection* friendConn = session->mConn;
-        if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
-            ret = sendNotifyFileByNet(friendConn, info);
+    Connection* friendConn = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
+        auto it = Server::GetInstance()->mUserSessionMap.find(info.recv_id);
+        if (it != Server::GetInstance()->mUserSessionMap.end()) {
+            friendConn = it->second->mConn;
         }
+    }
+    if (friendConn != NULL) {
+        ret = sendNotifyFileByNet(friendConn, info);
     }
     return ret;
 }
@@ -1877,19 +1893,23 @@ bool ProcessNotifyStateProcessor::Notify(Connection * conn, FriendList & friendL
 {
     bool success = true;
     for (auto &u : friendList) {
-        if (Server::GetInstance()->mUserSessionMap.count(u.user_id)) {
-            Session* session = Server::GetInstance()->mUserSessionMap[u.user_id];
-            Connection* friendConn = session->mConn;
-            if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
-                int clientSocket = friendConn->clientSocket; 
-                std::string data;
-                MyProtocolStream stream(data);
-                stream << mUserId << state;
-                Response rsp(1, FunctionCode::UpdateUserState, 3, 4, 5, 1, mUserId, 1, true, data);
-                rsp.mhasData = true;
-                string str = rsp.serial();
-                success &= friendConn->sendResponse(clientSocket, &rsp);
+        Connection* friendConn = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
+            auto it = Server::GetInstance()->mUserSessionMap.find(u.user_id);
+            if (it != Server::GetInstance()->mUserSessionMap.end()) {
+                friendConn = it->second->mConn;
             }
+        }
+        if (friendConn != NULL) {
+            int clientSocket = friendConn->clientSocket;
+            std::string data;
+            MyProtocolStream stream(data);
+            stream << mUserId << state;
+            Response rsp(1, FunctionCode::UpdateUserState, 3, 4, 5, 1, mUserId, 1, true, data);
+            rsp.mhasData = true;
+            string str = rsp.serial();
+            success &= friendConn->sendResponse(clientSocket, &rsp);
         }
     }
     return success;
@@ -1899,20 +1919,23 @@ bool ProcessNotifyStateProcessor::Notify(Connection *conn, vector<int> &friendLi
 {
     bool success = true;
     for (auto &u : friendList) {
-        if (Server::GetInstance()->mUserSessionMap.count(u)) {
-            Session* session = Server::GetInstance()->mUserSessionMap[u];
-            Connection* friendConn = session->mConn;
-            if (friendConn != NULL/* && friendConn->connState != DisConnectionState*/) {
-                int clientSocket = friendConn->clientSocket; 
-                std::string data;
-                MyProtocolStream stream(data);
-                stream << mUserId << state;
-                Response rsp(1, FunctionCode::UpdateUserState, 3, 4, 5, 1, mUserId, 1, true, data);
-                rsp.mhasData = true;
-                string str = rsp.serial();
-                //TODO:是用friendConn还是用conn?应该是friendConn
-                success &= friendConn->sendResponse(clientSocket, &rsp);
+        Connection* friendConn = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
+            auto it = Server::GetInstance()->mUserSessionMap.find(u);
+            if (it != Server::GetInstance()->mUserSessionMap.end()) {
+                friendConn = it->second->mConn;
             }
+        }
+        if (friendConn != NULL) {
+            int clientSocket = friendConn->clientSocket;
+            std::string data;
+            MyProtocolStream stream(data);
+            stream << mUserId << state;
+            Response rsp(1, FunctionCode::UpdateUserState, 3, 4, 5, 1, mUserId, 1, true, data);
+            rsp.mhasData = true;
+            string str = rsp.serial();
+            success &= friendConn->sendResponse(clientSocket, &rsp);
         }
     }
     return success;

@@ -5,6 +5,7 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <map>
+#include <mutex>
 #include <string>
 #include "Protocol.h"
 class Connection;
@@ -30,6 +31,8 @@ public:
     static Server* GetInstance(); 
     std::map<int, Connection*> mConnectionMap;//连接层 fd - conn
     std::map<int, Session*> mUserSessionMap;//会话层 userId - conn
+    std::mutex mConnectionMapMutex;
+    std::mutex mSessionMapMutex;
     vector<EventLoop*> mEvLoopList;
     int mEpollFd;
     int mServerSocket;

@@ -1,6 +1,7 @@
 #include "EventLoop.h"
 #include "server.h"
 #include <map>
+#include <mutex>
 #include "Protocol.h"
 EventLoop::EventLoop()
 {
@@ -64,8 +65,17 @@ void EventLoop::Run()
             }
             else if (events[i].data.fd != mWakeupSocket[1]) {
                 int client_fd = events[i].data.fd;
-                char buffer[4096];
-                mServer->mConnectionMap[client_fd]->processRead();
+                Connection* conn = nullptr;
+                {
+                    std::lock_guard<std::mutex> lock(mServer->mConnectionMapMutex);
+                    auto it = mServer->mConnectionMap.find(client_fd);
+                    if (it != mServer->mConnectionMap.end()) {
+                        conn = it->second;
+                    }
+                }
+                if (conn) {
+                    conn->processRead();
+                }
             }
         }
         doOtherThing();
@@ -151,9 +161,11 @@ void EventLoop::addSocket()
         perror("epoll_ctl");
         exit(EXIT_FAILURE);
     }
-    //TODO：每个EventLoop分别管理连接和session还是总体一起管理？
     Connection* conn = new Connection(client_fd, this);
-    mServer->mConnectionMap[client_fd] = conn;
+    {
+        std::lock_guard<std::mutex> lock(mServer->mConnectionMapMutex);
+        mServer->mConnectionMap[client_fd] = conn;
+    }
 }
 
 bool EventLoop::eraseSocket(int fd)
