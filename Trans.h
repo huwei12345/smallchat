@@ -1,6 +1,7 @@
 #ifndef TRANS_H
 #define TRANS_H
 #include <iostream>
+#include <vector>
 #include "Protocol.h"
 #include <memory.h>
 #include <unistd.h>
@@ -37,10 +38,10 @@ int send(int fd, const string& str) {
 
 
 int receive(int fd, string& ans, int len) {
-	char *buf = new char[len];
+	std::vector<char> buf(len);
 	int total = 0;
 	while (total < len) {
-		int ret = ::recv(fd, buf + total, len - total, 0);
+		int ret = ::recv(fd, buf.data() + total, len - total, 0);
 		if (ret > 0) {
 			total += ret;
 		}
@@ -55,7 +56,7 @@ int receive(int fd, string& ans, int len) {
 			return -1;
 		}
 	}
-	ans.assign(buf, buf + len);
+	ans.assign(buf.begin(), buf.begin() + len);
 	return len;
 }
 
