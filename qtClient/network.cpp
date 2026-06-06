@@ -301,13 +301,15 @@ int ClientNetWork::Client() {
         return -1;
     }
 
-    //处理对端关闭连接槽函数
+    //处理对端关闭连接槽函数（先断开防止重连时重复连接）
+    QObject::disconnect(&mSocket, &QTcpSocket::disconnected, nullptr, nullptr);
     QObject::connect(&mSocket, &QTcpSocket::disconnected, [this]() {
         qDebug() << "Disconnected from server.";
         mSocket.close();
     });
 
     //读取请求槽函数，协议读取，避免了粘包和分包问题
+    QObject::disconnect(&mSocket, &QTcpSocket::readyRead, nullptr, nullptr);
     QObject::connect(&mSocket, &QTcpSocket::readyRead, [this]() {
         buffer.append(mSocket.readAll());  // 将新数据追加到缓冲区
 

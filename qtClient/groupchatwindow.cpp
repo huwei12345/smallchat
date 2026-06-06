@@ -256,7 +256,8 @@ void GroupChatWindow::addGroupMemberToPage(int index, UserInfo info) {
     button->installEventFilter(this); // 在当前类中实现 eventFilter 方法
     mFriendButton[info.user_id] = button;
     button->setProperty("type", "Friend");
-    // 连接信号和槽
+    // 连接信号和槽（先断开防止重复连接）
+    disconnect(ui->memberListWidget, &QListWidget::itemClicked, this, &GroupChatWindow::showPersonCard);
     connect(ui->memberListWidget, &QListWidget::itemClicked, this, &GroupChatWindow::showPersonCard);
     QSize size;
     size.setHeight(25);

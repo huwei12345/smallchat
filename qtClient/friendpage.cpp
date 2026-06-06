@@ -655,7 +655,8 @@ void FriendPage::addFriendToPage(int i, UserInfo info) {
     button->installEventFilter(this); // 在当前类中实现 eventFilter 方法
     mFriendButton[info.user_id] =button;
     button->setProperty("type", "Friend");
-    // 连接信号和槽
+    // 连接信号和槽（先断开防止重复连接）
+    disconnect(ui->listWidget_3, &QListWidget::itemClicked, this, &FriendPage::chatWithFriend);
     connect(ui->listWidget_3, &QListWidget::itemClicked, this, &FriendPage::chatWithFriend);
     QSize size;
     size.setHeight(60);
@@ -692,7 +693,8 @@ bool FriendPage::addGroupToPage(GroupInfo info)
     button->setProperty("type", "Group");
     button->installEventFilter(this); // 在当前类中实现 eventFilter 方法
     mGroupButton[info.id] =button;
-    // 连接信号和槽
+    // 连接信号和槽（先断开防止重复连接）
+    disconnect(groupWidget, &QListWidget::itemClicked, this, &FriendPage::chatWithGroup);
     connect(groupWidget, &QListWidget::itemClicked, this, &FriendPage::chatWithGroup);
 
     QSize size;
@@ -1135,8 +1137,8 @@ void FriendPage::on_toolButton_4_clicked()
         mSpacePage = new MainPage(mInfo);
         mSpacePage->setReturn(this);
         mSpacePage->init();
+        connect(this, &FriendPage::StoreFileSuccess, mSpacePage, &MainPage::StoreFileSuccess);
     }
-    connect(this, &FriendPage::StoreFileSuccess, mSpacePage, &MainPage::StoreFileSuccess);
     mSpacePage->show();
     this->hide();
 }
