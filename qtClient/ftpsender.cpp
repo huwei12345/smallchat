@@ -1,4 +1,4 @@
-﻿#include "ftpsender.h"
+#include "ftpsender.h"
 #include "ftp/FtpManager.h"
 #include "network.h"
 #include "globalvaria.h"
@@ -27,50 +27,58 @@ FtpSender *FtpSender::GetInstance()
 }
 
 void FtpSender::ProcessSendList(FileInfo& info) {
-    if (1) {
-        bool ret = true;
-        qDebug() << "ProcessSendList";
-        //QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName)
-        ftpUtil->uploadFile(info);
-    }
+    qDebug() << "ProcessSendList";
+    ftpUtil->uploadFile(info);
 }
 
 void FtpSender::ProcessGetList(FileInfo& info) {
-    if (1) {
-        //QString::fromStdString(info.serverPath) + QString::fromStdString(info.serverFileName)
-        ftpUtil->downloadFile(info);
-    }
+    ftpUtil->downloadFile(info);
 }
 
 void FtpSender::Run() {
-    while (1) {
-        if (!mFtpSendList.empty()) {
-            FileInfo info = mFtpSendList.front();
-            mFtpSendList.pop();
-            if (ftpUtil->ftpState() != QFtp::Connected) {
-                //ftpUtil->connect();
-//                ftpUtil->connectFtp();
-//                QThread::sleep(1);
+    while (mRunning) {
+        FileInfo info;
+        bool hasSend = false;
+        bool hasGet = false;
+        {
+            QMutexLocker locker(&mQueueMutex);
+            if (!mFtpSendList.empty()) {
+                info = mFtpSendList.front();
+                mFtpSendList.pop();
+                hasSend = true;
+            } else if (!mFtpGetList.empty()) {
+                qDebug() << "mFtpGetList" << mFtpGetList.size();
+                info = mFtpGetList.front();
+                mFtpGetList.pop();
+                hasGet = true;
             }
-            ProcessSendList(info);
         }
-        if (!mFtpGetList.empty()) {
-            qDebug() << "mFtpGetList" << mFtpGetList.size();
-            FileInfo info = mFtpGetList.front();
-            mFtpGetList.pop();
+        if (hasSend) {
+            ProcessSendList(info);
+        } else if (hasGet) {
             qDebug() << "Will Get Ftp File .......................";
             ProcessGetList(info);
+        } else {
+            QMutexLocker locker(&mQueueMutex);
+            mWaitCondition.wait(&mQueueMutex, 100);
         }
-        QThread::usleep(1000);
     }
 }
 
 void FtpSender::SendFile(FileInfo& info) {
-    mFtpSendList.push(info);
+    {
+        QMutexLocker locker(&mQueueMutex);
+        mFtpSendList.push(info);
+    }
+    mWaitCondition.wakeOne();
 }
 
 void FtpSender::GetFile(FileInfo& info) {
-    mFtpGetList.push(info);
+    {
+        QMutexLocker locker(&mQueueMutex);
+        mFtpGetList.push(info);
+    }
+    mWaitCondition.wakeOne();
 }
 
 void FtpSender::close()
@@ -97,7 +105,7 @@ void FtpSender::addFile(FileInfo &info)
 
 void FtpSender::removeFile(FileInfo &info)
 {
-    if (mCurrentFileMap.count(info.ftpTaskId) == 0) {
+    if (mCurrentFileMap.count(info.ftpTaskId) != 0) {
         mCurrentFileMap.erase(info.ftpTaskId);
     }
     else {

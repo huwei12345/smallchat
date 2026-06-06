@@ -4,6 +4,8 @@
 #include <string>
 #include <queue>
 #include <QThread>
+#include <QMutex>
+#include <QWaitCondition>
 #include "Protocol.h"
 class FtpManager;
 class ClientNetWork;
@@ -24,6 +26,7 @@ public:
     void addFile(FileInfo& info);
     void removeFile(FileInfo& info);
     FileInfo file(int id);
+    void stop() { mRunning = false; mWaitCondition.wakeAll(); }
 signals:
 
 private:
@@ -31,8 +34,11 @@ private:
     static FtpSender* ftpSender;
     std::queue<FileInfo> mFtpSendList;
     std::queue<FileInfo> mFtpGetList;
+    QMutex mQueueMutex;
+    QWaitCondition mWaitCondition;
     FtpManager* ftpUtil;
     std::map<int, FileInfo> mCurrentFileMap;
+    bool mRunning = true;
 protected:
     // 在这里定义线程运行时需要执行的任务
     void run() override {
