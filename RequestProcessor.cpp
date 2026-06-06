@@ -1,4 +1,5 @@
 #include "RequestProcessor.h"
+#include <atomic>
 #include <mutex>
 #include <regex>
 #include <sys/stat.h>
@@ -19,6 +20,11 @@ bool checkDisk(FileInfo& info) {
     string path = info.serverPath;
     if (path.size() == 0 || path[0] == '/' || path.size() >= 150) {
         printf("server path error %s\n", path.c_str());
+        return false;
+    }
+    // 防止路径穿越攻击
+    if (path.find("..") != string::npos) {
+        printf("server path contains '..' rejected: %s\n", path.c_str());
         return false;
     }
     // 使用 std::count 统计字符出现次数
@@ -62,8 +68,8 @@ void RequestProcessor::Exec(Connection* conn, Request &request, Response &respon
     response.mhasData = 1;
     response.mData = "hello world!";
     response.mTimeStamp = 1111;
-    static int count = 0;
-    printf("count = %d\n", count);
+    static std::atomic<int> count(0);
+    printf("count = %d\n", count.load());
     count++;
 }
 
@@ -78,12 +84,14 @@ bool LoginProcessor::Login(const std::string& username, const std::string& passw
 	state2->setString(1, username);
     state2->setString(2, password);
     sql::ResultSet *st = state2->executeQuery();
-    try {	
+    int row = 0;
+    try {
         while (st->next()) {
             userInfo.user_id = st->getInt("user_id");
             userInfo.username = st->getString("username");
             userInfo.email = st->getString("email");
             userInfo.avatar_url = st->getString("avatar_url");
+            row++;
         }
     }
     catch(sql::SQLException& e) {
@@ -91,8 +99,9 @@ bool LoginProcessor::Login(const std::string& username, const std::string& passw
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
     }
-    int row = st->rowsCount();
     st->close();
+    delete st;
+    delete state2;
     MysqlPool::GetInstance()->releaseConncetion(conn);
     if (row == 0 || userInfo.user_id == 0) {
         return false;
@@ -122,7 +131,7 @@ void LoginProcessor::Exec(Connection* conn, Request &request, Response& response
         //conn->mUserId = info.user_id;
         //conn->mLoginState = ;
         Session* session = new Session;
-        session->mConn = conn;
+        session->mConn = conn->shared_from_this();
         conn->session = session;
         session->mUserId = info.user_id;
         {
@@ -173,11 +182,13 @@ int RegisterProcessor::Register(const Request& request, UserInfo& info) {
             cout << "# ERR " << e.what();
             cout << " SQLState: " << e.getSQLState() << std::endl;
         }
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return 2;
     }
 
     state2->close();
+    delete state2;
     sql::PreparedStatement* state3 = conn->prepareStatement("SELECT LAST_INSERT_ID();");
     sql::ResultSet* rs = state3->executeQuery();
     int autoIncKeyFromFunc = -1;
@@ -187,7 +198,9 @@ int RegisterProcessor::Register(const Request& request, UserInfo& info) {
         // throw an exception from here
     }
     rs->close();
+    delete rs;
     state3->close();
+    delete state3;
     MysqlPool::GetInstance()->releaseConncetion(conn);
 
     info.user_id = autoIncKeyFromFunc;
@@ -299,9 +312,15 @@ bool FindFriendProcessor::FindFriend(const Request &request, FriendList &friendL
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
+        st->close();
+        delete st;
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
+    st->close();
+    delete st;
+    delete state2;
     MysqlPool::GetInstance()->releaseConncetion(conn);
     if (friendList.size() > 0)
         return true;
@@ -382,9 +401,15 @@ bool FindGroupProcessor::FindGroup(const Request &request, vector<GroupInfo> &gr
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
+        st->close();
+        delete st;
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
+    st->close();
+    delete st;
+    delete state2;
     MysqlPool::GetInstance()->releaseConncetion(conn);
     if (groupList.size() > 0)
         return true;
@@ -416,13 +441,14 @@ bool AddFriendProcessor::AddFriend(const Request &request)
         return false;
     }
     //查询
-    //SQL 注入：确保对 request.mUserId 和 info.user_id 进行适当的验证或清理，以防止 SQL 注入攻击。
 	sql::PreparedStatement* state = conn->prepareStatement("select * from users where user_id = ?;");
 	state->setInt(1, request.mUserId);
     sql::ResultSet *st = state->executeQuery();
-    //资源管理：考虑使用 RAII（资源获取即初始化）来管理资源，如数据库连接 (conn)、预编译语句 (state, state2) 和结果集 (st)。这有助于自动资源清理，避免资源泄漏。
-    if (st->rowsCount() <= 0) {
-        printf("Row %d\n", (int)st->rowsCount());
+    if (!st->next()) {
+        printf("Row not found for user_id=%d\n", request.mUserId);
+        st->close();
+        delete st;
+        delete state;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
@@ -442,11 +468,18 @@ bool AddFriendProcessor::AddFriend(const Request &request)
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
+        st->close();
+        delete st;
+        delete state;
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
     st->close();
+    delete st;
+    delete state;
     state2->close();
+    delete state2;
     MysqlPool::GetInstance()->releaseConncetion(conn);
     return true;
 }
@@ -473,16 +506,16 @@ void SendMessageProcessor::Exec(Connection* conn, Request &request, Response& re
     LOG_DEBUG("send message: from={} to={} flag={}", info.send_id, info.recv_id, info.flag);
     //在线时，直接通过网络发送消息给客户端，（接收消息和朋友请求的逻辑）
     if (info.flag == MessageInfo::Person) {
-        Connection* friendConn = nullptr;
+        std::shared_ptr<Connection> friendConn;
         {
             std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
             auto it = Server::GetInstance()->mUserSessionMap.find(info.recv_id);
             if (it != Server::GetInstance()->mUserSessionMap.end()) {
-                friendConn = it->second->mConn;
+                friendConn = it->second->mConn.lock();
             }
         }
-        if (friendConn != NULL) {
-            sendMessageByNet(friendConn, info);
+        if (friendConn) {
+            sendMessageByNet(friendConn.get(), info);
         }
     }
     else {
@@ -492,16 +525,16 @@ void SendMessageProcessor::Exec(Connection* conn, Request &request, Response& re
         vector<UserInfo> userList;
         pro.FindAllGroupMember(groupId, userList);
         for (auto u : userList) {
-            Connection* friendConn = nullptr;
+            std::shared_ptr<Connection> friendConn;
             {
                 std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
                 auto it = Server::GetInstance()->mUserSessionMap.find(u.user_id);
                 if (it != Server::GetInstance()->mUserSessionMap.end()) {
-                    friendConn = it->second->mConn;
+                    friendConn = it->second->mConn.lock();
                 }
             }
-            if (friendConn != NULL) {
-                sendMessageByNet(friendConn, info);
+            if (friendConn) {
+                sendMessageByNet(friendConn.get(), info);
             }
         }
     }
@@ -560,9 +593,15 @@ bool SearchAllFriendProcessor::SearchAllFriend(const Request &request, FriendLis
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
+        st->close();
+        delete st;
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
+    st->close();
+    delete st;
+    delete state2;
     MysqlPool::GetInstance()->releaseConncetion(conn);
 
     return true;
@@ -663,9 +702,15 @@ bool SearchAllGroupProcessor::SearchAllGroup(const Request& request, std::vector
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
+        st->close();
+        delete st;
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
+    st->close();
+    delete st;
+    delete state2;
     MysqlPool::GetInstance()->releaseConncetion(conn);
 
     return true;
@@ -706,6 +751,7 @@ bool SendMessageProcessor::SendToPerson(const Request &request, MessageInfo& inf
     state2->execute();
 
     state2->close();
+    delete state2;
     sql::PreparedStatement* state3 = conn->prepareStatement("SELECT LAST_INSERT_ID();");
     sql::ResultSet* rs = state3->executeQuery();
     int autoIncKeyFromFunc = -1;
@@ -716,7 +762,9 @@ bool SendMessageProcessor::SendToPerson(const Request &request, MessageInfo& inf
     }
     info.id = autoIncKeyFromFunc;
     rs->close();
+    delete rs;
     state3->close();
+    delete state3;
     MysqlPool::GetInstance()->releaseConncetion(conn);
     if (info.id <= 0)
         return false;
@@ -738,6 +786,7 @@ bool SendMessageProcessor::SendToGroup(const Request &request, MessageInfo &info
     state2->execute();
 
     state2->close();
+    delete state2;
     sql::PreparedStatement* state3 = conn->prepareStatement("SELECT LAST_INSERT_ID();");
     sql::ResultSet* rs = state3->executeQuery();
     int autoIncKeyFromFunc = -1;
@@ -748,7 +797,9 @@ bool SendMessageProcessor::SendToGroup(const Request &request, MessageInfo &info
     }
     info.id = autoIncKeyFromFunc;
     rs->close();
+    delete rs;
     state3->close();
+    delete state3;
     MysqlPool::GetInstance()->releaseConncetion(conn);
     if (info.id <= 0)
         return false;
@@ -820,11 +871,16 @@ bool GetAllMessageProcessor::GetAllMessage(const Request &request, vector<Messag
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
+        st->close();
+        delete st;
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
     st->close();
+    delete st;
     state2->close();
+    delete state2;
     MysqlPool::GetInstance()->releaseConncetion(conn);
     return true;
 }
@@ -884,11 +940,16 @@ bool GetAllFriendReqProcessor::GetAllFriendReq(const Request &request, vector<Fr
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
+        st->close();
+        delete st;
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
     st->close();
+    delete st;
     state2->close();
+    delete state2;
     MysqlPool::GetInstance()->releaseConncetion(conn);
     return true;
 }
@@ -991,7 +1052,7 @@ void ProcessFriendRequestProcessor::Exec(Connection* conn, Request &request, Res
 }
 
 
-bool ProcessFriendRequestProcessor::ProcessFriendRequest(Request & request, FriendRequest fr)
+bool ProcessFriendRequestProcessor::ProcessFriendRequest(Request & request, FriendRequest& fr)
 {
     //
     string mData = request.mData;
@@ -1023,12 +1084,16 @@ bool ProcessFriendRequestProcessor::ProcessFriendRequest(Request & request, Frie
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
         state2->close();
+        delete state2;
         state3->close();
+        delete state3;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
     state2->close();
+    delete state2;
     state3->close();
+    delete state3;
     MysqlPool::GetInstance()->releaseConncetion(conn);
     return true;
 }
@@ -1069,11 +1134,13 @@ bool ProcessMessageReadProcessor::ProcessMessageRead(Request &request)
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
         state2->close();
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
     state2->close();
-    MysqlPool::GetInstance()->releaseConncetion(conn);    
+    delete state2;
+    MysqlPool::GetInstance()->releaseConncetion(conn);
     return true;
 }
 
@@ -1132,6 +1199,7 @@ bool CreateGroupProcessor::CreateGroup(Request &request, GroupInfo& info)
     try {
         pstmt->execute();
         pstmt->close();
+        delete pstmt;
         sql::PreparedStatement* state3 = conn->prepareStatement("SELECT LAST_INSERT_ID();");
         sql::ResultSet* rs = state3->executeQuery();
         int autoIncKeyFromFunc = -1;
@@ -1143,20 +1211,24 @@ bool CreateGroupProcessor::CreateGroup(Request &request, GroupInfo& info)
         info.id = autoIncKeyFromFunc;
         printf("id = %d\n", info.id);
         rs->close();
+        delete rs;
         state3->close();
-        MysqlPool::GetInstance()->releaseConncetion(conn);
+        delete state3;
         if (info.id <= 0) {
+            MysqlPool::GetInstance()->releaseConncetion(conn);
             return false;
         }
         //作为拥有者
         JoinGroupProcessor proc;
         bool ret = proc.JoinGroup(info.admin_id, info.id, 3);
         ret = initGroupConfirmId(conn, info.admin_id, info.id);
+        MysqlPool::GetInstance()->releaseConncetion(conn);
     } catch (sql::SQLException& e) {
         std::cerr << "SQL error: " << e.what() << std::endl;
         std::cerr << "Error code: " << e.getErrorCode() << std::endl;
         std::cerr << "SQLState: " << e.getSQLState() << std::endl;
         pstmt->close();
+        delete pstmt;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
@@ -1181,9 +1253,13 @@ if (conn == NULL) {
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
+        state2->close();
+        delete state2;
         throw e;
         return false;
     }
+    state2->close();
+    delete state2;
     return true;
 }
 
@@ -1223,6 +1299,7 @@ bool JoinGroupProcessor::JoinGroup(int userId, int groupId, int role)
     try {
         pstmt->execute();
         pstmt->close();
+        delete pstmt;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return true;
     } catch (sql::SQLException& e) {
@@ -1230,6 +1307,7 @@ bool JoinGroupProcessor::JoinGroup(int userId, int groupId, int role)
         std::cerr << "Error code: " << e.getErrorCode() << std::endl;
         std::cerr << "SQLState: " << e.getSQLState() << std::endl;
         pstmt->close();
+        delete pstmt;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
@@ -1329,6 +1407,7 @@ bool StoreFileProcessor::StoreFileSQL(Request &request, FileInfo &fileInfo)
     try {
         pstmt->execute();
         pstmt->close();
+        delete pstmt;
         sql::PreparedStatement* state3 = conn->prepareStatement("SELECT LAST_INSERT_ID();");
         sql::ResultSet* rs = state3->executeQuery();
         int autoIncKeyFromFunc = -1;
@@ -1340,7 +1419,9 @@ bool StoreFileProcessor::StoreFileSQL(Request &request, FileInfo &fileInfo)
         fileInfo.id = autoIncKeyFromFunc;
         printf("id = %d\n", fileInfo.id);
         rs->close();
+        delete rs;
         state3->close();
+        delete state3;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         if (fileInfo.id <= 0) {
             return false;
@@ -1351,6 +1432,7 @@ bool StoreFileProcessor::StoreFileSQL(Request &request, FileInfo &fileInfo)
         std::cerr << "Error code: " << e.getErrorCode() << std::endl;
         std::cerr << "SQLState: " << e.getSQLState() << std::endl;
         pstmt->close();
+        delete pstmt;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
@@ -1383,6 +1465,7 @@ bool StoreFileProcessor::InitUserSpaceRoot(int user_id)
     try {
         pstmt->execute();
         pstmt->close();
+        delete pstmt;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return true;
     } catch (sql::SQLException& e) {
@@ -1390,6 +1473,7 @@ bool StoreFileProcessor::InitUserSpaceRoot(int user_id)
         std::cerr << "Error code: " << e.getErrorCode() << std::endl;
         std::cerr << "SQLState: " << e.getSQLState() << std::endl;
         pstmt->close();
+        delete pstmt;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
@@ -1417,8 +1501,9 @@ int StoreFileProcessor::GetUserSpaceId(int user_id)
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
     }
-    int row = st->rowsCount();
     st->close();
+    delete st;
+    delete state2;
     MysqlPool::GetInstance()->releaseConncetion(conn);
     return storage_id;
 }
@@ -1583,6 +1668,7 @@ bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadSQL(Request &request, FileI
     try {
         pstmt->execute();
         pstmt->close();
+        delete pstmt;
         sql::PreparedStatement* state3 = conn->prepareStatement("SELECT LAST_INSERT_ID();");
         sql::ResultSet* rs = state3->executeQuery();
         int autoIncKeyFromFunc = -1;
@@ -1594,7 +1680,9 @@ bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadSQL(Request &request, FileI
         info.id = autoIncKeyFromFunc;
         printf("id = %d\n", info.id);
         rs->close();
+        delete rs;
         state3->close();
+        delete state3;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         if (info.id <= 0) {
             return false;
@@ -1605,6 +1693,7 @@ bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadSQL(Request &request, FileI
         std::cerr << "Error code: " << e.getErrorCode() << std::endl;
         std::cerr << "SQLState: " << e.getSQLState() << std::endl;
         pstmt->close();
+        delete pstmt;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
@@ -1632,11 +1721,13 @@ bool ProcessUpLoadFileSuccessProcessor::UpDateUserPhotoSQL(Request &request, Fil
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
         state2->close();
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
     state2->close();
-    MysqlPool::GetInstance()->releaseConncetion(conn);    
+    delete state2;
+    MysqlPool::GetInstance()->releaseConncetion(conn);
     return true;
 }
 
@@ -1727,11 +1818,13 @@ bool ProcessGetFileSuccessProcessor::setReadedBySQL(Request &request, FileInfo &
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
         state2->close();
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
     state2->close();
-    MysqlPool::GetInstance()->releaseConncetion(conn);    
+    delete state2;
+    MysqlPool::GetInstance()->releaseConncetion(conn);
     return true;
 }
 
@@ -1770,16 +1863,16 @@ void ProcessNofifyFileComingProcessor::Exec(Connection *conn, Request &request, 
 bool ProcessNofifyFileComingProcessor::NofifyFileComing(Connection *conn, Request &request, FileInfo &info)
 {
     bool ret = true;
-    Connection* friendConn = nullptr;
+    std::shared_ptr<Connection> friendConn;
     {
         std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
         auto it = Server::GetInstance()->mUserSessionMap.find(info.recv_id);
         if (it != Server::GetInstance()->mUserSessionMap.end()) {
-            friendConn = it->second->mConn;
+            friendConn = it->second->mConn.lock();
         }
     }
-    if (friendConn != NULL) {
-        ret = sendNotifyFileByNet(friendConn, info);
+    if (friendConn) {
+        ret = sendNotifyFileByNet(friendConn.get(), info);
     }
     return ret;
 }
@@ -1870,11 +1963,16 @@ bool ProcessGetAllOfflineFileProcessor::GetAllOfflineFile(Request &request, vect
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
+        st->close();
+        delete st;
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
     st->close();
+    delete st;
     state2->close();
+    delete state2;
     MysqlPool::GetInstance()->releaseConncetion(conn);
     return true;
 }
@@ -1898,15 +1996,15 @@ bool ProcessNotifyStateProcessor::Notify(Connection * conn, FriendList & friendL
 {
     bool success = true;
     for (auto &u : friendList) {
-        Connection* friendConn = nullptr;
+        std::shared_ptr<Connection> friendConn;
         {
             std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
             auto it = Server::GetInstance()->mUserSessionMap.find(u.user_id);
             if (it != Server::GetInstance()->mUserSessionMap.end()) {
-                friendConn = it->second->mConn;
+                friendConn = it->second->mConn.lock();
             }
         }
-        if (friendConn != NULL) {
+        if (friendConn) {
             int clientSocket = friendConn->clientSocket;
             std::string data;
             MyProtocolStream stream(data);
@@ -1924,15 +2022,15 @@ bool ProcessNotifyStateProcessor::Notify(Connection *conn, vector<int> &friendLi
 {
     bool success = true;
     for (auto &u : friendList) {
-        Connection* friendConn = nullptr;
+        std::shared_ptr<Connection> friendConn;
         {
             std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
             auto it = Server::GetInstance()->mUserSessionMap.find(u);
             if (it != Server::GetInstance()->mUserSessionMap.end()) {
-                friendConn = it->second->mConn;
+                friendConn = it->second->mConn.lock();
             }
         }
-        if (friendConn != NULL) {
+        if (friendConn) {
             int clientSocket = friendConn->clientSocket;
             std::string data;
             MyProtocolStream stream(data);
@@ -2018,11 +2116,16 @@ bool GetAllGroupReqProcessor::GetAllGroupReq(const Request &request, vector<Grou
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
+        st->close();
+        delete st;
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
     st->close();
+    delete st;
     state2->close();
+    delete state2;
     MysqlPool::GetInstance()->releaseConncetion(conn);
     return true;
 }
@@ -2044,7 +2147,7 @@ void ProcessGroupJoinReqProcessor::Exec(Connection *conn, Request &request, Resp
     }
 }
 
-bool ProcessGroupJoinReqProcessor::ProcessGroupJoinRequest(Request &request, GroupJoinRequest groupJoinRequest)
+bool ProcessGroupJoinReqProcessor::ProcessGroupJoinRequest(Request &request, GroupJoinRequest& groupJoinRequest)
 {
     string mData = request.mData;
     MyProtocolStream stream(mData);
@@ -2075,10 +2178,12 @@ bool ProcessGroupJoinReqProcessor::ProcessGroupJoinRequest(Request &request, Gro
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
         state2->close();
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
     state2->close();
+    delete state2;
     MysqlPool::GetInstance()->releaseConncetion(conn);
     return true;
 }
@@ -2318,7 +2423,9 @@ bool ProcessMoveFileProcessor::SearchFileInfo(FileInfo &info)
             info.serverPath = st->getString("file_path");
         }
         st->close();
+        delete st;
         state2->close();
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return true;
     }
@@ -2326,13 +2433,12 @@ bool ProcessMoveFileProcessor::SearchFileInfo(FileInfo &info)
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
+        st->close();
+        delete st;
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
-    st->close();
-    state2->close();
-    MysqlPool::GetInstance()->releaseConncetion(conn);
-    return false;
 }
 
 bool ProcessMoveFileProcessor::MoveFile(const Request &request, FileInfo &info)
@@ -2352,6 +2458,7 @@ bool ProcessMoveFileProcessor::MoveFile(const Request &request, FileInfo &info)
     try {
         pstmt->execute();
         pstmt->close();
+        delete pstmt;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return true;
     } catch (sql::SQLException& e) {
@@ -2359,6 +2466,7 @@ bool ProcessMoveFileProcessor::MoveFile(const Request &request, FileInfo &info)
         std::cerr << "Error code: " << e.getErrorCode() << std::endl;
         std::cerr << "SQLState: " << e.getSQLState() << std::endl;
         pstmt->close();
+        delete pstmt;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
@@ -2406,6 +2514,7 @@ bool ProcessEraseFileProcessor::EraseFile(const Request &request, FileInfo &info
     try {
         pstmt->execute();
         pstmt->close();
+        delete pstmt;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return true;
     } catch (sql::SQLException& e) {
@@ -2413,6 +2522,7 @@ bool ProcessEraseFileProcessor::EraseFile(const Request &request, FileInfo &info
         std::cerr << "Error code: " << e.getErrorCode() << std::endl;
         std::cerr << "SQLState: " << e.getSQLState() << std::endl;
         pstmt->close();
+        delete pstmt;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
@@ -2485,11 +2595,16 @@ bool GetAllGroupMessageProcessor::GetAllGroupMessage(const Request &request, vec
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
+        st->close();
+        delete st;
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
     st->close();
+    delete st;
     state2->close();
+    delete state2;
     MysqlPool::GetInstance()->releaseConncetion(conn);
     return true;
 }
@@ -2524,6 +2639,9 @@ bool ProcessGroupMessageReadProcessor::ProcessGroupMessageRead(Request &request,
     MyProtocolStream stream(data);
     int groupId = 0, userId = 0, size = 0;
     stream >> groupId >> userId >> size;
+    if (size <= 0 || size > 10000) {
+        return false;
+    }
     vector<int> confirmVec(size, 0);
     int start = INT_MAX;
     int end = 0;
@@ -2553,22 +2671,26 @@ bool ProcessGroupMessageReadProcessor::ProcessGroupMessageRead(Request &request,
         cout << "# ProcessGroupMessageReadProcessor ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
-        state2->close();
+        st->close();
+        delete st;
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
+    st->close();
+    delete st;
     //非当前确认，中间有漏
     printf("size = %ld id = %d [0] = %d\n", confirmVec.size(), id, confirmVec[0]);
     if (confirmVec.size() == 0 || confirmVec[0] > id) {
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
     else {
         //可以发消息给客户端，重发确认【confirmId, now】
     }
-    st->close();
-    state2->close();
-    state2 = conn->prepareStatement(R"(update group_confirm_t set lastConfirmMessageId = ? 
+    delete state2;
+    state2 = conn->prepareStatement(R"(update group_confirm_t set lastConfirmMessageId = ?
         where group_id = ? and user_id = ?;)");
     //TODO:此处不应该直接用end,而应该根据是否[start, end]续接到正好是群下一条应认证的消息，若不是需要缓存当前确认范围，以待中间认证范围被补全，或者这部分在客户端做也可以。
     state2->setInt(1, end);
@@ -2584,11 +2706,13 @@ bool ProcessGroupMessageReadProcessor::ProcessGroupMessageRead(Request &request,
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
         state2->close();
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
     state2->close();
-    MysqlPool::GetInstance()->releaseConncetion(conn);    
+    delete state2;
+    MysqlPool::GetInstance()->releaseConncetion(conn);
     return true;
 }
 
