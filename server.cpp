@@ -15,9 +15,9 @@
 #include "Trans.h"
 #include "./cache/friendCache.h"
 #include "EventLoop.h"
+#include "ServerConfig.h"
 using namespace std;
 #define MAX_REQUEST_SIZE 4096
-#define IO_THREAD_NUM 2
 
 RequestProcessor* requestProcessor[100];
 
@@ -205,15 +205,11 @@ int sendline(int sockfd, char* buffer, int Size) {
     return Size;
 }
 
-Server::Server(const char *ip, unsigned int port)
+Server::Server()
 {
-    if (ip == NULL) {
-        mServerIP = "";
-    }
-    else {
-        mServerIP = ip;
-    }
-    mServerPort = port;
+    ServerConfig* config = ServerConfig::GetInstance();
+    mServerIP = "";
+    mServerPort = config->getServerPort();
 
     requestProcessor[FunctionCode::TEST] = new RequestProcessor;
     requestProcessor[FunctionCode::Register] = new RegisterProcessor;
@@ -277,22 +273,24 @@ void runx(Server* server) {
 
 int Server::selectAlgorithm() {
     static int loop = 0;
-    return loop++ % IO_THREAD_NUM;
+    ServerConfig* config = ServerConfig::GetInstance();
+    return loop++ % config->getIOThreads();
 }
 
-static const int HEARTBEAT_CHECK_INTERVAL = 60; // 检查间隔(秒)
-static const int HEARTBEAT_TIMEOUT = 90;         // 超时时间(秒)
-
 static void heartbeatCheckThread(Server* server) {
+    ServerConfig* config = ServerConfig::GetInstance();
+    int checkInterval = config->getHeartbeatInterval();
+    int timeout = config->getHeartbeatTimeout();
+
     while (true) {
-        std::this_thread::sleep_for(std::chrono::seconds(HEARTBEAT_CHECK_INTERVAL));
+        std::this_thread::sleep_for(std::chrono::seconds(checkInterval));
         std::time_t now = std::time(nullptr);
         std::vector<int> timeoutFds;
 
         {
             std::lock_guard<std::mutex> lock(server->mConnectionMapMutex);
             for (auto& pair : server->mConnectionMap) {
-                if (pair.second && (now - pair.second->lastActiveTime) > HEARTBEAT_TIMEOUT) {
+                if (pair.second && (now - pair.second->lastActiveTime) > timeout) {
                     timeoutFds.push_back(pair.first);
                 }
             }
@@ -317,16 +315,19 @@ static void heartbeatCheckThread(Server* server) {
 
 int Server::run()
 {
+    ServerConfig* config = ServerConfig::GetInstance();
+    int ioThreadNum = config->getIOThreads();
+
     mServerSocket = createListener();
     if (mServerSocket <= 0) {
         return -1;
     }
-    for (int i = 0; i < IO_THREAD_NUM; i++) {
+    for (int i = 0; i < ioThreadNum; i++) {
         EventLoop* loop = new EventLoop(this, mServerSocket, i);
         loop->addWakeupSocket();
         mEvLoopList.push_back(loop);
     }
-    for (int i = 0; i < IO_THREAD_NUM; i++) {
+    for (int i = 0; i < ioThreadNum; i++) {
         std::thread *iothread =  new std::thread(std::bind(&EventLoop::Run, mEvLoopList[i]));
         mEvLoopList[i]->mThread = iothread;
         if (iothread == nullptr) {
@@ -338,7 +339,7 @@ int Server::run()
     std::thread heartbeatThread(heartbeatCheckThread, this);
     heartbeatThread.detach();
     printf("heartbeat check thread started (interval=%ds, timeout=%ds)\n",
-           HEARTBEAT_CHECK_INTERVAL, HEARTBEAT_TIMEOUT);
+           config->getHeartbeatInterval(), config->getHeartbeatTimeout());
 
     mMainEventLoop = new EventLoop(this, mServerSocket);
     mMainEventLoop->RunMain();

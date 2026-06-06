@@ -38,7 +38,7 @@ public:
     int mServerSocket;
     EventLoop* mMainEventLoop;
 private:
-    Server(const char* ip = NULL, unsigned int port = 8080);
+    Server();
     int client_fd[1024]; 
     int n, i;
     struct sockaddr_in server_addr;
