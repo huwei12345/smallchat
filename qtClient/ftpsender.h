@@ -1,6 +1,7 @@
 ﻿#ifndef FTPSENDER_H
 #define FTPSENDER_H
 #include <QObject>
+#include <atomic>
 #include <string>
 #include <queue>
 #include <QThread>
@@ -38,7 +39,7 @@ private:
     QWaitCondition mWaitCondition;
     FtpManager* ftpUtil;
     std::map<int, FileInfo> mCurrentFileMap;
-    bool mRunning = true;
+    std::atomic<bool> mRunning{true};
 protected:
     // 在这里定义线程运行时需要执行的任务
     void run() override {

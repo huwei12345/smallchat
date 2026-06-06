@@ -82,6 +82,7 @@ bool PersonCache::isFriend(int userId) {
 bool PersonCache::reset()
 {
     mPersonCacheMap.clear();
+    return true;
 }
 
 UserInfoDetail::UserInfoDetail(const UserInfo &info) : UserInfo(info)

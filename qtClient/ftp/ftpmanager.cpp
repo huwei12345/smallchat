@@ -186,17 +186,17 @@ void FtpManager::ftpCommandFinished(int cmdId, bool error)
     case QFtp::Rename:
     {
         if(error)
-            emit sigRename(true);
-        else
             emit sigRename(false);
+        else
+            emit sigRename(true);
 
     }break;
     case QFtp::Remove:
     {
         if(error)
-            emit sigDelete(true);
-        else
             emit sigDelete(false);
+        else
+            emit sigDelete(true);
     }break;
     default:
         break;

@@ -120,7 +120,7 @@ private:
 
     std::unordered_set<FriendRequest, friendHasher, friendEqual> mFriendRequestSet;
     std::unordered_set<GroupJoinRequest, groupHasher, groupEqual> mGroupRequestSet;
-    QTimer *mFriendRequestTimer;
+    QTimer *mFriendRequestTimer = nullptr;
 
     std::map<int, QTimer*> mUnReadMessageTimerMap;
     MainPage* mSpacePage;

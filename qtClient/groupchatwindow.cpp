@@ -82,6 +82,15 @@ GroupChatWindow::GroupChatWindow(GroupInfo info, QWidget *parent) :
 
 GroupChatWindow::~GroupChatWindow()
 {
+    for (auto* p : mUnReadMessageList) {
+        delete p;
+    }
+    for (auto* p : mCurrentMessageList) {
+        delete p;
+    }
+    for (auto& icon : mPhotoMap) {
+        delete icon.second;
+    }
     delete ui;
 }
 

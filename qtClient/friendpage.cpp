@@ -207,13 +207,16 @@ bool FriendPage::reset()
     for (auto icon : mPhotoMap) {
         delete icon.second;
     }
+    mPhotoMap.clear();
     for (auto icon : mGroupPhotoMap) {
         delete icon.second;
     }
+    mGroupPhotoMap.clear();
     mFriendRequestSet.clear();
     mGroupRequestSet.clear();
     if (mFriendRequestTimer) {
         delete mFriendRequestTimer;
+        mFriendRequestTimer = nullptr;
     }
     for (auto timer : mUnReadMessageTimerMap) {
         delete timer.second;
@@ -222,7 +225,7 @@ bool FriendPage::reset()
         delete mSpacePage;
 
     Processor::Logout();
-    //重置网络，或者使用logout命令准备在连接上切换session
+    return true;
 }
 
 
@@ -424,7 +427,7 @@ void FriendPage::initFriendState() {
             button->setIcon(pix);
             button->setIconSize(pix.size());
         }
-        else if (person.second.status == SessionState::ONLINE) {
+        else if (person.second.status == SessionState::OFFLINE) {
             QIcon *icon = mPhotoMap[person.second.user_id];
             QPixmap pix = icon->pixmap(100, 100, QIcon::Disabled);
             button->setIcon(pix);
@@ -600,7 +603,7 @@ void FriendPage::UpDateUserStateSuccess(Response response) {
             button->setIcon(pix);
             button->setIconSize(pix.size());
         }
-        else if (status == SessionState::ONLINE) {
+        else if (status == SessionState::OFFLINE) {
             QIcon *icon = mPhotoMap[response.mUserId];
             QPixmap pix = icon->pixmap(100, 100, QIcon::Disabled);
             button->setIcon(pix);
@@ -844,7 +847,6 @@ void FriendPage::NofifyFileComing(Response response)
     else {
         info.ClientPath = QCoreApplication::applicationDirPath().toStdString() + std::string("/userInfo/") + info.serverFileName;
     }
-    info.filesize = 10;
     int ret = false;
     if (info.filesize < 1000 * 1000 * 10) {
         FtpSender::GetInstance()->addFile(info);
@@ -982,7 +984,6 @@ void FriendPage::GetFileFirstSuccess(Response response)
         FileInfo info = FtpSender::GetInstance()->file(ftptaskId);//这样缓存了clientPath和clientFileName
         stream2 >> info.id >> info.serverPath >> info.serverFileName >> info.filesize;
         info.print();
-        info.filesize = 10;
         if (info.filesize < 10 * 1024 * 1024) {
             qDebug() << "Will Ftp Get .............................";
             FtpSender::GetInstance()->GetFile(info);//ftp获取队列异步获取
@@ -1080,7 +1081,7 @@ void FriendPage::on_toolButton_5_clicked()
     info.Generate();
     info.ClientPath = fileName.toStdString();
 
-    if (fileName.indexOf("regular/")) {
+    if (fileName.indexOf("regular/") != -1) {
         info.serverPath = "userPhoto/regular/";
         info.serviceType = FileServerType::TOUXIANG;
         info.owner = mInfo.user_id;

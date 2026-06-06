@@ -44,13 +44,13 @@ bool Processor::Logout()
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());
     int r = clientSocket->SendPacket(array);
+    user_id = 0;
     if (r > 0) {
         req.print();
 
         return true;
     }
     return false;
-    user_id = 0;
 }
 
 bool Processor::Register(string& username, string& password, string& email) {

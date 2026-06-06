@@ -285,6 +285,8 @@ bool ClientNetWork::confirmgroupMessage(int groupId, int mUserId, int lastConfir
 
 int ClientNetWork::Client() {
     //return -1;
+    buffer.clear();
+    expectedPacketSize = 0;
     mSocket.connectToHost(mServerIp, PORT); // 连接到服务器
 
     if (mSocket.waitForConnected(3000)) {
