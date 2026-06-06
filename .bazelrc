@@ -1,0 +1,12 @@
+build --cxxopt=-std=c++11
+build --host_cxxopt=-std=c++11
+
+# MySQL connector include path
+build --cxxopt=-I/usr/include/mysql-cppconn
+
+# Define SERVER for conditional compilation
+build --cxxopt=-DSERVER
+
+# Test output
+test --test_output=errors
+test --test_verbose_timeout_warnings
