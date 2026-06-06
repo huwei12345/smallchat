@@ -112,5 +112,5 @@ void ChatEditFile::setIconSizeBasedOnButtonSize()
 
 bool ChatEditFile::build(MessageInfo *info)
 {
-
+    return false;
 }

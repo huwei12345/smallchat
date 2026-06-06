@@ -187,7 +187,7 @@ break;
         break;
     }
     case FunctionCode::FindGroup: {
-        emit FindFriendSuccess(rsp);
+        emit FindGroupSuccess(rsp);
         break;
     }
     case FunctionCode::StartUpLoadFile: {

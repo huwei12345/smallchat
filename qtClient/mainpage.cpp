@@ -470,6 +470,7 @@ bool MainPage::updateSpaceFileInPage(FileInfo info, bool moved) {
 //        }
 //        parentNode->item->removeChild(node->item);
     }
+    return true;
 }
 
 bool MainPage::deleteLocalSpaceFile(FileInfo info) {
@@ -679,7 +680,7 @@ bool MainPage::openDir(QTreeWidgetItem* item) {
     Q_UNUSED(item)
     int fileId = item->whatsThis(0).toInt();
     FileInfo info = mSpaceFileMap[fileId];
-    if (info.fileType == std::string("dir") && info.fileType == std::string("rootdir")) {
+    if (info.fileType == std::string("dir") || info.fileType == std::string("rootdir")) {
         QString directoryPath = QS(info.ClientPath);
         QUrl url = QUrl::fromLocalFile(directoryPath);
         // 打开文件所在目录
@@ -705,7 +706,7 @@ bool MainPage::openDir(QTreeWidgetItem* item) {
 bool MainPage::push(QTreeWidgetItem* item) {
     int fileId = item->whatsThis(0).toInt();
     FileInfo info = mSpaceFileMap[fileId];
-    if (info.fileType == std::string("dir") && info.fileType == std::string("rootdir")) {
+    if (info.fileType == std::string("dir") || info.fileType == std::string("rootdir")) {
         return false;
     }
     info.Generate();
@@ -724,7 +725,7 @@ bool MainPage::push(QTreeWidgetItem* item) {
 bool MainPage::pull(QTreeWidgetItem* item) {
     int fileId = item->whatsThis(0).toInt();
     FileInfo info = mSpaceFileMap[fileId];
-//    if (info.fileType == std::string("dir") && info.fileType == std::string("rootdir")) {
+//    if (info.fileType == std::string("dir") || info.fileType == std::string("rootdir")) {
 //        return false;
 //    }
 
@@ -797,7 +798,7 @@ bool MainPage::close(QTreeWidgetItem* item) {
 
 bool MainPage::spaceHasFile(FileInfo *info)
 {
-    if (info->fileType == std::string("dir") && info->fileType == std::string("rootdir")) {
+    if (info->fileType == std::string("dir") || info->fileType == std::string("rootdir")) {
         return false;
     }
     QFile file(QS(info->ClientPath));
@@ -837,11 +838,12 @@ bool MainPage::setClientDir(FileInfo &info) {
             }
         }
     }
+    return true;
 }
 
 bool MainPage::moveClientLocalDir(FileInfo& oldInfo, FileInfo &info) {
     //将本地文件重命名，或者移动
-    if (info.fileType == std::string("dir") && info.fileType == std::string("rootdir")) {
+    if (info.fileType == std::string("dir") || info.fileType == std::string("rootdir")) {
         QString sourceDir = QS(oldInfo.ClientPath);  // 源文件夹路径
         QString destDir = QS(info.ClientPath);  // 目标文件夹路径
         QDir dir;

@@ -79,7 +79,7 @@ void ChatEditImage::showContextMenu(const QPoint &pos) {
 
 bool ChatEditImage::build(MessageInfo *info)
 {
-
+    return false;
 }
 
 void ChatEditImage::resizeEvent(QResizeEvent *event)

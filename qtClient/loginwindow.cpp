@@ -212,11 +212,13 @@ void LoginWindow::onLoginFailure()
 
 void LoginWindow::LogoutSuccess(Response response)
 {
-    mFriendPage->hide();
+    if (mFriendPage) {
+        mFriendPage->hide();
+        mFriendPage->reset();
+        delete mFriendPage;
+        mFriendPage = NULL;
+    }
     show();
-    mFriendPage->reset();
-    delete mFriendPage;
-    mFriendPage = NULL;
     ClientPersonInfo::GetInstance()->reset();
     mCurWidget = this;
 

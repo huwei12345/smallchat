@@ -39,7 +39,7 @@ private slots:
 
 private:
     Ui::FindFriendPage *ui;
-    QListWidgetItem *mSelectItem;
+    QListWidgetItem *mSelectItem = nullptr;
 };
 
 #endif // FINDFRIENDPAGE_H

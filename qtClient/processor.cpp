@@ -261,9 +261,6 @@ bool Processor::getAllOfflineFile(int userId) {
 
 bool Processor::StoreFile(FileInfo info)
 {
-    info.filesize = 100;
-    info.fileMode = 777;
-    info.md5sum = 10;
     ClientNetWork* clientSocket = ClientNetWork::GetInstance();
     std::string data;
     MyProtocolStream stream(data);
