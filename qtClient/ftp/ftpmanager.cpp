@@ -117,14 +117,16 @@ bool FtpManager::isConnected() const
 
 QFtp::State FtpManager::ftpState() const
 {
+    if (!mFtp)
+        return QFtp::Unconnected;
     return mFtp->state();
 }
 
 void FtpManager::ftpCommandFinished(int cmdId, bool error)
 {
-    sFtpData data = mTaskMap[cmdId];
     if(!mFtp)
         return;
+    sFtpData data = mTaskMap[cmdId];
     switch (mFtp->currentCommand()) {
     case QFtp::ConnectToHost:
     {
