@@ -302,9 +302,7 @@ int ClientNetWork::Client() {
     //处理对端关闭连接槽函数
     QObject::connect(&mSocket, &QTcpSocket::disconnected, [this]() {
         qDebug() << "Disconnected from server.";
-        if (mSocket.state() == QAbstractSocket::ConnectedState) {
-            mSocket.deleteLater(); // Optional: safely delete socket
-        }
+        mSocket.close();
     });
 
     //读取请求槽函数，协议读取，避免了粘包和分包问题
