@@ -82,7 +82,7 @@ void EventLoop::Run()
             }
             else if (events[i].data.fd != mWakeupSocket[1]) {
                 int client_fd = events[i].data.fd;
-                Connection* conn = nullptr;
+                std::shared_ptr<Connection> conn;
                 {
                     std::lock_guard<std::mutex> lock(mServer->mConnectionMapMutex);
                     auto it = mServer->mConnectionMap.find(client_fd);
@@ -194,7 +194,7 @@ void EventLoop::addSocket()
         close(client_fd);
         return;
     }
-    Connection* conn = new Connection(client_fd, this);
+    std::shared_ptr<Connection> conn = std::make_shared<Connection>(client_fd, this);
     {
         std::lock_guard<std::mutex> lock(mServer->mConnectionMapMutex);
         mServer->mConnectionMap[client_fd] = conn;
@@ -238,7 +238,7 @@ bool EventLoop::doWrite(Task *task)
     if (task->mData == nullptr)
         return true;
     int fd = task->sockFd;
-    Connection* conn = nullptr;
+    std::shared_ptr<Connection> conn;
     {
         std::lock_guard<std::mutex> lock(mServer->mConnectionMapMutex);
         auto it = mServer->mConnectionMap.find(fd);
@@ -268,6 +268,11 @@ void EventLoop::wakeup()
     task->type = ADD;
     {
         std::lock_guard<std::mutex> lock(mTaskQueueMutex);
+        if ((int)mTaskQueue.size() >= MAX_TASK_QUEUE_SIZE) {
+            LOG_WARN("task queue full ({}), dropping ADD task", mTaskQueue.size());
+            delete task;
+            return;
+        }
         mTaskQueue.push(task);
     }
 	write(mWakeupSocket[0], &wakeup, sizeof(int));
@@ -316,7 +321,12 @@ bool EventLoop::sendDataAll(int fd, const std::string& data)
     task->type = WRITE;
     {
         std::lock_guard<std::mutex> lock(mTaskQueueMutex);
+        if ((int)mTaskQueue.size() >= MAX_TASK_QUEUE_SIZE) {
+            LOG_WARN("task queue full ({}), dropping WRITE task for fd={}", mTaskQueue.size(), fd);
+            delete task;
+            return false;
+        }
         mTaskQueue.push(task);
     }
-    return false;
+    return true;
 }

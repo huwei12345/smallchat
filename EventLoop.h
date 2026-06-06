@@ -68,6 +68,7 @@ private:
     struct epoll_event events[MAX_EVENTS];
     std::queue<Task*> mTaskQueue;
     std::mutex mTaskQueueMutex;
+    static const int MAX_TASK_QUEUE_SIZE = 10000;
 };
 
 #endif
