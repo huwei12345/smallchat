@@ -197,7 +197,7 @@ bool EventLoop::doWrite(Task *task)
             return ret;
         }
         else {
-            if (errno = EAGAIN || errno == EWOULDBLOCK) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 continue;
             }
             printf("write error %d\n", errno);

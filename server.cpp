@@ -194,7 +194,7 @@ int sendline(int sockfd, char* buffer, int Size) {
             return ret;
         }
         else {
-            if (errno = EAGAIN || errno == EWOULDBLOCK) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 continue;
             }
             return ret;
