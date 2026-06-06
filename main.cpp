@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <signal.h>
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 #include "server.h"
@@ -11,6 +12,8 @@
 using namespace std;
 
 int main() {
+    signal(SIGPIPE, SIG_IGN);
+
     // 加载配置
     ServerConfig* config = ServerConfig::GetInstance();
     config->load("server_config.ini");

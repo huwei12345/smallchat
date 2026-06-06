@@ -115,8 +115,8 @@ void EventLoop::RunMain()
     }
     struct epoll_event ev;
     memset(&ev, 0, sizeof(ev));
-    //TODO:ServerSocket设置成EPOLLET需要一些适配
-    ev.events = EPOLLIN | EPOLLET;
+    // listen socket 使用 level-triggered，避免批量连接时只触发一次
+    ev.events = EPOLLIN;
     ev.data.fd = mServerSocket;
     if (epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mServerSocket, &ev) < 0) {
         printf("xxxxxxxxxxx %d %d\n", mEpollFd, mServerSocket);
