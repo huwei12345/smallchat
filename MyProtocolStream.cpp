@@ -94,9 +94,10 @@ namespace net
         char c;
         value = 0;
         int bitCount = 0;
-        int index = 0;
+        uint32_t index = 0;
         do
         {
+            if (index >= len) return;
             c = buf[index];
             uint32_t x = (c & 0x7F);
             x <<= bitCount;
@@ -112,9 +113,10 @@ namespace net
         char c;
         value = 0;
         int bitCount = 0;
-        int index = 0;
+        uint32_t index = 0;
         do
         {
+            if (index >= len) return;
             c = buf[index];
             uint64_t x = (c & 0x7F);
             x <<= bitCount;
@@ -152,10 +154,10 @@ namespace net
 
     bool MyProtocolStream::loadFloat(float f, bool reverse)
     {
-        char doublestr[128];
+        char doublestr[128] = {0};
         if (reverse == false)
         {
-            sprintf(doublestr, "%f", f);
+            snprintf(doublestr, sizeof(doublestr), "%f", f);
             loadCString(doublestr, strlen(doublestr));
         }
         else
@@ -165,10 +167,10 @@ namespace net
 
     bool MyProtocolStream::loadDouble(double d, bool reverse)
     {
-        char doublestr[128];
+        char doublestr[128] = {0};
         if (reverse == false)
         {
-            sprintf(doublestr, "%lf", d);
+            snprintf(doublestr, sizeof(doublestr), "%lf", d);
             loadCString(doublestr, strlen(doublestr));
         }
         else
@@ -288,7 +290,10 @@ namespace net
         {
             return false;
         }
-        // user buffer is not enough
+        if (fieldlen >= 128)
+        {
+            return false;
+        }
         char *cur = &m_str[m_pos];
         m_pos += headlen;
         cur += headlen;
@@ -312,7 +317,10 @@ namespace net
         {
             return false;
         }
-        // user buffer is not enough
+        if (fieldlen >= 128)
+        {
+            return false;
+        }
         char *cur = &m_str[m_pos];
         cur += headlen;
         m_pos += headlen;
@@ -334,11 +342,12 @@ namespace net
     bool MyProtocolStream::readLengthWithoutOffset(size_t &headlen, size_t &outlen)
     {
         headlen = 0;
-        const char *temp = &m_str[m_pos];
         char buf[5];
-        memcpy(buf, temp, sizeof(buf));
         for (size_t i = 0; i < sizeof(buf); i++)
         {
+            if (m_pos + i >= m_str.length())
+                return false;
+            buf[i] = m_str[m_pos + i];
             headlen++;
             if ((buf[i] & 0x80) == 0x00)
                 break;
@@ -492,8 +501,7 @@ namespace net
     }
 	
     MyProtocolStream& MyProtocolStream::operator<<(const char* str) {
-        std::string c = str;
-		loadString(str);
+        loadString(str);
         return *this;
     }
     MyProtocolStream& MyProtocolStream::operator<<(float f) {
