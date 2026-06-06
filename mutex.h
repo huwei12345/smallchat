@@ -69,6 +69,12 @@ public:
     }
 
 
+#ifndef _MSC_VER
+#if POSIX
+    pthread_mutex_t* nativeHandle() { return &mHandle; }
+#endif
+#endif
+
     void Unlock() {
 #ifdef _MSC_VER
         int err = ReleaseMutex(mHandle);

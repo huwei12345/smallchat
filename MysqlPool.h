@@ -11,6 +11,8 @@
 #include <mysql-cppconn/jdbc/cppconn/prepared_statement.h>
 #include <mysql-cppconn/jdbc/cppconn/resultset.h>
 #include "mutex.h"
+#include <pthread.h>
+#include <time.h>
 class MysqlPool {
 public:
     static MysqlPool* GetInstance(); 
@@ -34,6 +36,8 @@ private:
     std::vector<sql::Connection*> mConnectionPool;
     std::queue<sql::Connection*> mIdleConnectionQue;
     Mutex mMutex;
+    pthread_cond_t mCond;
+    int mWaitTimeoutMs;
 
 };
 
