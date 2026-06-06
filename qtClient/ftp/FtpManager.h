@@ -33,10 +33,6 @@ public:
 
 private:
 
-private:
-    //sFtpData *d;
-    static FtpManager *mFtpManager;
-
 public:
     static FtpManager *getInstance();
     void connectFtp();
