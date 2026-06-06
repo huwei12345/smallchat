@@ -268,6 +268,13 @@ Server::Server()
 }
 
 
+Server::~Server() {
+    mHeartbeatRunning = false;
+    if (mHeartbeatThread.joinable()) {
+        mHeartbeatThread.join();
+    }
+}
+
 void runx(Server* server) {
 
 }
@@ -283,8 +290,9 @@ static void heartbeatCheckThread(Server* server) {
     int checkInterval = config->getHeartbeatInterval();
     int timeout = config->getHeartbeatTimeout();
 
-    while (true) {
+    while (server->mHeartbeatRunning) {
         std::this_thread::sleep_for(std::chrono::seconds(checkInterval));
+        if (!server->mHeartbeatRunning) break;
         std::time_t now = std::time(nullptr);
         std::vector<std::shared_ptr<Connection>> timeoutConns;
 
@@ -330,8 +338,7 @@ int Server::run()
         }
     }
     // 启动心跳检测线程
-    std::thread heartbeatThread(heartbeatCheckThread, this);
-    heartbeatThread.detach();
+    mHeartbeatThread = std::thread(heartbeatCheckThread, this);
     printf("heartbeat check thread started (interval=%ds, timeout=%ds)\n",
            config->getHeartbeatInterval(), config->getHeartbeatTimeout());
 

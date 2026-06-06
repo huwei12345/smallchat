@@ -4,10 +4,12 @@
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <atomic>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <thread>
 #include "Protocol.h"
 class Connection;
 class Session;
@@ -26,6 +28,7 @@ using CallBack = void(void*);
 
 class Server {
 public:
+    ~Server();
     int run();
     int createListener();
     int selectAlgorithm();
@@ -38,10 +41,12 @@ public:
     int mEpollFd;
     int mServerSocket;
     EventLoop* mMainEventLoop;
+    std::atomic<bool> mHeartbeatRunning{true};
 private:
     Server();
-    int client_fd[1024]; 
+    int client_fd[1024];
     int n, i;
+    std::thread mHeartbeatThread;
     struct sockaddr_in server_addr;
     struct epoll_event events[MAX_EVENTS];
     char buf[BUF_SIZE];
