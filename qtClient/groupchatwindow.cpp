@@ -91,6 +91,7 @@ GroupChatWindow::~GroupChatWindow()
     for (auto& icon : mPhotoMap) {
         delete icon.second;
     }
+    delete mEmojiSelector;
     delete ui;
 }
 
@@ -584,10 +585,10 @@ void GroupChatWindow::ChangeGroupUserPic(FileInfo info)
 
     if (QFile::exists(clientPath)) {
             // 如果文件存在，加载图像并设置为头像
-            QIcon *icon = new QIcon(clientPath);
-            mFriendButton[info.owner]->setIcon(*icon);
+            QIcon icon(clientPath);
+            mFriendButton[info.owner]->setIcon(icon);
             mFriendButton[info.owner]->setIconSize(QSize(25, 25));
-            ClientPersonInfo::GetInstance()->photo = *icon;
+            ClientPersonInfo::GetInstance()->photo = icon;
     }
     else {
         if (regular != std::string::npos) {
@@ -597,10 +598,10 @@ void GroupChatWindow::ChangeGroupUserPic(FileInfo info)
         QToolButton* button = mFriendButton[info.owner];
         if (QFile::exists(clientPath)) {
             // 如果文件存在，加载图像并设置为头像
-            QIcon *icon = new QIcon(clientPath);
-            button->setIcon(*icon);
+            QIcon icon(clientPath);
+            button->setIcon(icon);
             button->setIconSize(QSize(25, 25));
-            PersonCache::GetInstance()->setPersonPhoto(info.owner, *icon, clientPath);
+            PersonCache::GetInstance()->setPersonPhoto(info.owner, icon, clientPath);
         }
     }
 }

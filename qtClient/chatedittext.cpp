@@ -23,6 +23,11 @@ ChatEditText::ChatEditText(MessageInfo *info, QWidget *parent) :
 
 }
 
+ChatEditText::~ChatEditText()
+{
+    delete mEmojiSelector;
+}
+
 bool ChatEditText::build(MessageInfo *info)
 {
     if (QString::fromStdString(info->message_text) == "0xa500") {

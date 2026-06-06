@@ -93,6 +93,10 @@ void MainPage::setReturn(QWidget *widget)
 
 MainPage::~MainPage()
 {
+    for (auto& pair : idBook) {
+        delete pair.second;
+    }
+    idBook.clear();
     delete ui;
 }
 

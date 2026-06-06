@@ -126,6 +126,14 @@ EmojiSelector::EmojiSelector(QWidget *parent) :
 
 EmojiSelector::~EmojiSelector()
 {
+    for (auto& group : mEmojiStructureMap) {
+        for (auto& pair : group.second) {
+            delete pair.second;
+        }
+    }
+    for (auto& pair : mEmojiPalinMap) {
+        delete pair.second;
+    }
     delete ui;
 }
 

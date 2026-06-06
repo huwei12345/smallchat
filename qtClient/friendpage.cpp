@@ -887,9 +887,9 @@ void FriendPage::ChangeUserPicBySend(FileInfo info) {
     if (info.owner == mInfo.user_id) {
         if (QFile::exists(clientPath)) {
             // 如果文件存在，加载图像并设置为头像
-            QIcon *icon = new QIcon(clientPath);
-            ui->toolButton_5->setIcon(*icon);
-            ClientPersonInfo::GetInstance()->photo = *icon;
+            QIcon icon(clientPath);
+            ui->toolButton_5->setIcon(icon);
+            ClientPersonInfo::GetInstance()->photo = icon;
             ui->toolButton_5->setIconSize(QSize(60, 60));
         } else {
             // 文件不存在，给用户提示
@@ -925,10 +925,10 @@ void FriendPage::ChangeUserPicBySend(FileInfo info) {
         QToolButton* button = mFriendButton[info.owner];
         if (QFile::exists(clientPath)) {
             // 如果文件存在，加载图像并设置为头像
-            QIcon *icon = new QIcon(clientPath);
-            button->setIcon(*icon);
+            QIcon icon(clientPath);
+            button->setIcon(icon);
             button->setIconSize(QSize(60, 60));
-            PersonCache::GetInstance()->setPersonPhoto(info.owner, *icon, clientPath);
+            PersonCache::GetInstance()->setPersonPhoto(info.owner, icon, clientPath);
             mChatWindowMap[info.owner]->updateUserPhoto();
         }
     }
@@ -946,10 +946,10 @@ void FriendPage::ChangeUserPic(FileInfo info)
     if (info.owner == mInfo.user_id) {
         if (QFile::exists(clientPath)) {
             // 如果文件存在，加载图像并设置为头像
-            QIcon *icon = new QIcon(clientPath);
-            ui->toolButton_5->setIcon(*icon);
+            QIcon icon(clientPath);
+            ui->toolButton_5->setIcon(icon);
             ui->toolButton_5->setIconSize(QSize(60, 60));
-            ClientPersonInfo::GetInstance()->photo = *icon;
+            ClientPersonInfo::GetInstance()->photo = icon;
         } else {
             // 文件不存在，给用户提示
             QMessageBox::warning(nullptr, "警告", "头像文件不存在。");
@@ -966,10 +966,10 @@ void FriendPage::ChangeUserPic(FileInfo info)
         QToolButton* button = mFriendButton[info.owner];
         if (QFile::exists(clientPath)) {
             // 如果文件存在，加载图像并设置为头像
-            QIcon *icon = new QIcon(clientPath);
-            button->setIcon(*icon);
+            QIcon icon(clientPath);
+            button->setIcon(icon);
             button->setIconSize(QSize(60, 60));
-            PersonCache::GetInstance()->setPersonPhoto(info.owner, *icon, clientPath);
+            PersonCache::GetInstance()->setPersonPhoto(info.owner, icon, clientPath);
             mChatWindowMap[info.owner]->updateUserPhoto();
         }
     }

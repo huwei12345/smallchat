@@ -100,6 +100,10 @@ ChatWindow::~ChatWindow()
     for (auto* p : mCurrentMessageList) {
         delete p;
     }
+    delete mEmojiSelector;
+    delete mChatViewDelegate;
+    delete mEmojiCoder;
+    delete clientInfo;
     delete ui;
 }
 

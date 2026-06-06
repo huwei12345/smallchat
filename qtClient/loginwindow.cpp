@@ -62,6 +62,10 @@ LoginWindow::LoginWindow(QWidget *parent)
 
 LoginWindow::~LoginWindow()
 {
+    delete mFriendPage;
+    delete mainPage;
+    delete registerPage;
+    delete mLoginSettingPage;
     delete ui;
     ClientNetWork::GetInstance()->close();
 }

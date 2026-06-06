@@ -12,6 +12,7 @@ class ChatEditText : public QTextEdit
 public:
     ChatEditText(QWidget *parent = nullptr);
     ChatEditText(MessageInfo* info, QWidget *parent = nullptr);
+    ~ChatEditText();
     bool build(MessageInfo* info);
     bool openFileDirectory(const QString &filePath);
     void sharkWindow();

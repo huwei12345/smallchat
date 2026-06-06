@@ -55,6 +55,9 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    delete friendPage;
+    delete mainPage;
+    delete registerPage;
     delete ui;
     ClientNetWork::GetInstance()->close();
 }
