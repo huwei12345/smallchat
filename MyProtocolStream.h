@@ -85,7 +85,7 @@ private:
 };// end of class MyProtocolStream
 
     //计算校验和
-    unsigned short checksum(const unsigned short* buffer, int size);
+    unsigned short checksum(unsigned char* src, int len);
     //将一个4字节的整型数值压缩成1~5个字节
     void write7BitEncoded(uint32_t value, std::string& buf);
     //将一个8字节的整型值编码成1~10个字节

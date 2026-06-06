@@ -1676,7 +1676,6 @@ bool ProcessUpLoadFileSuccessProcessor::ProcessUpLoadSQL(Request &request, FileI
     }
     std::cout << info.send_id << "   " << info.recv_id << "  " << info.serverPath << " + " << info.serverFileName << info.fileType << "  " << info.filesize;
     // Prepare SQL statement to insert into offline_transfer table
-    info.filesize = 10;
     sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
         INSERT INTO offline_transfers (sender_id, receiver_id, file_name, file_type, file_size)
         VALUES (?, ?, ?, ?, ?)

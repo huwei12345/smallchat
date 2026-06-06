@@ -187,7 +187,9 @@ namespace FunctionCode {
         "GETSTOREFILE        ",
         "RENAMESTOREFILE     ",
         "GetAllGroupMessage  ",
-        "ProcessGMessageRead "
+        "ProcessGMessageRead ",
+        "LOGOUT              ",
+        "Heartbeat           "
     };
 };
 
