@@ -8,9 +8,8 @@
 #include "Protocol.h"
 #include "globalvaria.h"
 #include "processor.h"
-QTcpSocket socket;
-QByteArray buffer;  // 缓冲区
-quint32 expectedPacketSize = 0;  // 预期数据包长度
+static QByteArray buffer;  // 缓冲区
+static quint32 expectedPacketSize = 0;  // 预期数据包长度
 #define PORT 8080
 extern int user_id;
 ClientNetWork::ClientNetWork()
@@ -301,17 +300,15 @@ int ClientNetWork::Client() {
     }
 
     //处理对端关闭连接槽函数
-    QObject::connect(&mSocket, &QTcpSocket::disconnected, [&]() {
+    QObject::connect(&mSocket, &QTcpSocket::disconnected, [this]() {
         qDebug() << "Disconnected from server.";
         if (mSocket.state() == QAbstractSocket::ConnectedState) {
             mSocket.deleteLater(); // Optional: safely delete socket
         }
     });
-    //本端关闭连接
-    //socket.disconnectFromHost();
 
     //读取请求槽函数，协议读取，避免了粘包和分包问题
-    QObject::connect(&mSocket, &QTcpSocket::readyRead, [&]() {
+    QObject::connect(&mSocket, &QTcpSocket::readyRead, [this]() {
         buffer.append(mSocket.readAll());  // 将新数据追加到缓冲区
 
         while (!buffer.isEmpty()) {
@@ -357,7 +354,7 @@ void ClientNetWork::socketError(QAbstractSocket::SocketError socketError) {
 
 void ClientNetWork::close()
 {
-    socket.disconnectFromHost();
+    mSocket.disconnectFromHost();
 }
 
 bool ClientNetWork::isClose() {
