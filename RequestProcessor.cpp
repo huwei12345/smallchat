@@ -46,17 +46,20 @@ bool checkUserLimit(FileInfo& info) {
 }
 
 int stoiAll(const std::string &str) {
-    int number = 0; 
-    if (str.size() > 15) {
+    if (str.empty() || str.size() > 10) {
         return -1;
     }
-    for (int i = 0; i < str.size(); i++) {
+    long long number = 0;
+    for (size_t i = 0; i < str.size(); i++) {
         if (str[i] > '9' || str[i] < '0') {
             return -1;
         }
-        number = number * 10 + (str[i] - '0'); 
+        number = number * 10 + (str[i] - '0');
+        if (number > INT_MAX) {
+            return -1;
+        }
     }
-    return number;
+    return (int)number;
 }
 
 void RequestProcessor::Exec(Connection* conn, Request &request, Response &response)
@@ -284,7 +287,6 @@ bool FindFriendProcessor::FindFriend(const Request &request, FriendList &friendL
     }
     else {
         type = 0;
-        stream >> info.username;
     }
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
@@ -370,8 +372,6 @@ bool FindGroupProcessor::FindGroup(const Request &request, vector<GroupInfo> &gr
     }
     else {
         type = 0;
-        printf("group.name = %s\n", info.group_name.c_str());
-        stream >> info.group_name;
     }
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
@@ -749,12 +749,20 @@ bool SendMessageProcessor::SendToPerson(const Request &request, MessageInfo& inf
         return false;
     }
     sql::PreparedStatement* state2 = conn->prepareStatement(R"(insert into messages
-        (sender_id, recipient_id, content) 
+        (sender_id, recipient_id, content)
         values(?,?,?);)");
     state2->setInt(1, request.mUserId);
     state2->setInt(2, info.recv_id);
     state2->setString(3, info.message_text);
-    state2->execute();
+    try {
+        state2->execute();
+    } catch (sql::SQLException& e) {
+        cout << "# ERR " << e.what();
+        state2->close();
+        delete state2;
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
 
     state2->close();
     delete state2;
@@ -763,8 +771,6 @@ bool SendMessageProcessor::SendToPerson(const Request &request, MessageInfo& inf
     int autoIncKeyFromFunc = -1;
     if (rs->next()) {
         autoIncKeyFromFunc = rs->getInt(1);
-    } else {
-        // throw an exception from here
     }
     info.id = autoIncKeyFromFunc;
     rs->close();
@@ -784,12 +790,20 @@ bool SendMessageProcessor::SendToGroup(const Request &request, MessageInfo &info
         return false;
     }
     sql::PreparedStatement* state2 = conn->prepareStatement(R"(insert into group_messages
-        (sender_id, recipient_id, content) 
+        (sender_id, recipient_id, content)
         values(?,?,?);)");
     state2->setInt(1, request.mUserId);
     state2->setInt(2, info.recv_id);
     state2->setString(3, info.message_text);
-    state2->execute();
+    try {
+        state2->execute();
+    } catch (sql::SQLException& e) {
+        cout << "# ERR " << e.what();
+        state2->close();
+        delete state2;
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
+    }
 
     state2->close();
     delete state2;
@@ -798,8 +812,6 @@ bool SendMessageProcessor::SendToGroup(const Request &request, MessageInfo &info
     int autoIncKeyFromFunc = -1;
     if (rs->next()) {
         autoIncKeyFromFunc = rs->getInt(1);
-    } else {
-        // throw an exception from here
     }
     info.id = autoIncKeyFromFunc;
     rs->close();
@@ -2200,10 +2212,10 @@ bool ProcessGroupJoinReqProcessor::ProcessGroupJoinRequest(Request &request, Gro
 
 bool ProcessGroupJoinReqProcessor::initGroupConfirmId(sql::Connection* conn, int userId, int groupId)
 {
-if (conn == NULL) {
+    if (conn == NULL) {
         return false;
     }
-    sql::PreparedStatement* state2 = conn->prepareStatement(R"(insert into group_confirm_t(user_id, group_id, lastConfirmMessageId) 
+    sql::PreparedStatement* state2 = conn->prepareStatement(R"(insert into group_confirm_t(user_id, group_id, lastConfirmMessageId)
         values(?, ?, ?);)");
     state2->setInt(1, userId);
     state2->setInt(2, groupId);
@@ -2212,13 +2224,15 @@ if (conn == NULL) {
         state2->executeUpdate();
     }
     catch(sql::SQLException& e) {
-        //rollback
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
-        throw e;
-        return false;
+        state2->close();
+        delete state2;
+        throw;
     }
+    state2->close();
+    delete state2;
     return true;
 }
 
@@ -2291,7 +2305,6 @@ bool ProcessFindSpaceFileTreeProcessor::FindSpaceFileTree(const Request &request
     state2->setInt(1, user_id);
     sql::ResultSet *st = state2->executeQuery();
 
-    int id = -1;
     try {
         while (st->next()) {
             info.id = st->getInt("storage_id");
@@ -2300,9 +2313,7 @@ bool ProcessFindSpaceFileTreeProcessor::FindSpaceFileTree(const Request &request
             info.fileType = st->getString("item_type");
             info.serverPath = st->getString("file_path");
             info.timestamp = st->getString("created_at");
-            //info.updated_at = ?
             info.expiredTime = st->getInt("expired_time");
-            //cout << "id:" << info.id << " name:" << info.role << " email:" << info.group_name << "status:" << info.admin_id << std::endl;
             fileList.push_back(info);
         }
     }
@@ -2310,9 +2321,17 @@ bool ProcessFindSpaceFileTreeProcessor::FindSpaceFileTree(const Request &request
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
+        st->close();
+        delete st;
+        state2->close();
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
+    st->close();
+    delete st;
+    state2->close();
+    delete state2;
     MysqlPool::GetInstance()->releaseConncetion(conn);
 
     return true;
@@ -2361,7 +2380,6 @@ bool ProcessFindAllGroupMemberProcessor::FindAllGroupMember(int groupId, vector<
     state2->setInt(1, groupId);
     sql::ResultSet *st = state2->executeQuery();
     UserInfo info;
-    int id = -1;
     try {
         while (st->next()) {
             info.user_id = st->getInt("user_id");
@@ -2378,9 +2396,17 @@ bool ProcessFindAllGroupMemberProcessor::FindAllGroupMember(int groupId, vector<
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
+        st->close();
+        delete st;
+        state2->close();
+        delete state2;
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
+    st->close();
+    delete st;
+    state2->close();
+    delete state2;
     MysqlPool::GetInstance()->releaseConncetion(conn);
 
     return true;
