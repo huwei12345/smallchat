@@ -397,6 +397,7 @@ Server *Server::GetInstance()
 
 bool Connection::readRequest(std::string &requestData)
 {
+    // MSG_PEEK: 不消费数据，EAGAIN 时安全重试
     int ret = recv(clientSocket, buffer, 4, MSG_PEEK);
     if (ret <= 0) {
         if (ret == 0) {
@@ -404,10 +405,8 @@ bool Connection::readRequest(std::string &requestData)
             LOG_INFO("connection closed fd={}", clientSocket);
             closeConnection();
         }
-        // Handle recv error
         return false;
     } else if (ret < 4) {
-        // Handle incomplete length field
         return false;
     }
     uint32_t len = 0;
@@ -415,11 +414,10 @@ bool Connection::readRequest(std::string &requestData)
     len = ntohl(len);
 
     if (len < 4 || len > MAX_REQUEST_SIZE) {
-        // Handle invalid length
         return false;
     }
 
-    // 循环读取完整数据包
+    // 读取完整数据包，EAGAIN 时返回让 epoll 重新触发（level-triggered 会再次通知）
     int totalRead = 0;
     while (totalRead < (int)len) {
         ret = recv(clientSocket, buffer + totalRead, len - totalRead, 0);
@@ -431,7 +429,9 @@ bool Connection::readRequest(std::string &requestData)
             return false;
         } else {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                continue;
+                // 已有部分数据但未读完，保存状态返回，epoll 会重新触发 EPOLLIN
+                // buffer 和 totalRead 在 Connection 生命周期内保持有效
+                return false;
             }
             return false;
         }
@@ -551,12 +551,10 @@ int Connection::flushWriteBuffer()
 //flag = 0,默认关闭  flag = 1,强行关闭
 bool Connection::closeConnection(int flag)
 {
-    mEvLoop->eraseSocket(clientSocket);
-
     Session* session = nullptr;
     int userId = -1;
 
-    // 从 map 中移除
+    // 加锁检查并移除，防止重复关闭竞态
     {
         std::lock_guard<std::mutex> lock(Server::GetInstance()->mConnectionMapMutex);
         auto it = Server::GetInstance()->mConnectionMap.find(clientSocket);
@@ -565,6 +563,9 @@ bool Connection::closeConnection(int flag)
         }
         Server::GetInstance()->mConnectionMap.erase(it);
     }
+
+    // map 中已移除，安全操作 epoll
+    mEvLoop->eraseSocket(clientSocket);
 
     session = this->session;
     if (session != NULL) {
