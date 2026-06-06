@@ -2,9 +2,21 @@
 #include <errno.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <string.h>
+
+static bool containsDotDot(const char *path) {
+    if (!path) return false;
+    const char *p = path;
+    while (*p) {
+        if (p[0] == '.' && p[1] == '.' && (p[2] == '/' || p[2] == '\0'))
+            return true;
+        p++;
+    }
+    return false;
+}
 int FileTools::createDirectory(const char *path)
 {
-    if (path == NULL || strlen(path) >= 500) {
+    if (path == NULL || strlen(path) >= 500 || containsDotDot(path)) {
         return -1;
     }
     // 分割路径字符串
@@ -53,7 +65,7 @@ int FileTools::createDirectory(const char *path)
 
 int FileTools::checkFile(const char *path)
 {
-    if (path == NULL || strlen(path) <= 1) {
+    if (path == NULL || strlen(path) <= 1 || containsDotDot(path)) {
         return -1;
     }
     char realPath[500];
@@ -120,7 +132,7 @@ void FileTools::deleteDirectory(const char *dirPath) {
 }
 
 int FileTools::eraseFile(const char *path) {
-    if (path == NULL || strlen(path) <= 1) {
+    if (path == NULL || strlen(path) <= 1 || containsDotDot(path)) {
         return -1;
     }
     char realPath[500];
@@ -148,7 +160,7 @@ int FileTools::eraseFile(const char *path) {
 }
 bool FileTools::moveFile(const char *src, const char *dst)
 {
-    if (src == NULL || dst == NULL) {
+    if (src == NULL || dst == NULL || containsDotDot(src) || containsDotDot(dst)) {
         return false;
     }
     char realSrc[500];
