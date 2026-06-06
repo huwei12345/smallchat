@@ -300,7 +300,7 @@ static void heartbeatCheckThread(Server* server) {
         for (int fd : timeoutFds) {
             printf("heartbeat timeout, closing connection fd=%d\n", fd);
             LOG_WARN("heartbeat timeout, closing connection fd={}", fd);
-            Connection* conn = nullptr;
+            std::shared_ptr<Connection> conn;
             {
                 std::lock_guard<std::mutex> lock(server->mConnectionMapMutex);
                 auto it = server->mConnectionMap.find(fd);
@@ -330,10 +330,12 @@ int Server::run()
         mEvLoopList.push_back(loop);
     }
     for (int i = 0; i < ioThreadNum; i++) {
-        std::thread *iothread =  new std::thread(std::bind(&EventLoop::Run, mEvLoopList[i]));
-        mEvLoopList[i]->mThread = iothread;
-        if (iothread == nullptr) {
-            printf("ioThread %d create error\n", i);
+        try {
+            std::thread *iothread = new std::thread(std::bind(&EventLoop::Run, mEvLoopList[i]));
+            mEvLoopList[i]->mThread = iothread;
+        } catch (const std::system_error& e) {
+            printf("ioThread %d create error: %s\n", i, e.what());
+            LOG_ERROR("ioThread {} create error: {}", i, e.what());
             return -3;
         }
     }
@@ -413,24 +415,29 @@ bool Connection::readRequest(std::string &requestData)
     }
     uint32_t len = 0;
     memcpy(&len, buffer, 4);
-    len = htonl(len);
-    
+    len = ntohl(len);
+
     if (len < 4 || len > MAX_REQUEST_SIZE) {
         // Handle invalid length
         return false;
     }
-    
-    ret = recv(clientSocket, buffer, len, MSG_WAITALL);
-    if (ret <= 0) {
-        if (ret == 0) {
+
+    // 循环读取完整数据包
+    int totalRead = 0;
+    while (totalRead < (int)len) {
+        ret = recv(clientSocket, buffer + totalRead, len - totalRead, 0);
+        if (ret > 0) {
+            totalRead += ret;
+        } else if (ret == 0) {
             printf("connect %d close\n", clientSocket);
             closeConnection();
+            return false;
+        } else {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                continue;
+            }
+            return false;
         }
-        // Handle recv error
-        return false;
-    } else if (ret != len) {
-        // Handle incomplete request data
-        return false;
     }
     requestData.assign(buffer, buffer + len);
     return true;
@@ -452,6 +459,22 @@ bool Connection::processRead()
     }
 
     int functionCode = request->mFunctionCode;
+    if (functionCode < 0 || functionCode >= 100) {
+        LOG_ERROR("invalid function code: {}", functionCode);
+        delete request;
+        return false;
+    }
+
+    // 认证检查：登录/注册不需要 session，其他操作必须验证 mUserId
+    if (functionCode != FunctionCode::Login && functionCode != FunctionCode::Register) {
+        if (session == NULL || request->mUserId != session->mUserId) {
+            LOG_WARN("auth mismatch: request mUserId={} but session userId={}",
+                     request->mUserId, session ? session->mUserId : -1);
+            delete request;
+            return false;
+        }
+    }
+
     response = new Response;
     requestProcessor[functionCode]->Exec(this, *request, *response);
     delete request;
@@ -469,13 +492,13 @@ bool Connection::processRead()
     return success;
 }
 
-bool Connection::sendResponse(int clientSocket, Response* response)
+bool Connection::sendResponse(int fd, Response* response)
 {
     std::string responseData = serialResponse(response);
     if (responseData == "") {
         return false;
     }
-    return mEvLoop->sendDataAll(clientSocket, responseData);
+    return mEvLoop->sendDataAll(fd, responseData);
 }
 
 Connection::~Connection()
@@ -527,26 +550,20 @@ bool Connection::closeConnection(int flag)
 {
     mEvLoop->eraseSocket(clientSocket);
 
-    Connection* conn = nullptr;
     Session* session = nullptr;
     int userId = -1;
 
-    // 从 map 中移除并获取 session 信息
+    // 从 map 中移除
     {
         std::lock_guard<std::mutex> lock(Server::GetInstance()->mConnectionMapMutex);
         auto it = Server::GetInstance()->mConnectionMap.find(clientSocket);
         if (it == Server::GetInstance()->mConnectionMap.end()) {
             return true;
         }
-        conn = it->second;
         Server::GetInstance()->mConnectionMap.erase(it);
     }
 
-    if (conn == nullptr) {
-        return true;
-    }
-
-    session = conn->session;
+    session = this->session;
     if (session != NULL) {
         userId = session->mUserId;
         std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
@@ -557,16 +574,17 @@ bool Connection::closeConnection(int flag)
     if (userId != -1) {
         ProcessNotifyStateProcessor processor;
         vector<int> friendList = FriendCache::GetInstance()->getFriendList(userId);
-        processor.Notify(conn, friendList, userId, OFFLINE);
+        processor.Notify(this, friendList, userId, OFFLINE);
     }
 
-    // 关闭 socket 并释放资源
+    // 关闭 socket
     close(clientSocket);
     clientSocket = -1;
     if (session != NULL) {
         delete session;
+        this->session = NULL;
     }
-    delete conn;
+    // Connection 由 shared_ptr 自动释放，无需 delete
     return true;
 }
 
