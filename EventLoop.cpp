@@ -42,11 +42,16 @@ void EventLoop::Run()
                 //WakeUp应该单独用于addSocket，可以不用TaskQueue，但是要考虑多线程竞争accept
                 int wakeup;
             	read(mWakeupSocket[1], (char*)&wakeup, sizeof(int));
-                for (int j = 0; j < mTaskQueue.size(); j++) {
-                    Task* task = mTaskQueue.front();
-                    mTaskQueue.pop();
+                std::queue<Task*> localQueue;
+                {
+                    std::lock_guard<std::mutex> lock(mTaskQueueMutex);
+                    localQueue.swap(mTaskQueue);
+                }
+                while (!localQueue.empty()) {
+                    Task* task = localQueue.front();
+                    localQueue.pop();
                     if (task->type == ADD) {
-                        addSocket();//accept
+                        addSocket();
                     }
                     else if (task->type == ERASE) {
                         eraseSocket(task->sockFd);
@@ -232,17 +237,25 @@ void EventLoop::wakeup()
     int wakeup = 1;
     Task *task = new Task;
     task->type = ADD;
-    mTaskQueue.push(task);
+    {
+        std::lock_guard<std::mutex> lock(mTaskQueueMutex);
+        mTaskQueue.push(task);
+    }
 	write(mWakeupSocket[0], &wakeup, sizeof(int));
 }
 
 void EventLoop::doOtherThing()
 {
-    for (int j = 0; j < mTaskQueue.size(); j++) {
-        Task* task = mTaskQueue.front();
-        mTaskQueue.pop();
+    std::queue<Task*> localQueue;
+    {
+        std::lock_guard<std::mutex> lock(mTaskQueueMutex);
+        localQueue.swap(mTaskQueue);
+    }
+    while (!localQueue.empty()) {
+        Task* task = localQueue.front();
+        localQueue.pop();
         if (task->type == ADD) {
-            addSocket();//accept
+            addSocket();
         }
         else if (task->type == ERASE) {
             eraseSocket(task->sockFd);
@@ -268,13 +281,13 @@ bool EventLoop::sendDataAll(int fd, const char* data, int len)
 
 bool EventLoop::sendDataAll(int fd, const std::string& data)
 {
-    //方式1：操作写缓冲区，并触发写事件
-    //方式2：添加Task在do_otherThing中进行将写操作作为任务，写出。
-    //目前没有写缓冲区，所以采用方式2
     Task *task = new Task;
     task->sockFd = fd;
     task->mData = new std::string(data);
     task->type = WRITE;
-    mTaskQueue.push(task);
+    {
+        std::lock_guard<std::mutex> lock(mTaskQueueMutex);
+        mTaskQueue.push(task);
+    }
     return false;
 }

@@ -2,6 +2,7 @@
 #define EVENT_LOOP_H
 
 #include <thread>
+#include <mutex>
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 #include <stdio.h>
@@ -65,6 +66,7 @@ private:
     Server* mServer;
     struct epoll_event events[MAX_EVENTS];
     std::queue<Task*> mTaskQueue;
+    std::mutex mTaskQueueMutex;
 };
 
 #endif
