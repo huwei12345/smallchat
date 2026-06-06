@@ -94,6 +94,12 @@ ChatWindow::ChatWindow(UserInfo info, QWidget *parent) :
 
 ChatWindow::~ChatWindow()
 {
+    for (auto* p : mUnReadMessageList) {
+        delete p;
+    }
+    for (auto* p : mCurrentMessageList) {
+        delete p;
+    }
     delete ui;
 }
 
