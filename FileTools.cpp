@@ -4,28 +4,29 @@
 #include <unistd.h>
 int FileTools::createDirectory(const char *path)
 {
-    if (path == NULL || strlen(path) >= 1000) {
+    if (path == NULL || strlen(path) >= 500) {
         return -1;
     }
     // 分割路径字符串
     char realPath[500];
-    strcpy(realPath, path);
     if (path[0] != '/' && path[0] != '.') {
-        sprintf(realPath, "/home/huwei/ftp/%s", path);
-        printf("realPath = %s\n", realPath);
+        snprintf(realPath, sizeof(realPath), "/home/huwei/ftp/%s", path);
+    } else {
+        snprintf(realPath, sizeof(realPath), "%s", path);
     }
 
     printf("path = %s\n", realPath);
-    char pathStr[1000];
-    char pathSub[1000];
+    char pathStr[500];
+    char pathSub[500];
     struct stat st;
-    memset(pathSub, 0, 1000);
+    pathSub[0] = '\0';
     strcpy(pathStr, realPath);
     char *token = pathStr;
     char *saveptr = NULL;
     // 第一次调用 strtok_r，传入完整字符串
     token = strtok_r(token, "/", &saveptr);
-    sprintf(pathSub, "/%s%s/", pathSub, token);
+    if (token == NULL) return -1;
+    snprintf(pathSub, sizeof(pathSub), "/%s/", token);
     printf("pathSub = %s\n", pathSub);
     while (token != NULL) {
         // 接下来调用 strtok_r，传入 NULL
@@ -34,7 +35,8 @@ int FileTools::createDirectory(const char *path)
         if (token == NULL) {
             break;
         }
-        sprintf(pathSub, "%s%s/", pathSub, token);
+        size_t curLen = strlen(pathSub);
+        snprintf(pathSub + curLen, sizeof(pathSub) - curLen, "%s/", token);
         // //检查目录是否已存在
         if (stat(pathSub, &st) == -1) {
             // 如果目录不存在，创建它
@@ -55,10 +57,10 @@ int FileTools::checkFile(const char *path)
         return -1;
     }
     char realPath[500];
-    strcpy(realPath, path);
     if (path[0] != '/' && path[0] != '.') {
-        sprintf(realPath, "/home/huwei/ftp/%s", path);
-        printf("realPath = %s\n", realPath);
+        snprintf(realPath, sizeof(realPath), "/home/huwei/ftp/%s", path);
+    } else {
+        snprintf(realPath, sizeof(realPath), "%s", path);
     }
     struct stat st;
     if (stat(realPath, &st) == -1) {
@@ -122,10 +124,10 @@ int FileTools::eraseFile(const char *path) {
         return -1;
     }
     char realPath[500];
-    strcpy(realPath, path);
     if (path[0] != '/' && path[0] != '.') {
-        sprintf(realPath, "/home/huwei/ftp/%s", path);
-        printf("realPath = %s\n", realPath);
+        snprintf(realPath, sizeof(realPath), "/home/huwei/ftp/%s", path);
+    } else {
+        snprintf(realPath, sizeof(realPath), "%s", path);
     }
     struct stat st;
     if (stat(realPath, &st) == -1) {
@@ -146,24 +148,31 @@ int FileTools::eraseFile(const char *path) {
 }
 bool FileTools::moveFile(const char *src, const char *dst)
 {
+    if (src == NULL || dst == NULL) {
+        return false;
+    }
     char realSrc[500];
     char realDst[500];
-    strcpy(realSrc, src);
+    realSrc[0] = '\0';
+    realDst[0] = '\0';
     if (src[0] != '/' && src[0] != '.') {
-        sprintf(realSrc, "/home/huwei/ftp/%s", src);
-        printf("realSrc = %s\n", realSrc);
+        snprintf(realSrc, sizeof(realSrc), "/home/huwei/ftp/%s", src);
+    } else {
+        snprintf(realSrc, sizeof(realSrc), "%s", src);
     }
     if (dst[0] != '/' && dst[0] != '.') {
-        sprintf(realDst, "/home/huwei/ftp/%s", dst);
-        printf("realDst = %s\n", realDst);
+        snprintf(realDst, sizeof(realDst), "/home/huwei/ftp/%s", dst);
+    } else {
+        snprintf(realDst, sizeof(realDst), "%s", dst);
     }
     // 使用rename函数移动文件
     if (rename(realSrc, realDst) == 0) {
         printf("File moved successfully %s\n", realDst);
+        return true;
     } else {
         printf("Error moving file %s\n", realDst);
+        return false;
     }
-    return false;
 }
 
 // int main() {
