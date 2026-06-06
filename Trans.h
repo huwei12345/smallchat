@@ -78,7 +78,7 @@ int receive(int fd, Response& rsp) {
 	int len = 0;
 	memcpy(&len, ans.c_str(), 4);
 	len = ntohl(len);
-	if (len - 4 <= 0) {
+	if (len - 4 <= 0 || len > MAX_REQUEST_SIZE) {
 		return -1;
 	}
 	string other;
@@ -114,7 +114,7 @@ int receive(int fd, Request& req) {
 	int len = 0;
 	memcpy(&len, ans.c_str(), 4);
 	len = ntohl(len);
-	if (len - 4 <= 0) {
+	if (len - 4 <= 0 || len > MAX_REQUEST_SIZE) {
 		return -1;
 	}
 	string other;

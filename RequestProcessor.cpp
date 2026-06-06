@@ -101,6 +101,11 @@ bool LoginProcessor::Login(const std::string& username, const std::string& passw
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
+        st->close();
+        delete st;
+        delete state2;
+        MysqlPool::GetInstance()->releaseConncetion(conn);
+        return false;
     }
     st->close();
     delete st;
@@ -133,6 +138,22 @@ void LoginProcessor::Exec(Connection* conn, Request &request, Response& response
         response.mData = info.loginserial();
         //conn->mUserId = info.user_id;
         //conn->mLoginState = ;
+        // 清理旧 session（重复登录场景）
+        {
+            std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
+            auto it = Server::GetInstance()->mUserSessionMap.find(info.user_id);
+            if (it != Server::GetInstance()->mUserSessionMap.end()) {
+                Session* oldSession = it->second;
+                if (oldSession) {
+                    std::shared_ptr<Connection> oldConn = oldSession->mConn.lock();
+                    if (oldConn) {
+                        oldConn->session = nullptr;
+                    }
+                    delete oldSession;
+                }
+                Server::GetInstance()->mUserSessionMap.erase(it);
+            }
+        }
         Session* session = new Session;
         session->mConn = conn->shared_from_this();
         conn->session = session;
@@ -614,6 +635,7 @@ bool SearchAllFriendProcessor::bindAllFriendState(Connection *conn, Request &req
 {
     for (auto &u : friendList) {
         FriendCache::GetInstance()->addFriend(request.mUserId, u.user_id);
+        FriendCache::GetInstance()->addFriend(u.user_id, request.mUserId);
         //大致获取其他好友状态，如果好友session在，就认为在线。在不在线其实不重要
         //就是个显示，在好友临界状态。 
         //刚上线，后续会收到好友的通知。 如果是通知已经发完了，那说明server端就已经有session了。不会错误 
@@ -1379,6 +1401,9 @@ bool StoreFileProcessor::StoreFile(Request &request, FileInfo& fileObject)
 {
     bool ret = checkDisk(fileObject);
     bool ret2 = checkUserLimit(fileObject);
+    if (!ret || !ret2) {
+        return false;
+    }
     printf("fileObject.fileType = %s\n", fileObject.fileType.c_str());
     if (fileObject.fileType == "dir") {
         printf("StoreFile Dir:\n");
@@ -2288,6 +2313,10 @@ bool ProcessFindSpaceFileTreeProcessor::FindSpaceFileTree(const Request &request
     FileInfo info;
     int user_id = 0;
     stream >> user_id;
+    // 使用请求中的认证 userId，防止越权访问
+    if (user_id != request.mUserId) {
+        return false;
+    }
     
     sql::Connection* conn = MysqlPool::GetInstance()->getConnection();
     if (conn == NULL) {
@@ -2444,9 +2473,10 @@ bool ProcessMoveFileProcessor::SearchFileInfo(FileInfo &info)
         return false;
     }
 	sql::PreparedStatement* state2 = conn->prepareStatement(R"(select file_path, item_name from user_storage
-        where storage_id = ?;
+        where storage_id = ? and user_id = ?;
     )");
     state2->setInt(1, info.id);
+    state2->setInt(2, request.mUserId);
     sql::ResultSet *st = state2->executeQuery();
     try {
         while (st->next()) {
@@ -2479,13 +2509,14 @@ bool ProcessMoveFileProcessor::MoveFile(const Request &request, FileInfo &info)
         std::cerr << "Failed to get database connection." << std::endl;
         return false;
     }
-    //更新路径或名字
+    //更新路径或名字（校验 owner）
     sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
-        update user_storage set file_path = ?, item_name = ? where storage_id = ?;
+        update user_storage set file_path = ?, item_name = ? where storage_id = ? and user_id = ?;
     )");
     pstmt->setString(1, info.serverPath);
     pstmt->setString(2, info.serverFileName);
     pstmt->setInt(3, info.id);
+    pstmt->setInt(4, request.mUserId);
     try {
         pstmt->execute();
         pstmt->close();
@@ -2537,11 +2568,12 @@ bool ProcessEraseFileProcessor::EraseFile(const Request &request, FileInfo &info
         std::cerr << "Failed to get database connection." << std::endl;
         return false;
     }
-    //级联删除
+    //级联删除（校验 owner）
     sql::PreparedStatement* pstmt = conn->prepareStatement(R"(
-        DELETE FROM user_storage where storage_id = ?
+        DELETE FROM user_storage where storage_id = ? and user_id = ?
     )");
     pstmt->setInt(1, info.id);
+    pstmt->setInt(2, request.mUserId);
     try {
         pstmt->execute();
         pstmt->close();

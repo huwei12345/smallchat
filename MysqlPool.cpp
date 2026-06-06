@@ -17,9 +17,11 @@ MysqlPool::~MysqlPool()
 {
     mStoping = true;
     pthread_cond_broadcast(&mCond);
-    for (int i = 0; i < mCapacity; i++) {
+    for (int i = 0; i < (int)mConnectionPool.size(); i++) {
         mConnectionPool[i]->close();
+        delete mConnectionPool[i];
     }
+    mConnectionPool.clear();
     pthread_cond_destroy(&mCond);
 }
 
@@ -30,6 +32,15 @@ bool MysqlPool::init(std::string host, std::string user, std::string passwd)
         if (!conn->isValid()) {
             printf("sql init conn %d failure\n", i);
             LOG_ERROR("mysql connection {} init failed", i);
+            // 清理已创建的连接
+            for (int j = 0; j < (int)mConnectionPool.size(); j++) {
+                mConnectionPool[j]->close();
+                delete mConnectionPool[j];
+            }
+            mConnectionPool.clear();
+            while (!mIdleConnectionQue.empty()) mIdleConnectionQue.pop();
+            mIdleSize = 0;
+            delete conn;
             return false;
         }
         else {
