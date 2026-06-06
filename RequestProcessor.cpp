@@ -1100,7 +1100,8 @@ bool ProcessFriendRequestProcessor::ProcessFriendRequest(Request & request, Frie
     if (conn == NULL) {
         return false;
     }
-    //trans
+    //事务：update + delete 必须原子执行
+    conn->setAutoCommit(false);
     sql::PreparedStatement* state2 = conn->prepareStatement(R"(update friendships set status = ?
         where user1_id = ? and user2_id = ?;)");
     state2->setInt(1, fr.mAccept ? 2 : 3);
@@ -1114,9 +1115,10 @@ bool ProcessFriendRequestProcessor::ProcessFriendRequest(Request & request, Frie
     try {
         state2->executeUpdate();
         state3->executeUpdate();
+        conn->commit();
     }
     catch(sql::SQLException& e) {
-        //rollback
+        conn->rollback();
         cout << "# ERR " << e.what();
         cout << " Err Code: " << e.getErrorCode();
         cout << " SQLState: " << e.getSQLState() << std::endl;
@@ -1124,9 +1126,11 @@ bool ProcessFriendRequestProcessor::ProcessFriendRequest(Request & request, Frie
         delete state2;
         state3->close();
         delete state3;
+        conn->setAutoCommit(true);
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
+    conn->setAutoCommit(true);
     state2->close();
     delete state2;
     state3->close();
@@ -1422,31 +1426,16 @@ bool StoreFileProcessor::StoreFileSQL(Request &request, FileInfo &fileInfo)
         return false;
     }
     sql::PreparedStatement* pstmt = nullptr;
-    if (fileInfo.id != 0) {
-    // Prepare SQL statement to insert into user_storage table
-        pstmt = conn->prepareStatement(R"(
-            INSERT INTO user_storage(user_id, parent_id, item_name, item_type, file_path, expired_time) 
-            VALUES(?, ?, ?, ?, ?, ?);
-        )");
-        pstmt->setInt(1, fileInfo.send_id);
-        pstmt->setInt(2, fileInfo.parentId);
-        pstmt->setString(3, fileInfo.serverFileName);
-        pstmt->setString(4, fileInfo.fileType);
-        pstmt->setString(5, fileInfo.serverPath);
-        pstmt->setInt(6, fileInfo.expiredTime);
-    }
-    else {
-        pstmt = conn->prepareStatement(R"(
-            INSERT INTO user_storage(user_id, parent_id, item_name, item_type, file_path, expired_time) 
-            VALUES(?, ?, ?, ?, ?, ?);
-        )");
-        pstmt->setInt(1, fileInfo.send_id);
-        pstmt->setInt(2, fileInfo.parentId);
-        pstmt->setString(3, fileInfo.serverFileName);
-        pstmt->setString(4, fileInfo.fileType);
-        pstmt->setString(5, fileInfo.serverPath);
-        pstmt->setInt(6, fileInfo.expiredTime);
-    }
+    pstmt = conn->prepareStatement(R"(
+        INSERT INTO user_storage(user_id, parent_id, item_name, item_type, file_path, expired_time)
+        VALUES(?, ?, ?, ?, ?, ?);
+    )");
+    pstmt->setInt(1, fileInfo.send_id);
+    pstmt->setInt(2, fileInfo.parentId);
+    pstmt->setString(3, fileInfo.serverFileName);
+    pstmt->setString(4, fileInfo.fileType);
+    pstmt->setString(5, fileInfo.serverPath);
+    pstmt->setInt(6, fileInfo.expiredTime);
     try {
         pstmt->execute();
         pstmt->close();

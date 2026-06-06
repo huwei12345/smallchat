@@ -425,14 +425,13 @@ namespace net
 	
     bool MyProtocolStream::getBool(bool &c)
     {
-        if (m_pos + sizeof(bool) > m_str.length())
+        if (m_pos + sizeof(char) > m_str.length())
             return false;
-        char x = 0;
-		x = m_str[m_pos];
-		c = x == 1 ? true : false;
-        m_pos += sizeof(bool);
+        char x = m_str[m_pos];
+        c = x == 1 ? true : false;
+        m_pos += sizeof(char);
         return true;
-	}
+    }
 
     size_t MyProtocolStream::getAll(char *szBuffer, size_t iLen) const
     {

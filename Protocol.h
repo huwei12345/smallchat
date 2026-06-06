@@ -361,6 +361,7 @@ public:
 
 class FriendRequest {
 public:
+    FriendRequest() : reciver_id(0), sender_id(0), state(false), mAccept(false) {}
     int reciver_id;
     int sender_id;
     bool state;
@@ -372,6 +373,7 @@ public:
 
 class GroupJoinRequest {
 public:
+    GroupJoinRequest() : user_id(0), sex(false), age(0), groupId(0), mAccept(false) {}
     int user_id;
     std::string username;
     std::string email;
@@ -392,6 +394,7 @@ public:
 
 class GroupInfo {
 public:
+    GroupInfo() : id(0), admin_id(0), confirmId(0) {}
     int id;
     int admin_id;
     std::string gtype;

@@ -273,6 +273,16 @@ Server::~Server() {
     if (mHeartbeatThread.joinable()) {
         mHeartbeatThread.join();
     }
+    for (auto* loop : mEvLoopList) {
+        loop->mRunning = false;
+        delete loop;
+    }
+    mEvLoopList.clear();
+    delete mMainEventLoop;
+    for (int i = 0; i < 100; i++) {
+        delete requestProcessor[i];
+        requestProcessor[i] = nullptr;
+    }
 }
 
 void runx(Server* server) {

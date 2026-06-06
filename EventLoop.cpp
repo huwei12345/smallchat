@@ -20,6 +20,16 @@ EventLoop::EventLoop(Server *server, int serverFd, int index)
         printf("EventLoop: createEpoll failed\n");
     }
     mServerSocket = serverFd;
+    mWakeupSocket[0] = -1;
+    mWakeupSocket[1] = -1;
+    mThread = nullptr;
+}
+
+EventLoop::~EventLoop()
+{
+    if (mWakeupSocket[0] >= 0) close(mWakeupSocket[0]);
+    if (mWakeupSocket[1] >= 0) close(mWakeupSocket[1]);
+    if (mEpollFd >= 0) close(mEpollFd);
 }
 int EventLoop::createEpoll()
 {

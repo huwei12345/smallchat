@@ -28,6 +28,7 @@ class EventLoop {
 public:
     EventLoop();
     EventLoop(Server *server, int serverFd, int index = -1);
+    ~EventLoop();
     enum TaskType {
         ADD,
         ERASE,
