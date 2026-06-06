@@ -41,7 +41,7 @@ bool SetTime::setTime(char *temptime)
     _timep = mktime(&_tm);
     _tv.tv_sec = _timep;
     _tv.tv_usec = 0;
-    if(settimeofday(&_tv, (struct timezone*)8) < 0) {
+    if(settimeofday(&_tv, NULL) < 0) {
         printf("!!!SetTime::SetTime Error\n");
         return false;
     }
@@ -60,7 +60,7 @@ bool SetTime::setSpeechTime(unsigned char *temptime)
     _timep = mktime(&_tm);
     _tv.tv_sec = _timep;
     _tv.tv_usec = 0;
-    if(settimeofday(&_tv, (struct timezone*)8) < 0) {
+    if(settimeofday(&_tv, NULL) < 0) {
         printf("!!!SetTime::SetTime Error\n");
         return false;
     }
@@ -69,11 +69,11 @@ bool SetTime::setSpeechTime(unsigned char *temptime)
 std::string SetTime::getTime()
 {
     time_t _now;
-    struct tm *_timenow;
+    struct tm _timenow;
     time(&_now);
-    _timenow =  localtime(&_now);
+    localtime_r(&_now, &_timenow);
     char temp[20] = {0};
-    snprintf(temp, 16, "%04d-%02d%02d-%02d_%02d", _timenow->tm_year + 1900, _timenow->tm_mon + 1, _timenow->tm_mday, _timenow->tm_hour, _timenow->tm_min);
+    snprintf(temp, 16, "%04d-%02d%02d-%02d_%02d", _timenow.tm_year + 1900, _timenow.tm_mon + 1, _timenow.tm_mday, _timenow.tm_hour, _timenow.tm_min);
     std::string tempstring;
     tempstring.assign(temp, 0, 15);
     return tempstring;
@@ -81,20 +81,20 @@ std::string SetTime::getTime()
 int SetTime::getUTCTime()
 {
     time_t _now;
-    struct tm *_timenow;
+    struct tm _timenow;
     time(&_now);
-    _timenow =  gmtime(&_now);
-	time_t utc = mktime(_timenow);
+    gmtime_r(&_now, &_timenow);
+	time_t utc = mktime(&_timenow);
     return (int)utc;
 }
 int SetTime::getTime2Sec()
 {
 	for(int i=0;i<30;i++){
 		struct timeval _gettv;
-		struct tm *_timenow;
+		struct tm _timenow;
 		gettimeofday(&_gettv,NULL);
-		_timenow =  localtime(&_gettv.tv_sec);
-		time_t utc = mktime(_timenow);
+		localtime_r(&_gettv.tv_sec, &_timenow);
+		time_t utc = mktime(&_timenow);
 		if(utc<0){
 			sleep(1);
 		}else{
@@ -106,10 +106,10 @@ int SetTime::getTime2Sec()
 int SetTime::getHour()
 {
 	time_t _now;
-	struct tm *_timenow;
+	struct tm _timenow;
 	time(&_now);
-	_timenow =  localtime(&_now);
-	return _timenow->tm_hour;
+	localtime_r(&_now, &_timenow);
+	return _timenow.tm_hour;
 }
 long SetTime::GetSec(){
 	struct timeval _gettv;
@@ -124,17 +124,10 @@ long SetTime::GetSecWithValue(struct timeval _gettv) {
 
 std::string SetTime::getAccurateTime4SameTime(struct timeval _gettv)
 {
-	//struct timeval _gettv;
-	struct tm *_timenow;
-	/*gettimeofday(&_gettv,NULL);
-	_gettv.tv_usec += 4*index*4900;
-	if(_gettv.tv_usec >= 1000000) {
-		(_gettv.tv_sec)++;
-		_gettv.tv_usec -= 1000000;
-	}*/
-	_timenow =  localtime(&_gettv.tv_sec);
+	struct tm _timenow;
+	localtime_r(&_gettv.tv_sec, &_timenow);
 	char temp[30] = {0};
-	snprintf(temp, 24, "%04d-%02d-%02d %02d:%02d:%02d %03ld", _timenow->tm_year + 1900, _timenow->tm_mon + 1, _timenow->tm_mday, _timenow->tm_hour, _timenow->tm_min, _timenow->tm_sec,_gettv.tv_usec/1000);
+	snprintf(temp, 24, "%04d-%02d-%02d %02d:%02d:%02d %03ld", _timenow.tm_year + 1900, _timenow.tm_mon + 1, _timenow.tm_mday, _timenow.tm_hour, _timenow.tm_min, _timenow.tm_sec,_gettv.tv_usec/1000);
 	std::string tempstring;
 	tempstring.assign(temp, 0, 24);
 	return tempstring;
@@ -144,10 +137,10 @@ std::string SetTime::getAccurateTime4SameTime(struct timeval _gettv)
 unsigned int SetTime::getAccurateTimeUsc()
 {
 	struct timeval _gettv;
-	struct tm *_timenow;
+	struct tm _timenow;
 	gettimeofday(&_gettv,NULL);
-	_timenow =  localtime(&_gettv.tv_sec);
-	int uscTime = (_timenow->tm_sec * 1000000) + _gettv.tv_usec;
+	localtime_r(&_gettv.tv_sec, &_timenow);
+	int uscTime = (_timenow.tm_sec * 1000000) + _gettv.tv_usec;
 	//char temp[30] = {0};
 	//snprintf(temp, 27, "%04d-%02d-%02d %02d:%02d:%02d %06ld", _timenow->tm_year + 1900, _timenow->tm_mon + 1, _timenow->tm_mday, _timenow->tm_hour, _timenow->tm_min, _timenow->tm_sec,_gettv.tv_usec);
 	//std::string tempstring;
@@ -159,12 +152,11 @@ unsigned int SetTime::getAccurateTimeUsc()
 std::string SetTime::getAccurateTime()
 {
 	struct timeval _gettv;
-	struct tm *_timenow;
+	struct tm _timenow;
 	gettimeofday(&_gettv,NULL);
-	_timenow =  localtime(&_gettv.tv_sec);
+	localtime_r(&_gettv.tv_sec, &_timenow);
 	char temp[30] = {0};
-	//snprintf(temp, 24, "%04d-%02d-%02d %02d:%02d:%02d %03ld", _timenow->tm_year + 1900, _timenow->tm_mon + 1, _timenow->tm_mday, _timenow->tm_hour, _timenow->tm_min, _timenow->tm_sec,_gettv.tv_usec/1000);
-	snprintf(temp, 24, "%04d-%02d-%02d %02d:%02d:%02d", _timenow->tm_year + 1900, _timenow->tm_mon + 1, _timenow->tm_mday, _timenow->tm_hour, _timenow->tm_min, _timenow->tm_sec);
+	snprintf(temp, 24, "%04d-%02d-%02d %02d:%02d:%02d", _timenow.tm_year + 1900, _timenow.tm_mon + 1, _timenow.tm_mday, _timenow.tm_hour, _timenow.tm_min, _timenow.tm_sec);
 	std::string tempstring;
 	tempstring.assign(temp, 0, 24);
 	return tempstring;
@@ -172,11 +164,11 @@ std::string SetTime::getAccurateTime()
 std::string SetTime::getAccurateTimeFileName()
 {
 	struct timeval _gettv;
-	struct tm *_timenow;
+	struct tm _timenow;
 	gettimeofday(&_gettv,NULL);
-	_timenow =  localtime(&_gettv.tv_sec);
+	localtime_r(&_gettv.tv_sec, &_timenow);
 	char temp[30] = {0};
-	snprintf(temp, 24, "%04d-%02d-%02d_%02d-%02d-%02d_%03ld", _timenow->tm_year + 1900, _timenow->tm_mon + 1, _timenow->tm_mday, _timenow->tm_hour, _timenow->tm_min, _timenow->tm_sec,_gettv.tv_usec/1000);
+	snprintf(temp, 24, "%04d-%02d-%02d_%02d-%02d-%02d_%03ld", _timenow.tm_year + 1900, _timenow.tm_mon + 1, _timenow.tm_mday, _timenow.tm_hour, _timenow.tm_min, _timenow.tm_sec,_gettv.tv_usec/1000);
 	std::string tempstring;
 	tempstring.assign(temp, 0, 24);
 	return tempstring;
