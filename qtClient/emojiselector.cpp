@@ -285,6 +285,7 @@ QString EmojiSelector::extractContentWithImages(QTextEdit *textEdit) {
 int EmojiSelector::cxplain(QTextEdit *plaintest, QTextEdit *plain, QString context) {
     QString text = extractContentWithImages(plaintest);
     showContentWithEmoji(plain, text);
+    return 0;
 }
 
 int EmojiSelector::explain(QTextEdit *plain, QString context)

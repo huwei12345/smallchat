@@ -68,8 +68,8 @@ public slots:
 private:
     Ui::ChatWindow *ui;
     UserInfo mInfo;
-    EmojiCoder* mEmojiCoder;
-    UserInfo* clientInfo;
+    EmojiCoder* mEmojiCoder = nullptr;
+    UserInfo* clientInfo = nullptr;
     EmojiSelector *mEmojiSelector;
     ChatViewDelegate* mChatViewDelegate;
     QStandardItemModel *mChatListModel;

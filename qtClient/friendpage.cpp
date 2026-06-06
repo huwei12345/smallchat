@@ -420,21 +420,17 @@ void FriendPage::findAllGroupSuccess(Response response)
 
 void FriendPage::initFriendState() {
     for (auto &person : mFriendMap) {
+        if (!mFriendButton.count(person.second.user_id) || !mPhotoMap.count(person.second.user_id))
+            continue;
         QToolButton* button = mFriendButton[person.second.user_id];
+        QIcon *icon = mPhotoMap[person.second.user_id];
+        if (!icon) continue;
         if (person.second.status == SessionState::ONLINE) {
-            QIcon *icon = mPhotoMap[person.second.user_id];
             QPixmap pix = icon->pixmap(100, 100, QIcon::Normal);
             button->setIcon(pix);
             button->setIconSize(pix.size());
         }
-        else if (person.second.status == SessionState::OFFLINE) {
-            QIcon *icon = mPhotoMap[person.second.user_id];
-            QPixmap pix = icon->pixmap(100, 100, QIcon::Disabled);
-            button->setIcon(pix);
-            button->setIconSize(pix.size());
-        }
         else {
-            QIcon *icon = mPhotoMap[person.second.user_id];
             QPixmap pix = icon->pixmap(100, 100, QIcon::Disabled);
             button->setIcon(pix);
             button->setIconSize(pix.size());
@@ -1044,14 +1040,16 @@ void FriendPage::SendFileSuccess(Response response)
             emit StoreFileSuccess(response);
         }
         else if (info.serviceType == SENDTOPERSON) {
-            mChatWindowMap[info.recv_id]->emitSendFiletoPerson(info);
+            if (mChatWindowMap.count(info.recv_id)) {
+                mChatWindowMap[info.recv_id]->emitSendFiletoPerson(info);
+            }
         }
         else {
-            QMessageBox::information(this, "提示", "SendFile %s Over");
+            QMessageBox::information(this, "提示", "SendFile Over");
         }
     }
     else {
-        QMessageBox::information(this, "提示", "SendFile %s Send Failure");
+        QMessageBox::information(this, "提示", "SendFile Send Failure");
     }
     //TODO:
     //FtpSender::GetInstance()->removeFile(info);

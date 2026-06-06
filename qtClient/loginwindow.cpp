@@ -282,48 +282,41 @@ bool LoginWindow::initTrayIcon(QApplication* app) {
     trayIcon->show();
 
     // 响应菜单项的槽函数
-    QObject::connect(showAction, &QAction::triggered, [&](){
-        // 执行显示主窗口的操作
-        // 例如：mainwindow->show();
-        mCurWidget->showNormal(); // 显示正常窗口
-        mCurWidget->activateWindow(); // 激活窗口
+    QObject::connect(showAction, &QAction::triggered, [this](){
+        mCurWidget->showNormal();
+        mCurWidget->activateWindow();
     });
 
-    QObject::connect(quitAction, &QAction::triggered, [&](){
-        // 执行退出应用程序的操作
+    QObject::connect(quitAction, &QAction::triggered, [](){
         QApplication::quit();
     });
 
     // 当用户双击系统托盘图标时，显示程序界面
-    QObject::connect(trayIcon, &QSystemTrayIcon::activated, [&](QSystemTrayIcon::ActivationReason reason) {
+    QObject::connect(mTrayIcon, &QSystemTrayIcon::activated, [this](QSystemTrayIcon::ActivationReason reason) {
         if (reason == QSystemTrayIcon::DoubleClick) {
-            mCurWidget->showNormal(); // 显示正常窗口
-            mCurWidget->activateWindow(); // 激活窗口
+            mCurWidget->showNormal();
+            mCurWidget->activateWindow();
         }
     });
 
     // 当窗口要被最小化时，隐藏窗口并显示托盘图标
-    QObject::connect(this, &QWidget::windowIconChanged, [&](const QIcon &icon){
+    QObject::connect(this, &QWidget::windowIconChanged, [this](const QIcon &icon){
         if (icon.isNull()) {
-            trayIcon->show();
+            mTrayIcon->show();
             mCurWidget->hide();
             this->hide();
         }
     });
     // 当点击托盘图标时，恢复窗口
-    QObject::connect(trayIcon, &QSystemTrayIcon::activated, [&](QSystemTrayIcon::ActivationReason reason) {
+    QObject::connect(mTrayIcon, &QSystemTrayIcon::activated, [this](QSystemTrayIcon::ActivationReason reason) {
         if (reason == QSystemTrayIcon::Trigger) {
-            // 鼠标单击托盘图标
-            mCurWidget->showNormal(); // 或 window.show();
+            mCurWidget->showNormal();
             mCurWidget->activateWindow();
         } else if (reason == QSystemTrayIcon::Context) {
-            // 鼠标右键点击托盘图标
             qDebug() << "Tray icon context menu activated";
         } else if (reason == QSystemTrayIcon::MiddleClick) {
-            // 鼠标中键点击托盘图标
             qDebug() << "Tray icon middle clicked";
         } else if (reason == QSystemTrayIcon::Unknown) {
-            // 其他原因
             qDebug() << "Unknown reason for tray icon activation";
         }
     });

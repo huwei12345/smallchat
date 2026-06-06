@@ -47,7 +47,9 @@ ChatWindow::ChatWindow(QWidget *parent) :
     ui->listView->setDefaultDropAction(Qt::CopyAction); //设置默认的拖放操作为复制操作。
 
     connect(this, &ChatWindow::confirmMessage, ClientNetWork::GetInstance(), &ClientNetWork::confirmMessage);
-    connect(this, &ChatWindow::resetFriendNewMessage, (FriendPage*)this->parent(), &FriendPage::resetFriendNewMessage);
+    if (this->parent()) {
+        connect(this, &ChatWindow::resetFriendNewMessage, (FriendPage*)this->parent(), &FriendPage::resetFriendNewMessage);
+    }
 
     //这两个应该放在网络线程（通用 通信确认业务），但同时，发送完文件也应该通知聊天框，看具体业务。
     //connect(FtpSender::GetInstance(), &FtpSender::ftpFileSendOver, this, &ChatWindow::ftpSendFileSuccess);
