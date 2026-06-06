@@ -402,16 +402,12 @@ bool Connection::processRead()
         return false;
     }
 
+    int functionCode = request->mFunctionCode;
     response = new Response;
-    requestProcessor[request->mFunctionCode]->Exec(this, *request, *response);
-    delete request; // Clean up request after use
-    if (!response) {
-        // Clean up response if necessary
-        return false;
-    }
+    requestProcessor[functionCode]->Exec(this, *request, *response);
+    delete request;
 
-    if (request->mFunctionCode == FunctionCode::ProcessMessageRead) {
-        //某些请求不返回相应的
+    if (functionCode == FunctionCode::ProcessMessageRead) {
         delete response;
         return true;
     }
