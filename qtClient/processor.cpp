@@ -162,7 +162,7 @@ bool Processor::AddFriend(int friendId) {
     std::string data;
     MyProtocolStream stream(data);
     stream << friendId;
-    Request req(1, FunctionCode::FindGroup, 3, 4, 5, data, user_id);
+    Request req(1, FunctionCode::AddFriend, 3, 4, 5, data, user_id);
     string str = req.serial();
     QByteArray array(str.c_str(),str.size());
     int r = clientSocket->SendPacket(array);
