@@ -1,5 +1,6 @@
 #ifndef MYSQL_POOL_H
 #define MYSQL_POOL_H
+#include <atomic>
 #include <vector>
 #include <queue>
 #include <string>
@@ -22,7 +23,7 @@ public:
     void releaseConncetion(sql::Connection *conn);
 
 private:
-    bool mStoping;
+    std::atomic<bool> mStoping;
     int mFlag;
     int mCapacity;
     int mIdleSize;

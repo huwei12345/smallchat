@@ -6,7 +6,7 @@ MysqlPool *MysqlPool::GetInstance()
     return &pool;
 }
 
-MysqlPool::MysqlPool(int handleNumber, int flag) : mCapacity(handleNumber), mFlag(flag)
+MysqlPool::MysqlPool(int handleNumber, int flag) : mCapacity(handleNumber), mFlag(flag), mIdleSize(0), mStoping(false)
 {
     mDriver = sql::mysql::get_driver_instance();
 }
@@ -39,18 +39,18 @@ bool MysqlPool::init(std::string host, std::string user, std::string passwd)
 }
 
 sql::Connection* MysqlPool::getConnection() {
-    if (!mIdleConnectionQue.empty() && !mStoping) {
-        mMutex.Lock();
-        sql::Connection *conn = NULL;
-        if (!mIdleConnectionQue.empty()) {
-            conn = mIdleConnectionQue.front();
-            mIdleConnectionQue.pop();
-            mIdleSize--;
-        }
-        mMutex.Unlock();
-        return conn;
+    if (mStoping) {
+        return NULL;
     }
-    return NULL;
+    mMutex.Lock();
+    sql::Connection *conn = NULL;
+    if (!mIdleConnectionQue.empty()) {
+        conn = mIdleConnectionQue.front();
+        mIdleConnectionQue.pop();
+        mIdleSize--;
+    }
+    mMutex.Unlock();
+    return conn;
 }
 
 void MysqlPool::releaseConncetion(sql::Connection* conn) {
