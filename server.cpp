@@ -286,31 +286,21 @@ static void heartbeatCheckThread(Server* server) {
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(checkInterval));
         std::time_t now = std::time(nullptr);
-        std::vector<int> timeoutFds;
+        std::vector<std::shared_ptr<Connection>> timeoutConns;
 
         {
             std::lock_guard<std::mutex> lock(server->mConnectionMapMutex);
             for (auto& pair : server->mConnectionMap) {
                 if (pair.second && (now - pair.second->lastActiveTime) > timeout) {
-                    timeoutFds.push_back(pair.first);
+                    timeoutConns.push_back(pair.second);
                 }
             }
         }
 
-        for (int fd : timeoutFds) {
-            printf("heartbeat timeout, closing connection fd=%d\n", fd);
-            LOG_WARN("heartbeat timeout, closing connection fd={}", fd);
-            std::shared_ptr<Connection> conn;
-            {
-                std::lock_guard<std::mutex> lock(server->mConnectionMapMutex);
-                auto it = server->mConnectionMap.find(fd);
-                if (it != server->mConnectionMap.end()) {
-                    conn = it->second;
-                }
-            }
-            if (conn) {
-                conn->closeConnection();
-            }
+        for (auto& conn : timeoutConns) {
+            printf("heartbeat timeout, closing connection fd=%d\n", conn->mSocket);
+            LOG_WARN("heartbeat timeout, closing connection fd={}", conn->mSocket);
+            conn->closeConnection();
         }
     }
 }
