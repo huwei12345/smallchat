@@ -1206,6 +1206,7 @@ bool CreateGroupProcessor::CreateGroup(Request &request, GroupInfo& info)
         pstmt->execute();
         pstmt->close();
         delete pstmt;
+        pstmt = nullptr;
         sql::PreparedStatement* state3 = conn->prepareStatement("SELECT LAST_INSERT_ID();");
         sql::ResultSet* rs = state3->executeQuery();
         int autoIncKeyFromFunc = -1;
@@ -1233,8 +1234,10 @@ bool CreateGroupProcessor::CreateGroup(Request &request, GroupInfo& info)
         std::cerr << "SQL error: " << e.what() << std::endl;
         std::cerr << "Error code: " << e.getErrorCode() << std::endl;
         std::cerr << "SQLState: " << e.getSQLState() << std::endl;
-        pstmt->close();
-        delete pstmt;
+        if (pstmt) {
+            pstmt->close();
+            delete pstmt;
+        }
         MysqlPool::GetInstance()->releaseConncetion(conn);
         return false;
     }
