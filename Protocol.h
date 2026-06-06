@@ -526,7 +526,7 @@ public:
         return ans;
     }
 
-    void deserial(std::string req) {
+    void deserial(const std::string& req) {
         MyProtocolStream stream(req, PROTOCOL_PACK);
         stream >> mType >> mFunctionCode >> mFlag
           >> mDirection >> mTimeStamp >> mUserId >> mSecret >> mData;
@@ -606,7 +606,7 @@ public:
         return ans;
     }
 
-    void deserial(std::string req) {
+    void deserial(const std::string& req) {
         MyProtocolStream stream(req, PROTOCOL_PACK);
         stream >> mType >> mFunctionCode >> mFlag
         >> mDirection >> mTimeStamp >> mCode >> mUserId >> mSecret >> mhasData;

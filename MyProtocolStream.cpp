@@ -1,5 +1,4 @@
 #include "MyProtocolStream.h"
-#include "MyProtocolStream.h"
 #include <string.h>
 #include <arpa/inet.h>
 #include <cmath>

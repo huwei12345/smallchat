@@ -380,7 +380,7 @@ int Server::createListener()
         close(mServerSocket);
         return -1;
     }
-    if (listen(mServerSocket, 5) < 0) {
+    if (listen(mServerSocket, SOMAXCONN) < 0) {
         perror("listen");
         close(mServerSocket);
         return -1;
