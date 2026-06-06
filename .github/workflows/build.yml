@@ -1,0 +1,40 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [ main, mainx ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ make libmysqlcppconn-dev
+
+      - name: Build server
+        run: make clean && make
+
+  build-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++
+
+      - name: Build tests
+        run: |
+          cd test
+          mkdir build && cd build
+          cmake .. && make
+
+      - name: Run tests
+        run: cd test/build && ./test_protocol && ./test_server_config
