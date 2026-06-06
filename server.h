@@ -41,7 +41,6 @@ private:
     struct sockaddr_in server_addr;
     struct epoll_event events[MAX_EVENTS];
     char buf[BUF_SIZE];
-    static Server* mInstance;
     std::string mServerIP;
     unsigned short mServerPort;
 };

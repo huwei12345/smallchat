@@ -1,13 +1,9 @@
 #include "MysqlPool.h"
 
-MysqlPool* MysqlPool::mPool = NULL;
-
 MysqlPool *MysqlPool::GetInstance()
 {
-    if (mPool == NULL) {
-        mPool = new MysqlPool();
-    }
-    return mPool;
+    static MysqlPool pool;
+    return &pool;
 }
 
 MysqlPool::MysqlPool(int handleNumber, int flag) : mCapacity(handleNumber), mFlag(flag)

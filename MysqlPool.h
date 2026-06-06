@@ -22,7 +22,6 @@ public:
     void releaseConncetion(sql::Connection *conn);
 
 private:
-    static MysqlPool* mPool;
     bool mStoping;
     int mFlag;
     int mCapacity;

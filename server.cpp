@@ -339,14 +339,10 @@ int Server::createListener()
 }
 
 
-Server* Server::mInstance = NULL;
-
 Server *Server::GetInstance()
 {
-    if (mInstance == NULL) {
-        mInstance = new Server;
-    }
-    return mInstance;
+    static Server instance;
+    return &instance;
 }
 
 bool Connection::readRequest(std::string &requestData)

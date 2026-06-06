@@ -25,6 +25,6 @@ void FriendCache::eraseFriendList(int userId)
 
 FriendCache * FriendCache::GetInstance()
 {
-    static FriendCache* cache = new FriendCache;
-    return cache;
+    static FriendCache cache;
+    return &cache;
 }

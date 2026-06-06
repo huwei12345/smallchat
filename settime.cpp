@@ -5,11 +5,8 @@
 
 SetTime * SetTime::GetInstance()
 {
-    static  SetTime * _instance = NULL;
-    if(_instance == NULL) {
-        _instance = new SetTime();
-    }
-    return _instance;
+    static SetTime instance;
+    return &instance;
 }
 SetTime::SetTime()
 {
