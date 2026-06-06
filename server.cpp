@@ -10,6 +10,7 @@
 #include <iostream>
 #include <mutex>
 #include <thread>
+#include <chrono>
 #include <functional>
 #include "Trans.h"
 #include "./cache/friendCache.h"
@@ -262,6 +263,8 @@ Server::Server(const char *ip, unsigned int port)
     requestProcessor[FunctionCode::RENAMESTOREFILE] = new ProcessMoveFileProcessor;
     requestProcessor[FunctionCode::GetAllGroupMessage] = new GetAllGroupMessageProcessor;
     requestProcessor[FunctionCode::ProcessGroupMessageRead] = new ProcessGroupMessageReadProcessor;
+    requestProcessor[FunctionCode::Heartbeat] = new HeartbeatProcessor;
+    requestProcessor[FunctionCode::LOGOUT] = new LogoutProcessor;
     for (int i = 50; i < 100; i++) {
         requestProcessor[i] = new RequestProcessor;
     }
@@ -277,6 +280,41 @@ int Server::selectAlgorithm() {
     return loop++ % IO_THREAD_NUM;
 }
 
+static const int HEARTBEAT_CHECK_INTERVAL = 60; // 检查间隔(秒)
+static const int HEARTBEAT_TIMEOUT = 90;         // 超时时间(秒)
+
+static void heartbeatCheckThread(Server* server) {
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::seconds(HEARTBEAT_CHECK_INTERVAL));
+        std::time_t now = std::time(nullptr);
+        std::vector<int> timeoutFds;
+
+        {
+            std::lock_guard<std::mutex> lock(server->mConnectionMapMutex);
+            for (auto& pair : server->mConnectionMap) {
+                if (pair.second && (now - pair.second->lastActiveTime) > HEARTBEAT_TIMEOUT) {
+                    timeoutFds.push_back(pair.first);
+                }
+            }
+        }
+
+        for (int fd : timeoutFds) {
+            printf("heartbeat timeout, closing connection fd=%d\n", fd);
+            Connection* conn = nullptr;
+            {
+                std::lock_guard<std::mutex> lock(server->mConnectionMapMutex);
+                auto it = server->mConnectionMap.find(fd);
+                if (it != server->mConnectionMap.end()) {
+                    conn = it->second;
+                }
+            }
+            if (conn) {
+                conn->closeConnection();
+            }
+        }
+    }
+}
+
 int Server::run()
 {
     mServerSocket = createListener();
@@ -289,7 +327,6 @@ int Server::run()
         mEvLoopList.push_back(loop);
     }
     for (int i = 0; i < IO_THREAD_NUM; i++) {
-        // 4 IO线程，目前无task线程、数据库线程、http线程、日志线程
         std::thread *iothread =  new std::thread(std::bind(&EventLoop::Run, mEvLoopList[i]));
         mEvLoopList[i]->mThread = iothread;
         if (iothread == nullptr) {
@@ -297,6 +334,12 @@ int Server::run()
             return -3;
         }
     }
+    // 启动心跳检测线程
+    std::thread heartbeatThread(heartbeatCheckThread, this);
+    heartbeatThread.detach();
+    printf("heartbeat check thread started (interval=%ds, timeout=%ds)\n",
+           HEARTBEAT_CHECK_INTERVAL, HEARTBEAT_TIMEOUT);
+
     mMainEventLoop = new EventLoop(this, mServerSocket);
     mMainEventLoop->RunMain();
     return 0;
@@ -393,6 +436,7 @@ bool Connection::processRead()
     if (!readRequest(requestData)) {
         return false;
     }
+    updateActiveTime();
     request = parseRequest(requestData);
     if (!request) {
         // Clean up requestData if necessary

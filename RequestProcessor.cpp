@@ -2586,3 +2586,34 @@ bool ProcessGroupMessageReadProcessor::ProcessGroupMessageRead(Request &request,
     MysqlPool::GetInstance()->releaseConncetion(conn);    
     return true;
 }
+
+void HeartbeatProcessor::Exec(Connection* conn, Request& request, Response& response)
+{
+    conn->updateActiveTime();
+    response.init(1, FunctionCode::Heartbeat, 0, 0, 0, 0, request.mUserId, 0, true, "");
+}
+
+void LogoutProcessor::Exec(Connection* conn, Request& request, Response& response)
+{
+    int userId = request.mUserId;
+    printf("User %d logout\n", userId);
+
+    // 从会话表中移除
+    {
+        std::lock_guard<std::mutex> lock(Server::GetInstance()->mSessionMapMutex);
+        Server::GetInstance()->mUserSessionMap.erase(userId);
+    }
+
+    // 通知好友下线
+    ProcessNotifyStateProcessor processor;
+    vector<int> friendList = FriendCache::GetInstance()->getFriendList(userId);
+    processor.Notify(conn, friendList, userId, OFFLINE);
+
+    // 清理连接的 session
+    if (conn->session != NULL) {
+        delete conn->session;
+        conn->session = NULL;
+    }
+
+    response.init(1, FunctionCode::LOGOUT, 0, 0, 0, 0, userId, 0, true, "");
+}

@@ -236,5 +236,13 @@ class ProcessGroupMessageReadProcessor  : public RequestProcessor  {
     bool ProcessGroupMessageRead(Request &request, int &endReturn);
 };
 
+class HeartbeatProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response& response);
+};
+
+class LogoutProcessor : public RequestProcessor {
+    void Exec(Connection* conn, Request& request, Response& response);
+};
+
 #endif
 

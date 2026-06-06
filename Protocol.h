@@ -4,6 +4,7 @@
 #include<iostream>
 #include<string>
 #include<vector>
+#include<ctime>
 #include"MyProtocolStream.h"
 #include "soft.h"
 #define BUF_SIZE 1024
@@ -20,17 +21,18 @@ class Response;
 
 class Connection {
 public:
-    Connection() : clientSocket(0), session(NULL) { }
-    Connection(int socket, EventLoop* loop) : clientSocket(socket), session(NULL), mEvLoop(loop) { }
+    Connection() : clientSocket(0), session(NULL), lastActiveTime(std::time(nullptr)) { }
+    Connection(int socket, EventLoop* loop) : clientSocket(socket), session(NULL), mEvLoop(loop), lastActiveTime(std::time(nullptr)) { }
     int clientSocket;
     char buffer[4096];
     bool readRequest(std::string &requestData);
-    // CallBack processRead; //CallBack
     bool processRead();
-bool sendResponse(int clientSocket, Response *response);
+    bool sendResponse(int clientSocket, Response *response);
     bool closeConnection(int flag = 0);
+    void updateActiveTime() { lastActiveTime = std::time(nullptr); }
     Session* session;
-EventLoop* mEvLoop;
+    EventLoop* mEvLoop;
+    std::time_t lastActiveTime;
 };
 
 enum SessionState {
@@ -113,7 +115,8 @@ namespace FunctionCode {
         RENAMESTOREFILE                           = 37,
         GetAllGroupMessage                        = 38,
         ProcessGroupMessageRead                   = 39,
-        //似乎会有服务器到客户端的广播，如消息传递、登录状态时的好友请求 朋友状态更新，需要监听
+        LOGOUT                                    = 40,
+        Heartbeat                                 = 41,
     };
 
     const std::vector<std::string> FunctionCodeString = {
