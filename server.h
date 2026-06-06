@@ -5,6 +5,7 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <string>
 #include "Protocol.h"
@@ -29,7 +30,7 @@ public:
     int createListener();
     int selectAlgorithm();
     static Server* GetInstance(); 
-    std::map<int, Connection*> mConnectionMap;//连接层 fd - conn
+    std::map<int, std::shared_ptr<Connection>> mConnectionMap;//连接层 fd - conn
     std::map<int, Session*> mUserSessionMap;//会话层 userId - conn
     std::mutex mConnectionMapMutex;
     std::mutex mSessionMapMutex;

@@ -76,7 +76,7 @@ int receive(int fd, Response& rsp) {
 	}
 	int len = 0;
 	memcpy(&len, ans.c_str(), 4);
-	len = htonl(len);
+	len = ntohl(len);
 	if (len - 4 <= 0) {
 		return -1;
 	}
@@ -84,7 +84,7 @@ int receive(int fd, Response& rsp) {
 	ret = receive(fd, other, len - 4);
 	if (ret <= 0) {
 		return -1;
-	}	
+	}
 	ans += other;
 	rsp.deserial(ans);
 	//TODO:在deserial里CRC校验
@@ -112,7 +112,7 @@ int receive(int fd, Request& req) {
 	}
 	int len = 0;
 	memcpy(&len, ans.c_str(), 4);
-	len = htonl(len);
+	len = ntohl(len);
 	if (len - 4 <= 0) {
 		return -1;
 	}
@@ -120,7 +120,7 @@ int receive(int fd, Request& req) {
 	ret = receive(fd, other, len - 4);
 	if (ret <= 0) {
 		return -1;
-	}	
+	}
 	ans += other;
 	req.deserial(ans);
 	//TODO:在deserial里CRC校验

@@ -8,6 +8,9 @@
 #include<ctime>
 #include"MyProtocolStream.h"
 #include "soft.h"
+#ifdef SERVER
+#include<memory>
+#endif
 #define BUF_SIZE 1024
 #define MAX_EVENTS 1024
 
@@ -20,7 +23,11 @@ class Session;
 class EventLoop;
 class Response;
 
-class Connection {
+class Connection
+#ifdef SERVER
+    : public std::enable_shared_from_this<Connection>
+#endif
+{
 public:
     Connection() : clientSocket(0), session(NULL), lastActiveTime(std::time(nullptr)), mWritePos(0) { }
     Connection(int socket, EventLoop* loop) : clientSocket(socket), session(NULL), mEvLoop(loop), lastActiveTime(std::time(nullptr)), mWritePos(0) { }
@@ -29,7 +36,7 @@ public:
     char buffer[4096];
     bool readRequest(std::string &requestData);
     bool processRead();
-    bool sendResponse(int clientSocket, Response *response);
+    bool sendResponse(int fd, Response *response);
     bool closeConnection(int flag = 0);
     void updateActiveTime() { lastActiveTime = std::time(nullptr); }
     Session* session;
@@ -55,7 +62,11 @@ enum SessionState {
 class Session {
 public:
     Session() : mLoginState(SessionState::ONLINE) {}
+#ifdef SERVER
+    std::weak_ptr<Connection> mConn;
+#else
     Connection* mConn;
+#endif
     int mUserId;
     int mLoginState;
     //应该还需要保持心跳连接

@@ -9,33 +9,37 @@
 class Logger {
 public:
     static void init(const std::string& level = "info") {
-        sLogger = spdlog::stdout_color_mt("smallchat");
-        sLogger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%s:%#] %v");
+        auto& logger = getMutable();
+        logger = spdlog::stdout_color_mt("smallchat");
+        logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%s:%#] %v");
         setLevel(level);
     }
 
     static void setLevel(const std::string& level) {
+        auto& logger = getMutable();
+        if (!logger) return;
         if (level == "debug" || level == "DEBUG")
-            sLogger->set_level(spdlog::level::debug);
+            logger->set_level(spdlog::level::debug);
         else if (level == "info" || level == "INFO")
-            sLogger->set_level(spdlog::level::info);
+            logger->set_level(spdlog::level::info);
         else if (level == "warn" || level == "WARN")
-            sLogger->set_level(spdlog::level::warn);
+            logger->set_level(spdlog::level::warn);
         else if (level == "error" || level == "ERROR")
-            sLogger->set_level(spdlog::level::err);
+            logger->set_level(spdlog::level::err);
         else
-            sLogger->set_level(spdlog::level::info);
+            logger->set_level(spdlog::level::info);
     }
 
     static std::shared_ptr<spdlog::logger> get() {
-        return sLogger;
+        return getMutable();
     }
 
 private:
-    static std::shared_ptr<spdlog::logger> sLogger;
+    static std::shared_ptr<spdlog::logger>& getMutable() {
+        static std::shared_ptr<spdlog::logger> sLogger = nullptr;
+        return sLogger;
+    }
 };
-
-std::shared_ptr<spdlog::logger> Logger::sLogger = nullptr;
 
 #define LOG_DEBUG(...)  if(Logger::get()) Logger::get()->debug(__VA_ARGS__)
 #define LOG_INFO(...)   if(Logger::get()) Logger::get()->info(__VA_ARGS__)

@@ -71,7 +71,7 @@ class GetAllFriendReqProcessor : public RequestProcessor  {
 
 class ProcessFriendRequestProcessor  : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
-    bool ProcessFriendRequest(Request &request, FriendRequest infoList);
+    bool ProcessFriendRequest(Request &request, FriendRequest& infoList);
 };
 
 
@@ -82,7 +82,7 @@ class GetAllGroupReqProcessor : public RequestProcessor  {
 
 class ProcessGroupJoinReqProcessor  : public RequestProcessor  {
     void Exec(Connection* conn, Request& request, Response&);
-    bool ProcessGroupJoinRequest(Request &request, GroupJoinRequest info);
+    bool ProcessGroupJoinRequest(Request &request, GroupJoinRequest& info);
     bool initGroupConfirmId(sql::Connection *conn, int userId, int groupId);
 };
 
