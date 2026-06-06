@@ -134,7 +134,7 @@ void EventLoop::RunMain()
         }
         struct sockaddr_in client_addr;
         memset(&client_addr, 0, sizeof(client_addr));
-        socklen_t client_len = 0;
+        socklen_t client_len = sizeof(client_addr);
         // 当有事件发生时，处理事件并将socket重新添加到epoll中
         for (int i = 0; i < nfds; i++) {
             if (events[i].data.fd == mServerSocket) {
@@ -167,7 +167,7 @@ void EventLoop::addSocket()
 {
     struct sockaddr_in client_addr;
     memset(&client_addr, 0, sizeof(client_addr));
-    socklen_t client_len = 0;
+    socklen_t client_len = sizeof(client_addr);
     int client_fd = ::accept(mServerSocket, (struct sockaddr *)&client_addr, &client_len);
     if (client_fd < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {

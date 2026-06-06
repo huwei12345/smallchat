@@ -466,6 +466,12 @@ bool Connection::processRead()
     }
 
     response = new Response;
+    if (requestProcessor[functionCode] == nullptr) {
+        LOG_ERROR("no processor for function code: {}", functionCode);
+        delete request;
+        delete response;
+        return false;
+    }
     requestProcessor[functionCode]->Exec(this, *request, *response);
     delete request;
 

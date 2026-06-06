@@ -61,7 +61,7 @@ enum SessionState {
 
 class Session {
 public:
-    Session() : mLoginState(SessionState::ONLINE) {}
+    Session() : mUserId(0), mLoginState(SessionState::ONLINE) {}
 #ifdef SERVER
     std::weak_ptr<Connection> mConn;
 #else
@@ -308,7 +308,8 @@ enum FileServerType {
 
 class FileInfo {
 public:
-    FileInfo() : id(0), ftpTaskId(0) {}
+    FileInfo() : id(0), ftpTaskId(0), send_id(0), recv_id(0), owner(0),
+        serviceType(0), filesize(0), fileMode(0), md5sum(0), expiredTime(0), parentId(0) {}
     int id;
     int ftpTaskId;
     int send_id;
