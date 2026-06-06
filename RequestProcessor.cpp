@@ -272,6 +272,9 @@ bool FindFriendProcessor::FindFriend(const Request &request, FriendList &friendL
     UserInfo info;
     int type = 0;//0 按名字，1 按id
     stream >> info.username;
+    if (info.username.empty()) {
+        return false;
+    }
     if (info.username[0] >= '0' && info.username[0] <= '9') {
         type = 1;
         info.user_id = stoiAll(info.username);
@@ -354,6 +357,9 @@ bool FindGroupProcessor::FindGroup(const Request &request, vector<GroupInfo> &gr
     int type = 0;//0 按名字，1 按id
     stream >> info.group_name;
     printf("group.name = %s\n", info.group_name.c_str());
+    if (info.group_name.empty()) {
+        return false;
+    }
     if (info.group_name[0] >= '0' && info.group_name[0] <= '9') {
         type = 1;
         info.id = stoiAll(info.group_name);
