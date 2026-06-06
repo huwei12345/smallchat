@@ -87,7 +87,15 @@ void EventLoop::Run()
                     }
                 }
                 if (conn) {
-                    conn->processRead();
+                    if (events[i].events & EPOLLOUT) {
+                        int remaining = conn->flushWriteBuffer();
+                        if (remaining <= 0) {
+                            modEpollFd(client_fd, EPOLLIN);
+                        }
+                    }
+                    if (events[i].events & EPOLLIN) {
+                        conn->processRead();
+                    }
                 }
             }
         }
@@ -198,6 +206,19 @@ bool EventLoop::eraseSocket(int fd)
     return true;
 }
 
+bool EventLoop::modEpollFd(int fd, uint32_t events)
+{
+    struct epoll_event ev;
+    memset(&ev, 0, sizeof(ev));
+    ev.events = events;
+    ev.data.fd = fd;
+    if (epoll_ctl(mEpollFd, EPOLL_CTL_MOD, fd, &ev) < 0) {
+        perror("epoll_ctl: EPOLL_CTL_MOD");
+        return false;
+    }
+    return true;
+}
+
 void EventLoop::changeSocket(Task *task)
 {
 }
@@ -208,42 +229,30 @@ void EventLoop::doAltrmTask(Task *task)
 
 bool EventLoop::doWrite(Task *task)
 {
-    //TODO:一次性全部写出，不太好，有缓冲区后修改
     if (task->mData == nullptr)
         return true;
     int fd = task->sockFd;
-    const char* data = task->mData->c_str();
-    int len = task->mData->size();
-    int pos = 0;
-    while (pos != len) {
-        int ret = ::send(fd, data + pos, len - pos, 0);
-        if (ret != -1) { 
-            pos += ret;
-        }
-        else if (ret == 0) {
-            if (task->mData) {
-                delete task->mData;
-                task->mData = nullptr;
-            }
-            return ret;
-        }
-        else {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                continue;
-            }
-            printf("write error %d\n", errno);
-            if (task->mData) {
-                delete task->mData;
-                task->mData = nullptr;
-            }
-            return ret;
+    Connection* conn = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(mServer->mConnectionMapMutex);
+        auto it = mServer->mConnectionMap.find(fd);
+        if (it != mServer->mConnectionMap.end()) {
+            conn = it->second;
         }
     }
-    if (task->mData) {
+    if (!conn) {
         delete task->mData;
         task->mData = nullptr;
+        return false;
     }
-    return len;
+    // data 所有权转移到写缓冲队列
+    conn->appendWriteBuffer(task->mData);
+    task->mData = nullptr;
+    int remaining = conn->flushWriteBuffer();
+    if (remaining > 0) {
+        modEpollFd(fd, EPOLLIN | EPOLLOUT);
+    }
+    return remaining >= 0;
 }
 
 void EventLoop::wakeup()

@@ -4,6 +4,7 @@
 #include<iostream>
 #include<string>
 #include<vector>
+#include<queue>
 #include<ctime>
 #include"MyProtocolStream.h"
 #include "soft.h"
@@ -21,8 +22,9 @@ class Response;
 
 class Connection {
 public:
-    Connection() : clientSocket(0), session(NULL), lastActiveTime(std::time(nullptr)) { }
-    Connection(int socket, EventLoop* loop) : clientSocket(socket), session(NULL), mEvLoop(loop), lastActiveTime(std::time(nullptr)) { }
+    Connection() : clientSocket(0), session(NULL), lastActiveTime(std::time(nullptr)), mWritePos(0) { }
+    Connection(int socket, EventLoop* loop) : clientSocket(socket), session(NULL), mEvLoop(loop), lastActiveTime(std::time(nullptr)), mWritePos(0) { }
+    ~Connection();
     int clientSocket;
     char buffer[4096];
     bool readRequest(std::string &requestData);
@@ -33,6 +35,15 @@ public:
     Session* session;
     EventLoop* mEvLoop;
     std::time_t lastActiveTime;
+
+#ifdef SERVER
+    void appendWriteBuffer(std::string* data);
+    int flushWriteBuffer();
+    bool hasPendingWrite() { return !mWriteQueue.empty(); }
+private:
+    std::queue<std::string*> mWriteQueue;
+    int mWritePos;
+#endif
 };
 
 enum SessionState {

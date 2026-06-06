@@ -475,6 +475,49 @@ bool Connection::sendResponse(int clientSocket, Response* response)
     return mEvLoop->sendDataAll(clientSocket, responseData);
 }
 
+Connection::~Connection()
+{
+    while (!mWriteQueue.empty()) {
+        delete mWriteQueue.front();
+        mWriteQueue.pop();
+    }
+}
+
+void Connection::appendWriteBuffer(std::string* data)
+{
+    mWriteQueue.push(data);
+}
+
+int Connection::flushWriteBuffer()
+{
+    while (!mWriteQueue.empty()) {
+        std::string* chunk = mWriteQueue.front();
+        const char* data = chunk->c_str();
+        int len = chunk->size();
+        while (mWritePos < len) {
+            int ret = ::send(clientSocket, data + mWritePos, len - mWritePos, 0);
+            if (ret > 0) {
+                mWritePos += ret;
+            } else if (ret < 0) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    return len - mWritePos;  // 还有数据未发完
+                }
+                printf("write error fd=%d errno=%d\n", clientSocket, errno);
+                delete chunk;
+                mWriteQueue.pop();
+                mWritePos = 0;
+                return -1;  // 发送错误
+            } else {
+                return len - mWritePos;
+            }
+        }
+        delete chunk;
+        mWriteQueue.pop();
+        mWritePos = 0;
+    }
+    return 0;  // 全部发送完成
+}
+
 //flag = 0,默认关闭  flag = 1,强行关闭
 bool Connection::closeConnection(int flag)
 {

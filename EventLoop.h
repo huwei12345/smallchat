@@ -48,6 +48,7 @@ public:
     bool addWakeupSocket();
     void addSocket(); // 主动accept
     bool eraseSocket(int fd);
+    bool modEpollFd(int fd, uint32_t events);
     void changeSocket(Task* task);
     void doAltrmTask(Task* task);
     bool doWrite(Task* task);
