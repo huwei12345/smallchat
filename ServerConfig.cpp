@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include "Logger.h"
 
 ServerConfig* ServerConfig::GetInstance()
 {
@@ -14,6 +15,7 @@ bool ServerConfig::load(const std::string& filename)
     std::ifstream file(filename);
     if (!file.is_open()) {
         printf("Warning: Cannot open config file '%s', using defaults\n", filename.c_str());
+        LOG_WARN("cannot open config file '{}', using defaults", filename);
         return false;
     }
 
@@ -53,6 +55,7 @@ bool ServerConfig::load(const std::string& filename)
 
     file.close();
     printf("Config loaded from '%s'\n", filename.c_str());
+    LOG_INFO("config loaded from '{}'", filename);
     return true;
 }
 

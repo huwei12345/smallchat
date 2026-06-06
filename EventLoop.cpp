@@ -3,6 +3,7 @@
 #include <map>
 #include <mutex>
 #include "Protocol.h"
+#include "Logger.h"
 EventLoop::EventLoop()
 {
     mIndex = -1;//-1是主线程
@@ -34,14 +35,17 @@ void EventLoop::Run()
 {
     if (mEpollFd < 0) {
         printf("EventLoop::Run: invalid epoll fd\n");
+        LOG_ERROR("EventLoop::Run: invalid epoll fd");
         return;
     }
+    LOG_INFO("IO thread {} started", mIndex);
     while (mRunning) {
         //-1 不主动返回
         int nfds = epoll_wait(mEpollFd, events, MAX_EVENTS, 100);
         if (nfds < 0) {
             if (errno == EINTR) continue;
             perror("epoll_wait");
+            LOG_ERROR("epoll_wait error in thread {}: {}", mIndex, strerror(errno));
             break;
         }
         for (int i = 0; i < nfds; i++) {
@@ -171,9 +175,11 @@ void EventLoop::addSocket()
         }
         printf("accept error: fd=%d errno=%d\n", mServerSocket, errno);
         perror("accept");
+        LOG_ERROR("accept error: server_fd={} errno={}", mServerSocket, errno);
         return;
     }
     std::cout << "EventLoop" << mIndex << " : get connect " << client_fd << std::endl;
+    LOG_INFO("new connection fd={} on thread {}", client_fd, mIndex);
     // 将client socket设置为非阻塞模式
     if (fcntl(client_fd, F_SETFL, O_NONBLOCK) < 0) {
         perror("fcntl");

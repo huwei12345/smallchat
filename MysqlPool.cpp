@@ -1,4 +1,5 @@
 #include "MysqlPool.h"
+#include "Logger.h"
 
 MysqlPool *MysqlPool::GetInstance()
 {
@@ -25,10 +26,12 @@ bool MysqlPool::init(std::string host, std::string user, std::string passwd)
         sql::Connection* conn = mDriver->connect(host, user, passwd);
         if (!conn->isValid()) {
             printf("sql init conn %d failure\n", i);
+            LOG_ERROR("mysql connection {} init failed", i);
             return false;
         }
         else {
             printf("sql init conn %d success\n", i);
+            LOG_INFO("mysql connection {} initialized", i);
         }
         mConnectionPool.push_back(conn);
         mIdleConnectionQue.push(conn);

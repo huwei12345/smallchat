@@ -16,6 +16,7 @@
 #include "./cache/friendCache.h"
 #include "EventLoop.h"
 #include "ServerConfig.h"
+#include "Logger.h"
 using namespace std;
 #define MAX_REQUEST_SIZE 4096
 
@@ -298,6 +299,7 @@ static void heartbeatCheckThread(Server* server) {
 
         for (int fd : timeoutFds) {
             printf("heartbeat timeout, closing connection fd=%d\n", fd);
+            LOG_WARN("heartbeat timeout, closing connection fd={}", fd);
             Connection* conn = nullptr;
             {
                 std::lock_guard<std::mutex> lock(server->mConnectionMapMutex);
@@ -400,6 +402,7 @@ bool Connection::readRequest(std::string &requestData)
     if (ret <= 0) {
         if (ret == 0) {
             printf("connect %d close\n", clientSocket);
+            LOG_INFO("connection closed fd={}", clientSocket);
             closeConnection();
         }
         // Handle recv error
@@ -503,6 +506,7 @@ int Connection::flushWriteBuffer()
                     return len - mWritePos;  // 还有数据未发完
                 }
                 printf("write error fd=%d errno=%d\n", clientSocket, errno);
+                LOG_ERROR("write error fd={} errno={}", clientSocket, errno);
                 delete chunk;
                 mWriteQueue.pop();
                 mWritePos = 0;

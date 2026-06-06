@@ -8,6 +8,7 @@
 #include "MysqlPool.h"
 #include "server.h"
 #include "settime.h"
+#include "Logger.h"
 #include "./cache/friendCache.h"
 #include "FileTools.h"
 bool checkDisk(FileInfo& info) {
@@ -105,6 +106,7 @@ void LoginProcessor::Exec(Connection* conn, Request &request, Response& response
     MyProtocolStream stream(data);
     string account, password;
     stream >> account >> password;
+    LOG_INFO("login request: account={}", account);
     UserInfo info;
     bool ret = Login(account, password, info);
     StoreFileProcessor pro;
@@ -128,9 +130,10 @@ void LoginProcessor::Exec(Connection* conn, Request &request, Response& response
             Server::GetInstance()->mUserSessionMap[info.user_id] = session;
         }
         //session->mLoginState = info.status; 登陆状态
+        LOG_INFO("login success: user_id={}", info.user_id);
     }
     else {
-        //some error info add
+        LOG_WARN("login failed: account={}", account);
     }
 }
 
@@ -197,6 +200,7 @@ int RegisterProcessor::Register(const Request& request, UserInfo& info) {
 
 void RegisterProcessor::Exec(Connection* conn, Request &request, Response& response)
 {
+    LOG_INFO("register request");
     UserInfo info;
     int ret = Register(request, info);
     if (ret == true) {
@@ -466,6 +470,7 @@ void SendMessageProcessor::Exec(Connection* conn, Request &request, Response& re
     MessageInfo info;//返回值
     bool ret = false;
     ret = SendMessage(request, info);
+    LOG_DEBUG("send message: from={} to={} flag={}", info.send_id, info.recv_id, info.flag);
     //在线时，直接通过网络发送消息给客户端，（接收消息和朋友请求的逻辑）
     if (info.flag == MessageInfo::Person) {
         Connection* friendConn = nullptr;
